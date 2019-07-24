@@ -41,6 +41,23 @@ def test_site_ECEF():
     assert_allclose(r_site_ECEF_calc, r_site_ECEF_true)
 
 
+def test_coe2rv():
+    """
+    Vallado, Eg.2-6, p.116
+    """
+    p = 11067.790   # [km]
+    e = 0.83285
+    i = 87.87       # [deg]
+    Omega = 227.89  # [deg]
+    w = 53.38       # [deg]
+    nu = 92.335     # [deg]
+    r_calc, v_calc = pp.coe2rv(p, e, i, Omega, w, nu)
+    r_true = np.array([6525.344, 6861.535, 6449.125])  # [km] 
+    v_true = np.array([4.902276, 5.533124, -1.975709]) # [km/s]
+    assert_allclose(r_calc, r_true, atol=1e-1)
+    assert_allclose(v_calc, v_true, rtol=1e-5)
+
+
 def test_pkepler():
     """ 
     Test orbit propagation
@@ -91,4 +108,4 @@ def test_kepEqtnE():
     assert_almost_equal(E_calc, E_true)
 
 if __name__ == "__main__":
-    test_site_declination_and_K_2()
+    test_coe2rv()
