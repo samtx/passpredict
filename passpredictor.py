@@ -28,9 +28,10 @@ def site_declination_and_K(phi_gd, h_ellp):
 
 
 def site_ECEF(phi_gd, lmda, h_ellp):
-    """
-    Algorithm 51 from Vallado, p.430
+    """Compute ECEF coordinates for tracking site on Earth
 
+    References:
+        Vallado, Algorithm 51, p.430
     """
 
     r_delta, r_K = site_declination_and_K(phi_gd, h_ellp)
@@ -48,8 +49,10 @@ def fk5():
 
 
 def nu2anomaly(nu, e):
-    """
-    Vallado, p.77
+    """Compute anomaly from nu and eccentricity
+
+    References:
+        Vallado, p.77
     """
     if e < 1.0:
         cosNu = cos(radians(nu))
@@ -68,8 +71,10 @@ def nu2anomaly(nu, e):
 
 
 def anomaly2nu(e, E, B=0, p=0, r=1, H=0):
-    """
-    Vallado, alg 6, p.77
+    """Compute nu from anomaly and eccentricity.
+
+    References:
+        Vallado, Algorithm 6, p.77
     """
     if e < 1.0:
         cosE = cos(radians(E))
@@ -84,18 +89,20 @@ def anomaly2nu(e, E, B=0, p=0, r=1, H=0):
 
 
 def rot1(a):
-    """
-    Euler angle rotation matrix, first angle
-    Vallado, Eq.3-15
+    """Compute Euler angle rotation matrix, first angle
+
+    References:
+        Vallado, Eq. 3-15
     """
     mtx = np.array([[1., 0., 0.], [0., cos(a), sin(a)], [0., -sin(a), cos(a)]])
     return mtx
 
 
 def rot2(a):
-    """
-    Euler angle rotation matrix, second angle
-    Vallado, Eq.3-15
+    """Compute Euler angle rotation matrix, second angle
+
+    References:
+        Vallado, Eq. 3-15
     """
     mtx = np.array([[cos(a), 0., -sin(a)], [0., cos(a), 0.],
                     [sin(a), 0., cos(a)]])
@@ -103,9 +110,10 @@ def rot2(a):
 
 
 def rot3(a):
-    """
-    Euler angle rotation matrix, third angle
-    Vallado, Eq.3-15
+    """Compute Euler angle rotation matrix, third angle
+
+    References:
+        Vallado, Eq. 3-15
     """
     mtx = np.array([[cos(a), sin(a), 0.], [-sin(a), cos(a), 0.],
                     [0., cos(a), 1.]])
@@ -113,8 +121,10 @@ def rot3(a):
 
 
 def coe2rv(p, e, i, Omega, w, nu, u=0., lmda_true=0., w_hat_true=0.):
-    """
-    Vallado, Alg 10, p.118
+    """Compute ECI position and velocity vectors from classical orbital elements
+
+    References:
+        Vallado, Algorithm 10, p.118
     """
     # special cases
     small = 1e-10
@@ -168,8 +178,10 @@ def coe2rv(p, e, i, Omega, w, nu, u=0., lmda_true=0., w_hat_true=0.):
 
 
 def rv2coe(rIJK, vIJK, findall=False):
-    """
-    Vallado, Alg 9, p.113
+    """Compute classical orbital elements from ECI position and velocity vectors.
+
+    References:
+        Vallado, Algorithm 9, p.113
     """
     hvec = cross(rIJK, vIJK)
     h = sqrt(dot(hvec, hvec))
@@ -255,8 +267,10 @@ def rv2coe(rIJK, vIJK, findall=False):
 
 
 def julian_date(yr, mo=None, dy=None, hr=None, mn=None, sec=None):
-    """
-    Vallado, alg.14, p.183
+    """Compute Julian Date from datetime or equivalent elements
+
+    References:
+        Vallado, Algorithm 14, p.183
     """
     if isinstance(yr, datetime):
         dt = yr
@@ -269,14 +283,15 @@ def julian_date(yr, mo=None, dy=None, hr=None, mn=None, sec=None):
     jd5 = 1721013.5
     jd6 = float(((sec / 60 + mn) / 60 + hr) / 24)
     jd = jd1 - jd2 + jd3 + jd4 + jd5 + jd6
-    from pprint import pprint
-    pprint([jd1, jd2, jd3, jd4, jd5, jd6])
+    print([jd1, jd2, jd3, jd4, jd5, jd6])
     return jd
 
 
 def kepEqtnE(M, e):
     """
-    Vallado, Alg 2, p.65
+
+    References:
+        Vallado, Algorithm 2, p.65
     """
     M_rad = radians(M)
     if (-pi < M_rad < 0) or (M_rad > pi):
@@ -296,10 +311,10 @@ def kepEqtnE(M, e):
 
 
 def pkepler_rv(r0, v0, dt, ndt=0., nddt=0.):
-    """
-    Vallado, Alg 65, p.691
+    """Propagate object from initial position and velocity vectors
 
-    Propagate object from initial position and velocity vectors
+    References:
+        Vallado, Algorithm 65, p.691
     """
 
     coe = rv2coe(r0, v0)
@@ -365,10 +380,10 @@ def pkepler_coe(a0,
                 dt,
                 ndt=0.,
                 nddt=0.):
-    """
-    Vallado, Alg 65, p.691
+    """Propagate object from orbital elements using Kepler's equation
 
-    Propagate object from orbital elements
+    References:
+        Vallado, Algorithm 65, p.691
     """
 
     if e0 != 0.0:
@@ -418,10 +433,9 @@ def sgp4(tle1, tle2, t):
     return r, v
 
 
-##################33
+##################
 # From sgp4lib.py in skyfield
-###################33
-
+###################
 
 def ITRF_position_velocity_error(t):
     """Return the ITRF position, velocity, and error at time `t`.
@@ -532,10 +546,6 @@ def alfano_approx2():
 
 def razel_from_t(tend=None, sec_per_query=120, sat='iss'):
     """Use skyfield to calculate azimuth, elevation from satellite object"""
-    from skyfield.api import Topos, load
-    from datetime import datetime, timedelta
-    from pytz import timezone
-
     sat_data = {
         'iss': {
             'url': 'http://celestrak.com/NORAD/elements/stations.txt',
@@ -683,8 +693,8 @@ def parabolic_blending(t, p):
     """Parabolic blending approximation from Alfano (1992)
     pts = (t1, p1), ... , (t4, p4)
 
-    References: 
-        Vallado, Appendix C.5.1 for finding cubic roots 
+    References:
+        Vallado, Appendix C.5.1 for finding cubic roots
     """
     from math import sqrt, atan2, cos, degrees, radians, pi
     alph_p = compute_alphas(p[0], p[1], p[2], p[3])
@@ -770,6 +780,9 @@ if __name__ == "__main__":
     from sgp4.earth_gravity import wgs72, wgs84
     import matplotlib.pyplot as plt
     import pickle
+    from skyfield.api import Topos, load
+    from datetime import datetime, timedelta
+    from pytz import timezone
 
     # Generate elevation function from Alfano using Skyfield
     recompute = False
