@@ -631,6 +631,9 @@ def para_roots(alph_p):
     delta = a*a*a/27 + b*b/4
     tol = 1e-8
     Troots = None
+
+    # plot_para_blending(alph_p)
+
     if delta > tol:
         # Use Cardan's solution, Eq. C-31
         sqrt_delta = sqrt(delta)
@@ -664,6 +667,19 @@ def para_roots(alph_p):
     else:
         return None
     return Troots
+
+def C(a, T):
+    return a[3]*T**3 + a[2]*T**2 + a[1]*T + a[0]
+
+def plot_para_blending(alph_p, p):
+    fig, ax = plt.subplots()
+    xT = np.linspace(0,1)
+    yT = C(alph_p, xT)
+    ax.plot(xT, yT, '-', label='C(T)')
+    ax.grid()
+    ax.legend()
+    plt.show()
+    
 
 
 def parabolic_blending(t, p):
@@ -754,7 +770,7 @@ if __name__ == "__main__":
     # sat = 'spirale a'
     sat = 'iss'
     sec_per_query = 1
-    lofi_step = 150  # seconds
+    lofi_step = 60  # seconds
     dt_days = 2
     import datetime
     import numpy as np
@@ -816,6 +832,8 @@ if __name__ == "__main__":
     el = np.empty(0)
     troot = np.empty(0)
     elroot = np.empty(0)
+    from timeit import default_timer as tic
+    t_0 = tic()  
     for i in range(1, tt_lofi.size-2):
         if (np.product(elev_fn[i-1:i+1]) > 0) and (np.product(elev_fn[i:i+2]) > 0) \
             and (np.product(elev_fn[i+1:i+3]) > 0):
@@ -825,6 +843,7 @@ if __name__ == "__main__":
         a_t = compute_alphas(tt_lofi[i-1],tt_lofi[i],tt_lofi[i+1],tt_lofi[i+2])
         t = np.append(t, C(a_t, T))
         Troots = para_roots(a_el)
+        # plot_para_blending()
         if not np.any(Troots):
             continue
         elroot = np.append(elroot, C(a_el, Troots))
@@ -832,6 +851,8 @@ if __name__ == "__main__":
     idx = (troot > tt[0]) & (troot < tt[-1])
     troot = troot[idx]
     elroot = elroot[idx]
+    t_1 = tic()
+    print(f'Time = {t_1-t_0:.6f} sec')
     
 
     # trise, tset = [], []
@@ -866,7 +887,7 @@ if __name__ == "__main__":
     ax.plot(tt, alts, ':', markersize=markersize, label='Exact Elev.')
     ax.plot(tt_lofi, elev_fn + el_lower_lim, 'o-', markersize=markersize*2, label='Elev. Fn.')
     ax.plot(tt_lofi, np.ones(tt_lofi.size)*el_lower_lim, 'k--', label='Elev. Limit')
-    ax.plot(t, el + el_lower_lim, label='Para Blend')
+    ax.plot(t, el + el_lower_lim, 's-', label='Para Blend')
     ax.plot(troot, elroot + el_lower_lim, 'o', markersize=markersize*3, label='Para roots')
     # ax.plot(tt, elev_fn1, 'o-', markersize=markersize, label='Elev. Fn1.')
     # ax.plot(tt, elev_fn2, 'o-', markersize=markersize, label='Elev. Fn2.')
