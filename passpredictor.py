@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import dot, cross
 from math import sqrt, sin, cos, cosh, acosh, tan, atan, acos, radians, degrees, pi
-from datetime import datetime
+import datetime
 
 # Constants
 R_EARTH = np.float64(6378.137)  # [km] Mean equatorial radius
@@ -116,7 +116,7 @@ def rot3(a):
         Vallado, Eq. 3-15
     """
     mtx = np.array([[cos(a), sin(a), 0.], [-sin(a), cos(a), 0.],
-                    [0., cos(a), 1.]])
+                    [0., 0., 1.]])
     return mtx
 
 
@@ -269,11 +269,17 @@ def rv2coe(rIJK, vIJK, findall=False):
 def julian_date(yr, mo=None, dy=None, hr=None, mn=None, sec=None):
     """Compute Julian Date from datetime or equivalent elements
 
+    Notes
+        T0 = 2451545.0
+
     References:
         Vallado, Algorithm 14, p.183
     """
-    if isinstance(yr, datetime):
-        dt = yr
+    if isinstance(yr, datetime.datetime) or isinstance(yr, np.datetime64):
+        if isinstance(yr, np.datetime64):
+            dt = yr.astype(datetime.datetime)
+        else:
+            dt = yr
         yr, mo, dy = dt.year, dt.month, dt.day
         hr, mn, sec = dt.hour, dt.minute, dt.second
     jd1 = float(367 * yr)
@@ -283,7 +289,7 @@ def julian_date(yr, mo=None, dy=None, hr=None, mn=None, sec=None):
     jd5 = 1721013.5
     jd6 = float(((sec / 60 + mn) / 60 + hr) / 24)
     jd = jd1 - jd2 + jd3 + jd4 + jd5 + jd6
-    print([jd1, jd2, jd3, jd4, jd5, jd6])
+    # print([jd1, jd2, jd3, jd4, jd5, jd6])
     return jd
 
 
@@ -460,9 +466,6 @@ def _at(self, t):
     return rGCRS, vGCRS, rGCRS, error
 
 
-_second = 1.0 / (24.0 * 60.0 * 60.0)
-
-
 def theta_GMST1982(jd_ut1):
     """Return the angle of Greenwich Mean Standard Time 1982 given the JD.
 
@@ -470,9 +473,20 @@ def theta_GMST1982(jd_ut1):
     Equator Mean Equinox (TEME) frame of reference used by SGP4 and the
     more standard Pseudo Earth Fixed (PEF) frame of reference.
 
-    From AIAA 2006-6753 Appendix C.
+    Args:
+        jd_ut1 (float): Julian date since Jan 1, 2000
 
+    Returns:
+        theta (float): GMST in radians
+        thetadt (float): time derivative of GMST in rad/s
+
+    References:
+        Vallado, et al. "Revisiting Spacetrack Report #3", AIAA, 2006-6753, Appendix C.
+        Rhodes, Skyfield library, github.com/skyfielders/python-skyfield --> sgp4lib.py
     """
+    tau = 2 * pi
+    _second = 1.0 / (24.0 * 60.0 * 60.0)
+    T0 = 2451545.0  # JD for Jan 1, 2000
     t = (jd_ut1 - T0) / 36525.0
     g = 67310.54841 + (8640184.812866 + (0.093104 + (-6.2e-6) * t) * t) * t
     dg = 8640184.812866 + (0.093104 * 2.0 + (-6.2e-6 * 3.0) * t) * t
@@ -490,26 +504,26 @@ def TEME_to_ITRF(jd_ut1, rTEME, vTEME, xp=0.0, yp=0.0):
     The velocity should be provided in units per day, not per second.
 
     From AIAA 2006-6753 Appendix C.
-
     """
     theta, theta_dot = theta_GMST1982(jd_ut1)
     zero = theta_dot * 0.0
-    angular_velocity = array([zero, zero, -theta_dot])
-    R = rot_z(-theta)
+    angular_velocity = np.array([zero, zero, -theta_dot])
+    R = rot3(-theta).T
 
     if len(rTEME.shape) == 1:
-        rPEF = (R).dot(rTEME)
-        vPEF = (R).dot(vTEME) + cross(angular_velocity, rPEF)
+        rPEF = np.dot(R, rTEME)
+        vPEF = np.dot(R, vTEME) + cross(angular_velocity, rPEF)
     else:
-        rPEF = einsum('ij...,j...->i...', R, rTEME)
-        vPEF = einsum('ij...,j...->i...', R, vTEME) + cross(
+        rPEF = np.einsum('ij...,j...->i...', R, rTEME)
+        vPEF = np.einsum('ij...,j...->i...', R, vTEME) + cross(
             angular_velocity, rPEF, 0, 0).T
 
     if xp == 0.0 and yp == 0.0:
         rITRF = rPEF
         vITRF = vPEF
     else:
-        W = (rot_x(yp)).dot(rot_y(xp))
+        W = (rot1(yp)).dot(rot2(xp))
+        W = W.T
         rITRF = (W).dot(rPEF)
         vITRF = (W).dot(vPEF)
     return rITRF, vITRF
@@ -773,164 +787,6 @@ def alfano_approx(t, lat, lon, h=0.):
 
 
 if __name__ == "__main__":
-    import datetime
-    import numpy as np
-    from sgp4.propagation import sgp4 as sgp4_BR
-    from sgp4.io import twoline2rv
-    from sgp4.earth_gravity import wgs72, wgs84
-    import matplotlib.pyplot as plt
     import pickle
-    from skyfield.api import Topos, load
-    from datetime import datetime, timedelta
-    from pytz import timezone
+    import matplotlib.pyplot as plt
 
-    # Generate elevation function from Alfano using Skyfield
-    recompute = False
-    # sat = 'spirale a'
-    sat = 'iss'
-    sec_per_query = 1
-    lofi_step = 60  # seconds
-    dt_days = 2
-
-    try:
-        data = np.load('iss_razel.npz', allow_pickle=True)
-        tt = data['tt']
-        azs = data['azs']
-        alts = data['alts']
-        rr = data['rr']
-        rrsat = data['rrsat']
-    except:
-        tend = datetime.datetime.now(
-            datetime.timezone.utc) + datetime.timedelta(days=dt_days)
-        (tt, azs, alts, rr, rrsat) = razel_from_t(tend,
-                                                  sec_per_query=sec_per_query,
-                                                  sat=sat)
-        if isinstance(tt[0], datetime.datetime):
-            # Convert datetime array to minutes since epoch (beginning)
-            tmp = tt.copy()
-            t1 = tmp[0]
-            tt = np.empty(tmp.size)
-            for i in range(tmp.size):
-                dt = tmp[i] - t1
-                tt[i] = dt.total_seconds() / 60
-        np.savez('iss_razel.npz',
-                 tt=tt,
-                 azs=azs,
-                 alts=alts,
-                 rr=rr,
-                 rrsat=rrsat)
-
-    try:
-        data = np.load('elev_fn.npz', allow_pickle=True)
-        tt = data['tt']
-        alts = data['alts']
-        rr = data['rr']
-        el_lower_lim = data['el_lower_lim']
-        elev_fn = data['elev_fn']
-        tt_lofi = data['tt_lofi']
-        alts_lofi = data['alts_lofi']
-    except:
-        # Get elevation limit function from Alfano (1992)
-        SEC_PER_HOUR = 3600
-        start_hour = 0
-        end_hour = 48
-        tt = tt[SEC_PER_HOUR * start_hour:SEC_PER_HOUR * end_hour]
-        alts = alts[SEC_PER_HOUR * start_hour:SEC_PER_HOUR * end_hour]
-        tt_lofi = tt[::lofi_step]
-        alts_lofi = alts[::lofi_step]
-        el_lower_lim = 10   # deg lower limit
-        elev_fn = alts_lofi - el_lower_lim
-        np.savez('elev_fn.npz',
-                 elev_fn=elev_fn,
-                 tt=tt,
-                 alts=alts,
-                 rr=rr,
-                 el_lower_lim=el_lower_lim,
-                 tt_lofi=tt_lofi,
-                 alts_lofi=alts_lofi)
-
-    # Do the parabolic blending to find rise and set times
-    C = lambda a, tau: a[3] * tau**3 + a[2] * tau**2 + a[1] * tau + a[0]
-    T = np.linspace(0, 1)
-    t = np.empty(0)
-    el = np.empty(0)
-    troot = np.empty(0)
-    elroot = np.empty(0)
-    from timeit import default_timer as tic
-    t_0 = tic()
-    for i in range(1, tt_lofi.size - 2):
-        if (np.product(elev_fn[i-1:i+1]) > 0) and (np.product(elev_fn[i:i+2]) > 0) \
-            and (np.product(elev_fn[i+1:i+3]) > 0):
-            continue
-        a_el = compute_alphas(elev_fn[i - 1], elev_fn[i], elev_fn[i + 1],
-                              elev_fn[i + 2])
-        el = np.append(el, C(a_el, T))
-        a_t = compute_alphas(tt_lofi[i - 1], tt_lofi[i], tt_lofi[i + 1],
-                             tt_lofi[i + 2])
-        t = np.append(t, C(a_t, T))
-        Troots = para_roots(a_el)
-        # plot_para_blending()
-        if not np.any(Troots):
-            continue
-        elroot = np.append(elroot, C(a_el, Troots))
-        troot = np.append(troot, C(a_t, Troots))
-    idx = (troot > tt[0]) & (troot < tt[-1])
-    troot = troot[idx]
-    elroot = elroot[idx]
-    t_1 = tic()
-    print(f'Time = {t_1-t_0:.6f} sec')
-
-    # trise, tset = [], []
-    # assert tt_lofi.size == alts_lofi.size
-    # n = tt_lofi.size
-    # for i in range(3,n-4):
-    #     t, p = tt_lofi[i-1:i+3], alts_lofi[i-1:i+3]
-    #     rise, set = parabolic_blending(t, p)
-    #     if rise:
-    #         trise.extend(rise)
-    #     if set:
-    #         tset.extend(set)
-    # trise = np.asarray(trise)
-    # tset = np.asarray(tset)
-
-    ymax = alts.max()
-    ymin = alts.min()
-
-    fig, axs = plt.subplots(figsize=(30, 5), sharex=True)
-    markersize = 1.25
-    try:
-        ax = axs[0]
-    except:
-        ax = axs
-    ax.plot(tt, alts, ':', markersize=markersize, label='Exact Elev.')
-    ax.plot(tt_lofi,
-            elev_fn + el_lower_lim,
-            'o-',
-            markersize=markersize * 2,
-            label='Elev. Fn.')
-    ax.plot(tt_lofi,
-            np.ones(tt_lofi.size) * el_lower_lim,
-            'k--',
-            label='Elev. Limit')
-    ax.plot(t, el + el_lower_lim, 's-', label='Para Blend')
-    ax.plot(troot,
-            elroot + el_lower_lim,
-            'o',
-            markersize=markersize * 3,
-            label='Para roots')
-    ax.set_xlabel('Minutes since epoch')
-    ax.set_ylabel('Elevation Angle')
-    ax.grid()
-    ax.legend()
-    try:
-        ax = axs[1]
-        ax.plot(tt, rr, 'o-', markersize=markersize, label=r'$\rho$')
-        ax.plot(tt, rrsat, 'o-', markersize=markersize, label=r'$R$')
-        ax.legend()
-        ax.grid()
-    except:
-        pass
-    plt.savefig('iss_razel.png', dpi=400)
-    with open('iss_razel.fig', 'wb') as figfile:
-        pickle.dump(fig, figfile)
-    plt.show()
