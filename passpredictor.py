@@ -56,6 +56,25 @@ def site_ECEF(phi_gd, lmda, h_ellp):
     return r_site_ECEF
 
 
+def site_ECEF2(phi_gd, lmda, h_ellp):
+    """Compute ECEF coordinates for tracking site on Earth
+
+    Args:
+        phi_gd: (float) geodetic latitutde of site in degrees
+        lmda: (float) east longitude of site in degrees
+        h_ellp: (float) height above the reference ellipse in meters
+
+    References:
+        Vallado, p. 428, Eq. 7-1
+    """
+    phi_gd_rad = phi_gd * DEG2RAD
+    C = R_EARTH / np.sqrt(1 - e2_EARTH * sin(phi_gd_rad)**2)
+    S = C * (1 - e2_EARTH)
+    r_site_ECEF = np.array([
+
+    ])
+
+
 def fk5(r, xp=0., yp=0.):
     """IAU-76 / FK5 reductions for polar motion, nutation, precession
 
