@@ -31,6 +31,13 @@ def test_site_declination_and_K_2():
     assert_almost_equal(rK_calc, rK_true, decimal=2)
 
 
+def test_sgp4_fk5():
+    """
+    Vallado, p. 233-234
+    """
+    pass
+
+
 def test_site_ECEF():
     """
     Vallado, Eg 7-1, p.431
@@ -59,6 +66,19 @@ def test_site_ECEF():
 #         (   8,       12.41552416, 0.0036498,  74.0186, 0.,    0., 0.),
 #         (   9,       13.84150848, 0.0048964, 144.6414, 0.,    0., 0.)
 #     ]
+
+
+def test_utc2tt():
+    """Vallado, Eg. 3-7"""
+    # Mountain standard time (UTC-6)
+    dt = datetime(2004, 5, 14, 10, 43, 0)
+    deltaAT = 32  # sec
+    deltaUT1 = -0.463326  # sec
+    # get UTC by adjusting from MST timezone
+    dt += timedelta(hours=6)
+    jd_utc = pp.julian_date(dt)
+    tt = pp.utc2tt(jd_utc, deltaAT=deltaAT, deltaUT1=deltaUT1)
+    assert_almost_equal(tt, 0.043674121031, decimal=12)
 
 
 def test_nu2anomaly():
