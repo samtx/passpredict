@@ -95,6 +95,21 @@ def test_ECEF_to_SEZ():
         assert_almost_equal(rSEZ[i], rSEZ_true[i], decimal=0, verbose=True)
 
 
+def test_sun_pos():
+    """
+    Vallado, Eg. 5-1, p. 280
+    """
+    dt = datetime(2006, 4, 2)  # April 2, 2006, 00:00 UTC
+    jdt = pp.julian_date2(dt)
+    assert_almost_equal(jdt, 2453827.5, decimal=12)
+    jdt = np.asarray(jdt)
+    r = pp.sun_pos(jdt)
+    r_true = np.array([146186212, 28788976, 12481064], dtype=np.float)
+    r_true = np.reshape(r_true, (3, 1))
+    assert_allclose(r, r_true, rtol=1e-5)
+
+
+
 # def test_riseset():
 #     """pa
 #     Test orbit propagation

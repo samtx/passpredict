@@ -109,6 +109,50 @@ def ECEF_to_SEZ(r, phi, lmda):
 
     return rSEZ
 
+
+def rng_el(r):
+    """Get range and elevation from SEZ vector"""
+    rng = np.linalg.norm(r, axis=1)
+    el = np.arcsin(r[2]/rng)
+    el *= RAD2DEG
+    return el, rng
+
+
+def sun_pos(t):
+    """Compute the Sun position vector
+
+    References:
+        Vallado, p. 279, Alg. 29
+    """
+    t_ut1 = (t - 2451545.0)/36525
+    t_tdb = t_ut1
+    # print(f't_tdb={t_tdb}')
+    lmda_Msun = (280.460 + 36000.771*t_tdb) % 360
+    # print(f'lmda_Msun={lmda_Msun}')
+    M_sun = (357.5291092 + 35999.05034*t_tdb) % 360
+    # print(f'M_sun={M_sun}')
+    lmda_eclp = lmda_Msun + 1.914666471*np.sin(M_sun*DEG2RAD)
+    lmda_eclp += 0.019994643*np.sin(2*M_sun*DEG2RAD)
+    # print(f'lmda_eclp={lmda_eclp}')
+    r_sun_mag = 1.000140612 - 0.016708617*np.cos(M_sun*DEG2RAD)
+    r_sun_mag -= 0.000139589*np.cos(2*M_sun*DEG2RAD)
+    # print(f'r_sun_mag ={r_sun_mag}')
+    eps = 23.439291 - 0.0130042*t_tdb
+    # print(f'eps={eps}')
+    coslmda = np.cos(lmda_eclp*DEG2RAD)
+    sinlmda = np.sin(lmda_eclp*DEG2RAD)
+    coseps = np.cos(eps*DEG2RAD)
+    sineps = np.sin(eps*DEG2RAD)
+    r = np.empty((3,t.size), dtype=np.float)
+    r[0] = r_sun_mag * coslmda
+    r[1] = r_sun_mag * coseps * sinlmda
+    r[2] = r_sun_mag * sineps * sinlmda
+    # print(r)
+    r *= AU_KM
+    return r
+
+
+
 def fk5(r, xp=0., yp=0.):
     """IAU-76 / FK5 reductions for polar motion, nutation, precession
 
