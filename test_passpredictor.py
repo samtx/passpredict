@@ -47,11 +47,56 @@ def test_site_ECEF():
     alt = 2187.         # [m]
     r_ECEF = pp.site_ECEF(phi_gd, lmda, alt)
     r_ECEFtrue = np.array([-1275.1219, -4797.9890, 3994.2975])
-    assert_allclose(r_ECEF, r_ECEFtrue)
+    for i in [0, 1, 2]:
+        assert_almost_equal(r_ECEF[i], r_ECEFtrue[i], decimal=4)
+
+
+def test_site_ECEF2():
+    """
+    Vallado, Eg 7-1, p.431
+    """
+    phi_gd = 39.007     # [deg]
+    lmda = -104.883     # [deg]
+    alt = 2187.         # [m]
+    r_ECEF = pp.site_ECEF2(phi_gd, lmda, alt)
+    r_ECEFtrue = np.array([-1275.1219, -4797.9890, 3994.2975])
+    for i in [0, 1, 2]:
+        assert_almost_equal(r_ECEF[i], r_ECEFtrue[i], decimal=4)
+
+
+def test_site_ECEF2_v2():
+    phi = 42.38    # latitude, deg
+    lmda = -71.13  # longitude, deg
+    h = 24         # height, m
+    rsite = pp.site_ECEF2(phi, lmda, h)
+    rtrue = np.array([1526.122, -4465.064, 4276.894])
+    print(rsite)
+    for i in [0, 1, 2]:
+        assert_almost_equal(rsite[i], rtrue[i], decimal=3, verbose=True)
+
+
+def test_ECEF_to_SEZ():
+    """
+    Vallado, Eg. 11-6, p.912
+    """
+    phi = 42.38    # latitude, deg
+    lmda = -71.13  # longitude, deg
+    # lmda = 136.2944
+    h = 24         # height, m
+    rsat = np.array([885.7296, -4389.3856, 5070.1765])
+    rsite = pp.site_ECEF2(phi, lmda, h)
+    rhoECEF = rsat - rsite
+    print(rhoECEF)
+    rSEZ = pp.ECEF_to_SEZ(rhoECEF, phi, lmda)
+    rSEZ_true = np.array([-773.8654, -581.4980, 328.8145])
+    np.set_printoptions(precision=8)
+    # print(rSEZ)
+    for i in [0, 1, 2]:
+        assert_almost_equal(rSEZ[i], rSEZ_true[i], decimal=0, verbose=True)
 
 
 # def test_riseset():
-#     """
+#     """pa
 #     Test orbit propagation
 #     """
 #         # Obj, n [rev/solar day],         e,  i [deg],  w, Omega, M
@@ -332,5 +377,8 @@ if __name__ == "__main__":
     # test_julian_date_vectorized()
     # test_theta_GMST1982()
     # test_appendix_c_conversion_from_TEME_to_ITRF_UTC1()
-    test_jd_from_skyfield2()
-    test_jd_from_skyfield3()
+    # test_jd_from_skyfield2()
+    # test_jd_from_skyfield3()
+    # test_site_declination_and_K()
+    # test_site_ECEF2()
+    test_ECEF_to_SEZ()
