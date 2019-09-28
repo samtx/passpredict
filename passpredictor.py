@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import dot, cross
+import math
 from math import sqrt, sin, cos, cosh, acosh, tan, atan, acos, radians, degrees, pi
 import datetime
 
@@ -68,12 +69,45 @@ def site_ECEF2(phi_gd, lmda, h_ellp):
         Vallado, p. 428, Eq. 7-1
     """
     phi_gd_rad = phi_gd * DEG2RAD
-    C = R_EARTH / np.sqrt(1 - e2_EARTH * sin(phi_gd_rad)**2)
+    lmda_rad = lmda * DEG2RAD
+    cosphi = math.cos(phi_gd_rad)
+    sinphi = math.sin(phi_gd_rad)
+    C = R_EARTH / math.sqrt(1 - e2_EARTH * (sinphi**2))
     S = C * (1 - e2_EARTH)
+    h_ellp *= 0.001  # convert to km
+    tmp = (C + h_ellp) * cosphi
     r_site_ECEF = np.array([
-
+        tmp * math.cos(lmda_rad),
+        tmp * math.sin(lmda_rad),
+        (S + h_ellp) * sinphi
     ])
+    return r_site_ECEF
 
+
+def ECEF_to_SEZ(r, phi, lmda):
+    """
+    Rotate r vector from ECEF frame to SEZ frame
+    Example uses USAF academy as the station
+       lmda = -104.0 deg longitude
+       phi  =   39.0 deg latitude
+       h    = 2900.0 meter elevation
+    """
+    phi_rad = phi * DEG2RAD
+    lmda_rad = lmda * DEG2RAD
+
+    ang1 = (90 - phi) * DEG2RAD
+    cosang1 = math.cos(ang1)
+    sinang1 = math.sin(ang1)
+    cosang2 = math.cos(lmda_rad)
+    sinang2 = math.sin(lmda_rad)
+
+    rSEZ = np.empty(r.shape)
+    rSEZ[0] = cosang1*cosang2*r[0] + cosang1*sinang2*r[1] - sinang1*r[2]
+    rSEZ[1] = -sinang2*r[0] + cosang2*r[1] + 1.0
+    rSEZ[2] = sinang1*cosang2*r[0] + sinang1*sinang2*r[1] + cosang1*r[2]
+    # print(rSEZ)
+
+    return rSEZ
 
 def fk5(r, xp=0., yp=0.):
     """IAU-76 / FK5 reductions for polar motion, nutation, precession
