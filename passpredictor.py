@@ -3,6 +3,7 @@ from numpy import dot, cross
 import math
 from math import sqrt, sin, cos, cosh, acosh, tan, atan, acos, radians, degrees, pi
 import datetime
+from numpy.linalg import norm
 
 # Constants
 R_EARTH = np.float64(6378.137)  # [km] Mean equatorial radius
@@ -123,13 +124,15 @@ def sun_pos(t):
 
     References:
         Vallado, p. 279, Alg. 29
+        Vallado software, AST2BODY.FOR, subroutine SUN
     """
     t_ut1 = (t - 2451545.0)/36525
     t_tdb = t_ut1
     # print(f't_tdb={t_tdb}')
-    lmda_Msun = (280.460 + 36000.771*t_tdb) % 360
+    lmda_Msun = (280.4606184 + 36000.77005361*t_tdb) % 360
     # print(f'lmda_Msun={lmda_Msun}')
-    M_sun = (357.5291092 + 35999.05034*t_tdb) % 360
+    # M_sun = (357.5291092 + 35999.05034*t_tdb) % 360
+    M_sun = (357.5277233 + 35999.05034*t_tdb) % 360
     # print(f'M_sun={M_sun}')
     lmda_eclp = lmda_Msun + 1.914666471*np.sin(M_sun*DEG2RAD)
     lmda_eclp += 0.019994643*np.sin(2*M_sun*DEG2RAD)
@@ -151,6 +154,76 @@ def sun_pos(t):
     r *= AU_KM
     return r
 
+
+def vector_angle(r1, r2):
+    """Compute the angle between two vectors
+
+        r1 and r2 : (3, n), n is the number of observations
+    """
+    numerator = np.einsum('ij,ij->j',r1, r2)  # vectorized dot product
+    denominator = norm(r1, axis=0) * norm(r2, axis=0)
+    out = np.arccos(numerator/denominator) * RAD2DEG
+    return out
+
+
+def satellite_visible(rsatECI, rsiteECEF, rho, jdt):
+    """Determine visibility of satellite from Earth"""
+    visible = np.zeros(jdt.size)
+    # First, determine if satellite is above the horizon
+    # find indecies where rho[2] > 0 --> idx
+
+    vis_idx = np.nonzero(rho[2] > 0)[0]
+
+    # Loop over indecies for times that satellite is over horizon
+    for i in range(len(vis_idx)):
+        idx = vis_idx[i]
+        jdt_i = jdt[idx]
+        rsatECI_i = rsatECI[:,idx]
+        rsiteECEF_i = rsiteECEF[:,idx]
+        rho_i = rho[:,idx]
+
+        # Check if site is in daylight, compute dot product of sun position.
+        rsun = sun_pos(jdt_i)
+        if len(rsun.shape) > 1:
+            rsun = rsun.flatten()
+
+        # TODO: compute ECI vector for site position
+        rsiteECI = rsiteECEF_i
+
+        if np.dot(rsun, rsiteECI) > 0:
+            # site is in daylight
+            visible[idx] = 1
+        else:
+            # If nighttime, check if satellite is illuminated or in shadow
+            if is_sat_illuminated(rsatECI_i, rsun):
+                # satellite is illuminated, compute razel coordinates
+                visible[idx] = 3
+            else:
+                # satellite is in shadow
+                visible[idx] = 2
+
+    return visible
+
+
+def sun_sat_angle(rsat, rsun):
+    """Compute the sun-satellite angle
+
+    References:
+        Vallado, p. 912, Alg. 74
+    """
+    # print(f'rsun.shape={rsun.shape}')
+    # print(f'rsat.shape={rsat.shape}')
+    sinzeta = norm(np.cross(rsun, rsat, axisa=0, axisb=0))/(norm(rsun)*norm(rsat))
+    return np.arcsin(sinzeta)
+
+
+def sun_sat_orthogonal_distance(rsat, zeta):
+    return norm(rsat) * np.cos(zeta-math.pi*0.5)
+
+def is_sat_illuminated(rsat, rsun):
+    zeta = sun_sat_angle(rsat, rsun)
+    dist = sun_sat_orthogonal_distance(rsat, zeta)
+    return dist > R_EARTH
 
 
 def fk5(r, xp=0., yp=0.):
@@ -286,19 +359,52 @@ def fk5_nutation(tt):
 
     return dPsi1980, dEps1980
 
-def fk5_precession(jdt):
+def fk5_precession(Td):
     """Calculate precession angle Theta
 
     Assume JD2000 epoch, T0 = 0
 
+    Args
+        Td: terrestial time
+
     References:
         Vallado, p. 227, Eq. 3-87
     """
-    Td = (jdt - J2000)/36525
-    zeta = (2306.2181 + (0.30188 + 0.017998*Td)*Td)*Td
-    Theta = (2004.3109 + (-0.42665 - 0.041833*Td)*Td)*Td
-    z = (2306.2181 + (1.09468 + 0.018203*Td)*Td)*Td
-    return zeta, Theta, z
+    # Td = (jdt - J2000)/36525
+    zeta  = (2306.2181 + ( 0.30188 + 0.017998*Td)*Td)*Td
+    theta = (2004.3109 + (-0.42665 - 0.041833*Td)*Td)*Td
+    z     = (2306.2181 + ( 1.09468 + 0.018203*Td)*Td)*Td
+    # Convert to radians
+    zeta  *= ASEC2RAD
+    theta *= ASEC2RAD
+    z     *= ASEC2RAD
+
+    return zeta, theta, z
+
+
+def precess_rotation(r, zeta, theta, z):
+    """Perform precession rotations on position vector r
+    From IAU 80 Precession Theory. Rotation from MOD to GCRF.
+
+    Args:
+        r : (3, n), n is the number of observations
+        zeta, theta, z (n): precession angles in radians
+
+    References:
+        Vallado, p. 228, Eq. 3-89
+    """
+    coszeta = np.cos(zeta)
+    sinzeta = np.sin(zeta)
+    costheta = np.cos(theta)
+    sintheta = np.sin(theta)
+    cosz = np.cos(z)
+    sinz = np.sin(z)
+
+    rGCRF = np.empty(r.shape, dtype=np.float)
+    rGCRF[0] = (costheta*cosz*coszeta - sinz*sinzeta)*r[0] + (sinz*costheta*coszeta + sinzeta*cosz)*r[1] + sintheta*coszeta*r[2]
+    rGCRF[1] = (-sinzeta*costheta*cosz - sinz*coszeta)*r[0] + (-sinz*sinzeta*costheta + cosz*coszeta)*r[1] - sintheta*sinzeta*r[2]
+    rGCRF[2] = -sintheta*cosz*r[0] - sintheta*sinz*r[1] + costheta*r[2]
+    return rGCRF
 
 
 def nu2anomaly(nu, e):

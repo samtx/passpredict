@@ -106,12 +106,97 @@ def test_sun_pos():
     r = pp.sun_pos(jdt)
     r_true = np.array([146186212, 28788976, 12481064], dtype=np.float)
     r_true = np.reshape(r_true, (3, 1))
-    assert_allclose(r, r_true, rtol=1e-5)
+    assert_allclose(r, r_true, rtol=1e-4)
 
+
+def test_sun_pos_2():
+    """
+    Vallado, Eg. 11-6, p. 913
+    """
+    dt = datetime(1997, 4, 2, 1, 8)  # April 2, 1997, 01:08:0.00 UTC
+    jdt = pp.julian_date2(dt)
+    jdt = np.asarray(jdt)
+    r = pp.sun_pos(jdt) / pp.AU_KM
+    r_true = np.array([0.9765, 0.1960, 0.0850], dtype=np.float)
+    r_true = np.reshape(r_true, (3, 1))
+    assert_allclose(r, r_true, rtol=1e-3)
+
+
+def test_sun_sat_angle():
+    """
+    Vallado, Eg. 11-6, p.913
+    """
+    dt = datetime(1997, 4, 2, 1, 8)  # April 2, 1997, 01:08:0.00 UTC
+    jdt = pp.julian_date2(dt)
+    jdt = np.asarray(jdt)
+    rsun = pp.sun_pos(jdt)
+    rsat = np.array([-2811.2769, 3486.2632, 5069.5763])
+    rsun = np.atleast_2d(rsun)
+    rsat = np.atleast_2d(rsat).T
+    sunangle = pp.sun_sat_angle(rsat, rsun) * pp.RAD2DEG
+    assert_almost_equal(sunangle, 76.0407, decimal=3)
+
+
+def test_sun_sat_angle2():
+    """
+    Vallado, Eg. 11-6, p.913
+    """
+    rsat = np.array([-2811.2769, 3486.2632, 5069.5763])
+    rsun = np.array([0.9765, 0.1960, 0.0850]) * pp.AU_KM
+    sunangle = pp.sun_sat_angle(rsat, rsun) * pp.RAD2DEG
+    assert_almost_equal(sunangle, 76.0407, decimal=3)
+
+
+def test_satellite_visible():
+    """
+    Vallado, Eg. 11-6, p.913
+    """
+    rsat = np.array([[-2811.2769, 3486.2632, 5069.5763]]).T  # ECI coords
+    rsite = np.array([[-3414.0283, 3258.1636, 4276.1212]]).T      # ECI coords
+    rho = np.array([[-773.8654, -581.4980, 328.8145]]).T   # SEZ coords
+    dt = datetime(1997, 4, 2, 1, 8)  # April 2, 1997, 01:08:0.00 UTC
+    jdt = np.array([pp.julian_date2(dt)])
+    vis = pp.satellite_visible(rsat, rsite, rho, jdt )
+    assert(vis[0] > 2)
+
+
+def test_fk5_precession():
+    """
+    Vallado, Eg. 3-15, p.231
+    """
+    # April 6, 2004, 07:51:28.386009 UTC
+    tt = 0.0426236319  # Julian centuries since J2000
+    zeta, theta, z = pp.fk5_precession(tt)
+    assert_almost_equal(zeta, 0.0273055*pp.DEG2RAD, decimal=9)
+    assert_almost_equal(theta, 0.0237306*pp.DEG2RAD, decimal=9)
+    assert_almost_equal(z, 0.0273059*pp.DEG2RAD, decimal=9)
+
+
+def test_precess_rotation():
+    """
+    Vallado, Eg. 3-15, p.231
+    """
+    rMOD = np.array([5094.0283745, 6127.8708164, 6380.2485164])
+    zeta = 0.0273055 * pp.DEG2RAD
+    theta = 0.0237306 * pp.DEG2RAD
+    z = 0.0273059 * pp.DEG2RAD
+    rGCRF = pp.precess_rotation(rMOD, zeta, theta, z)
+    rGCRF_true = np.array([5102.508958, 6123.011401, 6378.136928])
+    assert_allclose(rGCRF, rGCRF_true)
+
+
+def test_sun_sat_orthogonal_distance():
+    """
+    Vallado, Eg. 11-6, p.913
+    """
+    r = np.array([-2811.2769, 3486.2632, 5069.5763])  # sat, ECI coordinates
+    zeta = 76.0407  # deg
+    dist = pp.sun_sat_orthogonal_distance(r, zeta * pp.DEG2RAD)
+    assert_almost_equal(dist, 6564.6870, decimal=4)
 
 
 # def test_riseset():
-#     """pa
+#     """Eg. ,
 #     Test orbit propagation
 #     """
 #         # Obj, n [rev/solar day],         e,  i [deg],  w, Omega, M
@@ -197,12 +282,23 @@ def test_julian_date_datetime():
     assert_almost_equal(jd, jdT, decimal=8)
 
 
+# def test_julian_date_datetime2():
+#     """
+#     Vallado, eg. 3-15, p. 230
+#     """
+#     dt = datetime(2004, 4, 6, 7, 51, )
+#     jd = pp.julian_date(dt)
+#     jdT = 2450383.09722222
+#     assert_almost_equal(jd, jdT, decimal=8)
+
+
 def test_julian_date_vectorized():
     """Use an array of datetimes to find the Julian Date"""
     dt_ary = np.arange('2019-09-14T00:00:00', '2019-10-07T00:00:00', 200, dtype='datetime64')
     jd_vectorized = np.vectorize(pp.julian_date)
     jd_ary = jd_vectorized(dt_ary)
     # print(jd_ary)
+
 
 def test_theta_GMST1982():
     """Compute the Greenwich Mean Sidereal Time
@@ -396,4 +492,5 @@ if __name__ == "__main__":
     # test_jd_from_skyfield3()
     # test_site_declination_and_K()
     # test_site_ECEF2()
-    test_ECEF_to_SEZ()
+    # test_ECEF_to_SEZ()
+    test_satellite_visible()
