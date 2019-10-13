@@ -9,15 +9,15 @@ def test_coe2rv():
     """
     Vallado, Eg.2-6, p.116
     """
-    p = 11067.790   # [km]
+    p = 11067.790  # [km]
     e = 0.83285
-    i = 87.87       # [deg]
+    i = 87.87  # [deg]
     Omega = 227.89  # [deg]
-    w = 53.38       # [deg]
-    nu = 92.335     # [deg]
+    w = 53.38  # [deg]
+    nu = 92.335  # [deg]
     r_calc, v_calc = kepler.coe2rv(p, e, i, Omega, w, nu)
     r_true = np.array([6525.344, 6861.535, 6449.125])  # [km]
-    v_true = np.array([4.902276, 5.533124, -1.975709]) # [km/s]
+    v_true = np.array([4.902276, 5.533124, -1.975709])  # [km/s]
     assert_allclose(r_calc, r_true, atol=1e-1)
     assert_allclose(v_calc, v_true, rtol=1e-5)
 
@@ -26,64 +26,69 @@ def test_rv2coe():
     """
     Vallado, Eg.2-5, p.114
     """
-    rIJK = np.array([6524.834, 6862.875, 6448.296]) # [km]
-    vIJK = np.array([4.901327, 5.533756, -1.976341]) # [km/s]
+    rIJK = np.array([6524.834, 6862.875, 6448.296])  # [km]
+    vIJK = np.array([4.901327, 5.533756, -1.976341])  # [km/s]
     p_true, a_true, e_true = 11067.790, 36127.343, 0.832853
     i_true, Omega_true, w_true = 87.870, 227.898, 53.38
-    nu_true, u_true, lmda_true_true, what_true_true = 92.335, 145.60549, 55.282587, 247.806
+    nu_true, u_true, lmda_true_true, what_true_true = (
+        92.335,
+        145.60549,
+        55.282587,
+        247.806,
+    )
     coe = kepler.rv2coe(rIJK, vIJK, findall=True)
-    assert_almost_equal(coe['p'], p_true, decimal=2)
-    assert_almost_equal(coe['a'], a_true, decimal=2)
-    assert_almost_equal(coe['e'], e_true, decimal=6)
-    assert_almost_equal(coe['i'], i_true, decimal=3)
-    assert_almost_equal(coe['Omega'], Omega_true, decimal=3)
-    assert_almost_equal(coe['w'], w_true, decimal=2)
-    assert_almost_equal(coe['nu'], nu_true, decimal=3)
-    assert_almost_equal(coe['u'], u_true, decimal=0)
-    assert_almost_equal(coe['lmda_true'], lmda_true_true, decimal=3)
-    assert_almost_equal(coe['what_true'], what_true_true, decimal=3)
+    assert_almost_equal(coe["p"], p_true, decimal=2)
+    assert_almost_equal(coe["a"], a_true, decimal=2)
+    assert_almost_equal(coe["e"], e_true, decimal=6)
+    assert_almost_equal(coe["i"], i_true, decimal=3)
+    assert_almost_equal(coe["Omega"], Omega_true, decimal=3)
+    assert_almost_equal(coe["w"], w_true, decimal=2)
+    assert_almost_equal(coe["nu"], nu_true, decimal=3)
+    assert_almost_equal(coe["u"], u_true, decimal=0)
+    assert_almost_equal(coe["lmda_true"], lmda_true_true, decimal=3)
+    assert_almost_equal(coe["what_true"], what_true_true, decimal=3)
 
 
 def test_rv2coe_to_coe2rv():
-    rIJK = np.array([6524.834, 6862.875, 6448.296])   # [km]
+    rIJK = np.array([6524.834, 6862.875, 6448.296])  # [km]
     vIJK = np.array([4.901327, 5.533756, -1.976341])  # [km/s]
     coe = kepler.rv2coe(rIJK, vIJK, findall=True)
-    p = coe.get('p')
-    e = coe.get('e')
-    i = coe.get('i')
-    Omega = coe.get('Omega')
-    w = coe.get('w')
-    u = coe.get('u')
-    lmda_true = coe.get('lmda_true')
-    nu = coe.get('nu')
-    what_true = coe.get('what_true')
+    p = coe.get("p")
+    e = coe.get("e")
+    i = coe.get("i")
+    Omega = coe.get("Omega")
+    w = coe.get("w")
+    u = coe.get("u")
+    lmda_true = coe.get("lmda_true")
+    nu = coe.get("nu")
+    what_true = coe.get("what_true")
     r_calc, v_calc = kepler.coe2rv(p, e, i, Omega, w, nu, u, lmda_true, what_true)
     assert_allclose(r_calc, rIJK)
     assert_allclose(v_calc, vIJK)
 
 
 def test_coe2rv_to_rv2coe():
-    p = 11067.790   # [km]
+    p = 11067.790  # [km]
     e = 0.83285
-    i = 87.87       # [deg]
+    i = 87.87  # [deg]
     Omega = 227.89  # [deg]
-    w = 53.38       # [deg]
-    nu = 92.335     # [deg]
+    w = 53.38  # [deg]
+    nu = 92.335  # [deg]
     r, v = kepler.coe2rv(p, e, i, Omega, w, nu)
     coeT = kepler.rv2coe(r, v, findall=True)
-    assert_almost_equal(p, coeT['p'], decimal=2)
-    assert_almost_equal(e, coeT['e'], decimal=6)
-    assert_almost_equal(i, coeT['i'], decimal=3)
-    assert_almost_equal(Omega, coeT['Omega'], decimal=3)
-    assert_almost_equal(w, coeT['w'], decimal=2)
-    assert_almost_equal(nu, coeT['nu'], decimal=3)
+    assert_almost_equal(p, coeT["p"], decimal=2)
+    assert_almost_equal(e, coeT["e"], decimal=6)
+    assert_almost_equal(i, coeT["i"], decimal=3)
+    assert_almost_equal(Omega, coeT["Omega"], decimal=3)
+    assert_almost_equal(w, coeT["w"], decimal=2)
+    assert_almost_equal(nu, coeT["nu"], decimal=3)
 
 
 def test_nu2anomaly():
     """
     Vallado, p.87
     """
-    nu = 60   # [deg]
+    nu = 60  # [deg]
     e = 0.999
     E_calc = kepler.nu2anomaly(nu, e)
     E_true = 1.4796584  # [deg]
@@ -97,7 +102,7 @@ def test_anomaly2nu():
     E = 1.4796584  # [deg]
     e = 0.999
     nu_calc = kepler.anomaly2nu(e, E)
-    nu_true = 60.  # [deg]
+    nu_true = 60.0  # [deg]
     assert_almost_equal(nu_calc, nu_true, decimal=6)
 
 

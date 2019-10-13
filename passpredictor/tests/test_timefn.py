@@ -22,8 +22,8 @@ def test_julian_date():
     """
     Vallado, eg.3-4
     """
-    yr, mo, dy = 1996, 10., 26.
-    hr, mn, sec = 14., 20., 0.
+    yr, mo, dy = 1996, 10.0, 26.0
+    hr, mn, sec = 14.0, 20.0, 0.0
     jd = timefn.julian_date(yr, mo, dy, hr, mn, sec)
     jdT = 2450383.09722222
     assert_almost_equal(jd, jdT, decimal=8)
@@ -53,7 +53,9 @@ def test_julian_date_datetime():
 
 def test_julian_date_vectorized():
     """Use an array of datetimes to find the Julian Date"""
-    dt_ary = np.arange('2019-09-14T00:00:00', '2019-10-07T00:00:00', 200, dtype='datetime64')
+    dt_ary = np.arange(
+        "2019-09-14T00:00:00", "2019-10-07T00:00:00", 200, dtype="datetime64"
+    )
     jd_vectorized = np.vectorize(timefn.julian_date)
     jd_ary = jd_vectorized(dt_ary)
     # print(jd_ary)
@@ -73,9 +75,9 @@ def test_jd_from_skyfield2():
     dt = datetime(2004, 4, 6, 7, 51, 27, ms)
     jd = timefn.julian_date2(dt)
     jd_desired = 2453101.8274067827
-    print(f'jd   ={jd:20.15f}')
-    print(f'jddes={jd_desired:20.15f}')
-    print(f'diff ={jd-jd_desired:0.15f}')
+    print(f"jd   ={jd:20.15f}")
+    print(f"jddes={jd_desired:20.15f}")
+    print(f"diff ={jd-jd_desired:0.15f}")
     assert_almost_equal(jd, 2453101.8274067827, decimal=12)
 
 
@@ -86,7 +88,7 @@ def test_jd_from_skyfield3():
     hr, mn = 7, 51
     jd = timefn.julian_date2(yr, mo, dy, hr, mn, sec)
     jd_desired = 2453101.8274067827
-    print(f'jd   ={jd:20.15f}')
-    print(f'jddes={jd_desired:20.15f}')
-    print(f'diff ={jd-jd_desired:0.15f}')
+    print(f"jd   ={jd:20.15f}")
+    print(f"jddes={jd_desired:20.15f}")
+    print(f"diff ={jd-jd_desired:0.15f}")
     assert_almost_equal(jd, jd_desired, decimal=12)
