@@ -1,6 +1,5 @@
 # Test using pytest
-
-import astro
+from .. import kepler
 from numpy.testing import assert_allclose, assert_almost_equal
 import numpy as np
 from datetime import datetime, timedelta
@@ -16,7 +15,7 @@ def test_coe2rv():
     Omega = 227.89  # [deg]
     w = 53.38       # [deg]
     nu = 92.335     # [deg]
-    r_calc, v_calc = astro.coe2rv(p, e, i, Omega, w, nu)
+    r_calc, v_calc = kepler.coe2rv(p, e, i, Omega, w, nu)
     r_true = np.array([6525.344, 6861.535, 6449.125])  # [km]
     v_true = np.array([4.902276, 5.533124, -1.975709]) # [km/s]
     assert_allclose(r_calc, r_true, atol=1e-1)
@@ -32,7 +31,7 @@ def test_rv2coe():
     p_true, a_true, e_true = 11067.790, 36127.343, 0.832853
     i_true, Omega_true, w_true = 87.870, 227.898, 53.38
     nu_true, u_true, lmda_true_true, what_true_true = 92.335, 145.60549, 55.282587, 247.806
-    coe = astro.rv2coe(rIJK, vIJK, findall=True)
+    coe = kepler.rv2coe(rIJK, vIJK, findall=True)
     assert_almost_equal(coe['p'], p_true, decimal=2)
     assert_almost_equal(coe['a'], a_true, decimal=2)
     assert_almost_equal(coe['e'], e_true, decimal=6)
@@ -48,7 +47,7 @@ def test_rv2coe():
 def test_rv2coe_to_coe2rv():
     rIJK = np.array([6524.834, 6862.875, 6448.296])   # [km]
     vIJK = np.array([4.901327, 5.533756, -1.976341])  # [km/s]
-    coe = astro.rv2coe(rIJK, vIJK, findall=True)
+    coe = kepler.rv2coe(rIJK, vIJK, findall=True)
     p = coe.get('p')
     e = coe.get('e')
     i = coe.get('i')
@@ -58,7 +57,7 @@ def test_rv2coe_to_coe2rv():
     lmda_true = coe.get('lmda_true')
     nu = coe.get('nu')
     what_true = coe.get('what_true')
-    r_calc, v_calc = astro.coe2rv(p, e, i, Omega, w, nu, u, lmda_true, what_true)
+    r_calc, v_calc = kepler.coe2rv(p, e, i, Omega, w, nu, u, lmda_true, what_true)
     assert_allclose(r_calc, rIJK)
     assert_allclose(v_calc, vIJK)
 
@@ -70,8 +69,8 @@ def test_coe2rv_to_rv2coe():
     Omega = 227.89  # [deg]
     w = 53.38       # [deg]
     nu = 92.335     # [deg]
-    r, v = astro.coe2rv(p, e, i, Omega, w, nu)
-    coeT = astro.rv2coe(r, v, findall=True)
+    r, v = kepler.coe2rv(p, e, i, Omega, w, nu)
+    coeT = kepler.rv2coe(r, v, findall=True)
     assert_almost_equal(p, coeT['p'], decimal=2)
     assert_almost_equal(e, coeT['e'], decimal=6)
     assert_almost_equal(i, coeT['i'], decimal=3)
@@ -91,9 +90,9 @@ def test_coe2rv_to_rv2coe():
 #     Omega = 13.3340  # [deg]
 #     w = 102.5680       # [deg]
 #     M = 257.5950  # mean anomaly
-#     E = astro.kepEqtnE(M, e)
-#     nu = astro.anomaly2nu(e, E)
-#     r_calc, v_calc = astro.coe2rv(p, e, i, Omega, w, nu)
+#     E = kepler.kepEqtnE(M, e)
+#     nu = kepler.anomaly2nu(e, E)
+#     r_calc, v_calc = kepler.coe2rv(p, e, i, Omega, w, nu)
 #     r_true = np.array([6585.038266, 1568.184321, 9.116355])  # [km]
 #     v_true = np.array([-1.1157766, 4.6316816, 6.0149576]) # [km/s]
 #     assert_allclose(r_calc, r_true, atol=1e-1, verbose=True)
@@ -108,10 +107,10 @@ def test_coe2rv_to_rv2coe():
 #     v0 = np.array([-1.1157766, 4.6316816, 6.0149576])
 #     jd0 = 2450540.400
 #     ndt = 7.889e-5
-#     # jdf = astro.julian_date(1997, 4, 2, 13, 8, 0)
+#     # jdf = kepler.julian_date(1997, 4, 2, 13, 8, 0)
 #     jdf = 2450540.5472
 #     dt = jdf - jd0
-#     rf, vf = astro.pkepler_rv(r0, v0, dt, ndt)
+#     rf, vf = kepler.pkepler_rv(r0, v0, dt, ndt)
 #     rf_true = np.array([-2811.2769, 3486.2632, 5069.5763])
 #     vf_true = np.array([-6.859691, -2.964792, -1.764721])
 #     assert_allclose(rf, rf_true)
