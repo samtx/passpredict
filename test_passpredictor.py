@@ -493,4 +493,15 @@ if __name__ == "__main__":
     # test_site_declination_and_K()
     # test_site_ECEF2()
     # test_ECEF_to_SEZ()
-    test_satellite_visible()
+#     test_satellite_visible()
+
+    def azm(s, e):
+        out = np.arctan2(s, e) * 180/np.pi + 90
+        print(out)
+        if s<0 and e<0:
+            out = out % 360
+        return out
+
+    s, e = -1, 1
+    print(azm(s, e))
+
