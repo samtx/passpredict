@@ -1,10 +1,24 @@
 import numpy as np
 import math
 from .constants import (
-    R_EARTH, R2_EARTH, e_EARTH, e2_EARTH, MU, J2, J2000, AU_M, AU_KM, ASEC360,
-    DAY_S, ASEC2RAD, DEG2RAD, RAD2DEG, tau
+    R_EARTH,
+    R2_EARTH,
+    e_EARTH,
+    e2_EARTH,
+    MU,
+    J2,
+    J2000,
+    AU_M,
+    AU_KM,
+    ASEC360,
+    DAY_S,
+    ASEC2RAD,
+    DEG2RAD,
+    RAD2DEG,
+    tau,
 )
 from math import pi
+
 
 def ECEF_to_SEZ(r, phi, lmda):
     """
@@ -24,15 +38,15 @@ def ECEF_to_SEZ(r, phi, lmda):
     sinang2 = math.sin(lmda_rad)
 
     rSEZ = np.empty(r.shape)
-    rSEZ[0] = cosang1*cosang2*r[0] + cosang1*sinang2*r[1] - sinang1*r[2]
-    rSEZ[1] = -sinang2*r[0] + cosang2*r[1] + 1.0
-    rSEZ[2] = sinang1*cosang2*r[0] + sinang1*sinang2*r[1] + cosang1*r[2]
+    rSEZ[0] = cosang1 * cosang2 * r[0] + cosang1 * sinang2 * r[1] - sinang1 * r[2]
+    rSEZ[1] = -sinang2 * r[0] + cosang2 * r[1] + 1.0
+    rSEZ[2] = sinang1 * cosang2 * r[0] + sinang1 * sinang2 * r[1] + cosang1 * r[2]
     # print(rSEZ)
 
     return rSEZ
 
 
-def fk5(r, xp=0., yp=0.):
+def fk5(r, xp=0.0, yp=0.0):
     """IAU-76 / FK5 reductions for polar motion, nutation, precession
 
     Args
@@ -65,7 +79,7 @@ def eps1982(tt):
     References:
         Vallado, p. 225, Eq. 3-81
     """
-    return 23.439291*DEG2RAD + (-0.0130042 + (-1.64e-7 + 5.04e-7*tt) * tt) * tt
+    return 23.439291 * DEG2RAD + (-0.0130042 + (-1.64e-7 + 5.04e-7 * tt) * tt) * tt
 
 
 def theta_GMST1982(jd_ut1):
@@ -108,7 +122,7 @@ def omega_moon(tt):
     """
     r = 360 * 60
     omega_moon_deg = 125.04455501
-    omega_moon_deg += (-5*r - 134.1361851 + (0.0020756 + 2.139e-6*tt)*tt)*tt
+    omega_moon_deg += (-5 * r - 134.1361851 + (0.0020756 + 2.139e-6 * tt) * tt) * tt
     return omega_moon_deg * DEG2RAD
 
 
@@ -123,8 +137,8 @@ def equinox1982(dPsi1980, eps1980, omega_moon):
         Vallado, p.224
     """
     eq = dPsi1980 * np.cos(eps1980)
-    eq += 0.00264*ASEC2RAD*np.sin(omega_moon)
-    eq += 0.000063*np.sin(2*omega_moon)
+    eq += 0.00264 * ASEC2RAD * np.sin(omega_moon)
+    eq += 0.000063 * np.sin(2 * omega_moon)
     return eq
 
 
@@ -144,31 +158,78 @@ def theta_GAST1982(Eq, gmst):
 
 
 def nutation_coeff():
-    i = np.array([      1,      9,    31,    2,   10,  32,   11,   33,   34,   12, 35, 13, 36, 38, 37], dtype=np.int)
-    A = np.array([-171996, -13187, -2274, 2062, 1426, 712, -517, -386, -301,  217, -158, 129, 123, 63, 63], dtype=np.float64)
-    B = np.array([ -174.2,   -1.6,  -0.2,  0.2, -3.4, 0.1,  1.2, -0.4,  0.0, -0.5, 0.0, 0.1, 0.0, 0.1, 0.0 ])
-    C = np.array([  92025,   5736,   977, -895,   54,  -7,  224,  200,  129,  -95, -1, -70, -53, -33, -2])
-    D = np.array([    8.9,   -3.1,  -0.5,  0.5, -0.1, 0.0, -0.6,  0.0, -0.1,  0.3, 0.0, 0.0, 0.0, 0.0, 0.0])
-    an = np.array([
-        [ 0,  0,  0,  0,  1],
-        [ 0,  0,  2, -2,  2],
-        [ 0,  0,  2,  0,  2],
-        [ 0,  0,  0,  0,  2],
-        [ 0,  1,  0,  0,  0],
-        [ 1,  0,  0,  0,  0],
-        [ 0,  1,  2, -2,  2],
-        [ 0,  0,  2,  0,  1]
-    ])
+    i = np.array(
+        [1, 9, 31, 2, 10, 32, 11, 33, 34, 12, 35, 13, 36, 38, 37], dtype=np.int
+    )
+    A = np.array(
+        [
+            -171996,
+            -13187,
+            -2274,
+            2062,
+            1426,
+            712,
+            -517,
+            -386,
+            -301,
+            217,
+            -158,
+            129,
+            123,
+            63,
+            63,
+        ],
+        dtype=np.float64,
+    )
+    B = np.array(
+        [
+            -174.2,
+            -1.6,
+            -0.2,
+            0.2,
+            -3.4,
+            0.1,
+            1.2,
+            -0.4,
+            0.0,
+            -0.5,
+            0.0,
+            0.1,
+            0.0,
+            0.1,
+            0.0,
+        ]
+    )
+    C = np.array(
+        [92025, 5736, 977, -895, 54, -7, 224, 200, 129, -95, -1, -70, -53, -33, -2]
+    )
+    D = np.array(
+        [8.9, -3.1, -0.5, 0.5, -0.1, 0.0, -0.6, 0.0, -0.1, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0]
+    )
+    an = np.array(
+        [
+            [0, 0, 0, 0, 1],
+            [0, 0, 2, -2, 2],
+            [0, 0, 2, 0, 2],
+            [0, 0, 0, 0, 2],
+            [0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0],
+            [0, 1, 2, -2, 2],
+            [0, 0, 2, 0, 1],
+        ]
+    )
+
 
 def fk5_nutation(tt):
     """
     Ref: Table D-6, p. 1043
     """
-    api = an1*M_moon + an2*M_sun + an3*Um_moon + an4*D_sun + an5*Omega_moon
-    psi_tmp = np.sum(A + B*tt)*np.sin(api)
-    eps_tmp = np.sum(C + D*tt)*np.cos(api)
+    api = an1 * M_moon + an2 * M_sun + an3 * Um_moon + an4 * D_sun + an5 * Omega_moon
+    psi_tmp = np.sum(A + B * tt) * np.sin(api)
+    eps_tmp = np.sum(C + D * tt) * np.cos(api)
 
     return dPsi1980, dEps1980
+
 
 def fk5_precession(Td):
     """Calculate precession angle Theta
@@ -182,13 +243,13 @@ def fk5_precession(Td):
         Vallado, p. 227, Eq. 3-87
     """
     # Td = (jdt - J2000)/36525
-    zeta  = (2306.2181 + ( 0.30188 + 0.017998*Td)*Td)*Td
-    theta = (2004.3109 + (-0.42665 - 0.041833*Td)*Td)*Td
-    z     = (2306.2181 + ( 1.09468 + 0.018203*Td)*Td)*Td
+    zeta = (2306.2181 + (0.30188 + 0.017998 * Td) * Td) * Td
+    theta = (2004.3109 + (-0.42665 - 0.041833 * Td) * Td) * Td
+    z = (2306.2181 + (1.09468 + 0.018203 * Td) * Td) * Td
     # Convert to radians
-    zeta  *= ASEC2RAD
+    zeta *= ASEC2RAD
     theta *= ASEC2RAD
-    z     *= ASEC2RAD
+    z *= ASEC2RAD
 
     return zeta, theta, z
 
@@ -212,9 +273,17 @@ def precess_rotation(r, zeta, theta, z):
     sinz = np.sin(z)
 
     rGCRF = np.empty(r.shape, dtype=np.float)
-    rGCRF[0] = (costheta*cosz*coszeta - sinz*sinzeta)*r[0] + (sinz*costheta*coszeta + sinzeta*cosz)*r[1] + sintheta*coszeta*r[2]
-    rGCRF[1] = (-sinzeta*costheta*cosz - sinz*coszeta)*r[0] + (-sinz*sinzeta*costheta + cosz*coszeta)*r[1] - sintheta*sinzeta*r[2]
-    rGCRF[2] = -sintheta*cosz*r[0] - sintheta*sinz*r[1] + costheta*r[2]
+    rGCRF[0] = (
+        (costheta * cosz * coszeta - sinz * sinzeta) * r[0]
+        + (sinz * costheta * coszeta + sinzeta * cosz) * r[1]
+        + sintheta * coszeta * r[2]
+    )
+    rGCRF[1] = (
+        (-sinzeta * costheta * cosz - sinz * coszeta) * r[0]
+        + (-sinz * sinzeta * costheta + cosz * coszeta) * r[1]
+        - sintheta * sinzeta * r[2]
+    )
+    rGCRF[2] = -sintheta * cosz * r[0] - sintheta * sinz * r[1] + costheta * r[2]
     return rGCRF
 
 
@@ -224,7 +293,13 @@ def rot1(a):
     References:
         Vallado, Eq. 3-15
     """
-    mtx = np.array([[1., 0., 0.], [0., math.cos(a), math.sin(a)], [0., -math.sin(a), math.cos(a)]])
+    mtx = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, math.cos(a), math.sin(a)],
+            [0.0, -math.sin(a), math.cos(a)],
+        ]
+    )
     return mtx
 
 
@@ -234,8 +309,13 @@ def rot2(a):
     References:
         Vallado, Eq. 3-15
     """
-    mtx = np.array([[math.cos(a), 0., -math.sin(a)], [0., math.cos(a), 0.],
-                    [math.sin(a), 0., math.cos(a)]])
+    mtx = np.array(
+        [
+            [math.cos(a), 0.0, -math.sin(a)],
+            [0.0, math.cos(a), 0.0],
+            [math.sin(a), 0.0, math.cos(a)],
+        ]
+    )
     return mtx
 
 
@@ -245,6 +325,11 @@ def rot3(a):
     References:
         Vallado, Eq. 3-15
     """
-    mtx = np.array([[math.cos(a), math.sin(a), 0.], [-math.sin(a), math.cos(a), 0.],
-                    [0., 0., 1.]])
+    mtx = np.array(
+        [
+            [math.cos(a), math.sin(a), 0.0],
+            [-math.sin(a), math.cos(a), 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )
     return mtx

@@ -5,8 +5,21 @@ from math import sqrt, sin, cos, cosh, acosh, tan, atan, acos, radians, degrees,
 import datetime
 from numpy.linalg import norm
 from .constants import (
-    R_EARTH, R2_EARTH, e_EARTH, e2_EARTH, MU, J2, J2000, AU_M, AU_KM, ASEC360,
-    DAY_S, ASEC2RAD, DEG2RAD, RAD2DEG, tau
+    R_EARTH,
+    R2_EARTH,
+    e_EARTH,
+    e2_EARTH,
+    MU,
+    J2,
+    J2000,
+    AU_M,
+    AU_KM,
+    ASEC360,
+    DAY_S,
+    ASEC2RAD,
+    DEG2RAD,
+    RAD2DEG,
+    tau,
 )
 from .rotations import rot1, rot2, rot3, theta_GMST1982
 
@@ -19,7 +32,7 @@ def site_declination_and_K(phi_gd, h_ellp):
     """
     phi_gd_rad = radians(np.float64(phi_gd))  # convert [deg] to [rad]
     h_ellp_km = np.float64(h_ellp) * (1 / 1000)  # convert [m] to [km]
-    C = R_EARTH / np.sqrt(1 - e2_EARTH * sin(phi_gd_rad)**2)
+    C = R_EARTH / np.sqrt(1 - e2_EARTH * sin(phi_gd_rad) ** 2)
     S = C * (1 - e2_EARTH)
     r_delta = (C + h_ellp_km) * cos(phi_gd_rad)
     r_K = (S + h_ellp_km) * sin(phi_gd_rad)
@@ -37,8 +50,7 @@ def site_ECEF(phi_gd, lmda, h_ellp):
 
     lmda_rad = radians(lmda)
 
-    r_site_ECEF = np.array(
-        [r_delta * cos(lmda_rad), r_delta * sin(lmda_rad), r_K])
+    r_site_ECEF = np.array([r_delta * cos(lmda_rad), r_delta * sin(lmda_rad), r_K])
 
     return r_site_ECEF
 
@@ -58,22 +70,20 @@ def site_ECEF2(phi_gd, lmda, h_ellp):
     lmda_rad = lmda * DEG2RAD
     cosphi = math.cos(phi_gd_rad)
     sinphi = math.sin(phi_gd_rad)
-    C = R_EARTH / math.sqrt(1 - e2_EARTH * (sinphi**2))
+    C = R_EARTH / math.sqrt(1 - e2_EARTH * (sinphi ** 2))
     S = C * (1 - e2_EARTH)
     h_ellp *= 0.001  # convert to km
     tmp = (C + h_ellp) * cosphi
-    r_site_ECEF = np.array([
-        tmp * math.cos(lmda_rad),
-        tmp * math.sin(lmda_rad),
-        (S + h_ellp) * sinphi
-    ])
+    r_site_ECEF = np.array(
+        [tmp * math.cos(lmda_rad), tmp * math.sin(lmda_rad), (S + h_ellp) * sinphi]
+    )
     return r_site_ECEF
 
 
 def rng_el(r):
     """Get range and elevation from SEZ vector"""
     rng = np.linalg.norm(r, axis=1)
-    el = np.arcsin(r[2]/rng)
+    el = np.arcsin(r[2] / rng)
     el *= RAD2DEG
     return el, rng
 
@@ -85,27 +95,27 @@ def sun_pos(t):
         Vallado, p. 279, Alg. 29
         Vallado software, AST2BODY.FOR, subroutine SUN
     """
-    t_ut1 = (t - 2451545.0)/36525
+    t_ut1 = (t - 2451545.0) / 36525
     t_tdb = t_ut1
     # print(f't_tdb={t_tdb}')
-    lmda_Msun = (280.4606184 + 36000.77005361*t_tdb) % 360
+    lmda_Msun = (280.4606184 + 36000.77005361 * t_tdb) % 360
     # print(f'lmda_Msun={lmda_Msun}')
     # M_sun = (357.5291092 + 35999.05034*t_tdb) % 360
-    M_sun = (357.5277233 + 35999.05034*t_tdb) % 360
+    M_sun = (357.5277233 + 35999.05034 * t_tdb) % 360
     # print(f'M_sun={M_sun}')
-    lmda_eclp = lmda_Msun + 1.914666471*np.sin(M_sun*DEG2RAD)
-    lmda_eclp += 0.019994643*np.sin(2*M_sun*DEG2RAD)
+    lmda_eclp = lmda_Msun + 1.914666471 * np.sin(M_sun * DEG2RAD)
+    lmda_eclp += 0.019994643 * np.sin(2 * M_sun * DEG2RAD)
     # print(f'lmda_eclp={lmda_eclp}')
-    r_sun_mag = 1.000140612 - 0.016708617*np.cos(M_sun*DEG2RAD)
-    r_sun_mag -= 0.000139589*np.cos(2*M_sun*DEG2RAD)
+    r_sun_mag = 1.000140612 - 0.016708617 * np.cos(M_sun * DEG2RAD)
+    r_sun_mag -= 0.000139589 * np.cos(2 * M_sun * DEG2RAD)
     # print(f'r_sun_mag ={r_sun_mag}')
-    eps = 23.439291 - 0.0130042*t_tdb
+    eps = 23.439291 - 0.0130042 * t_tdb
     # print(f'eps={eps}')
-    coslmda = np.cos(lmda_eclp*DEG2RAD)
-    sinlmda = np.sin(lmda_eclp*DEG2RAD)
-    coseps = np.cos(eps*DEG2RAD)
-    sineps = np.sin(eps*DEG2RAD)
-    r = np.empty((3,t.size), dtype=np.float)
+    coslmda = np.cos(lmda_eclp * DEG2RAD)
+    sinlmda = np.sin(lmda_eclp * DEG2RAD)
+    coseps = np.cos(eps * DEG2RAD)
+    sineps = np.sin(eps * DEG2RAD)
+    r = np.empty((3, t.size), dtype=np.float)
     r[0] = r_sun_mag * coslmda
     r[1] = r_sun_mag * coseps * sinlmda
     r[2] = r_sun_mag * sineps * sinlmda
@@ -119,9 +129,9 @@ def vector_angle(r1, r2):
 
         r1 and r2 : (3, n), n is the number of observations
     """
-    numerator = np.einsum('ij,ij->j',r1, r2)  # vectorized dot product
+    numerator = np.einsum("ij,ij->j", r1, r2)  # vectorized dot product
     denominator = norm(r1, axis=0) * norm(r2, axis=0)
-    out = np.arccos(numerator/denominator) * RAD2DEG
+    out = np.arccos(numerator / denominator) * RAD2DEG
     return out
 
 
@@ -137,9 +147,9 @@ def satellite_visible(rsatECI, rsiteECEF, rho, jdt):
     for i in range(len(vis_idx)):
         idx = vis_idx[i]
         jdt_i = jdt[idx]
-        rsatECI_i = rsatECI[:,idx]
-        rsiteECEF_i = rsiteECEF[:,idx]
-        rho_i = rho[:,idx]
+        rsatECI_i = rsatECI[:, idx]
+        rsiteECEF_i = rsiteECEF[:, idx]
+        rho_i = rho[:, idx]
 
         # Check if site is in daylight, compute dot product of sun position.
         rsun = sun_pos(jdt_i)
@@ -173,7 +183,7 @@ def sun_sat_angle(rsat, rsun):
     References:
         Vallado, p. 912, Alg. 74
     """
-    sinzeta = norm(np.cross(rsun, rsat, axisa=0, axisb=0))/(norm(rsun)*norm(rsat))
+    sinzeta = norm(np.cross(rsun, rsat, axisa=0, axisb=0)) / (norm(rsun) * norm(rsat))
     return np.arcsin(sinzeta)
 
 
@@ -185,7 +195,7 @@ def sun_sat_orthogonal_distance(rsat, zeta):
     Output:
         distance from satellite to center of Earth orthogonal to sun vector
     """
-    return norm(rsat) * np.cos(zeta-math.pi*0.5)
+    return norm(rsat) * np.cos(zeta - math.pi * 0.5)
 
 
 def is_sat_illuminated(rsat, rsun):
@@ -202,10 +212,10 @@ def azm(s, e):
     Output:
         azimuth angle in radians with 0 at north.
     """
-    out = np.arctan2(s, e) + pi*0.5
+    out = np.arctan2(s, e) + pi * 0.5
     # print(out)
-    if s < 0 and  e < 0:
-        out = out % (2*pi)
+    if s < 0 and e < 0:
+        out = out % (2 * pi)
     return out
 
 
@@ -236,6 +246,7 @@ def sgp4(tle1, tle2, t):
 ##################
 # From sgp4lib.py in skyfield
 ###################
+
 
 def ITRF_position_velocity_error(t):
     """Return the ITRF position, velocity, and error at time `t`.
@@ -279,9 +290,11 @@ def TEME_to_ITRF(jd_ut1, rTEME, vTEME, xp=0.0, yp=0.0):
         rPEF = np.dot(R, rTEME)
         vPEF = np.dot(R, vTEME) + cross(angular_velocity, rPEF)
     else:
-        rPEF = np.einsum('ij...,j...->i...', R, rTEME)
-        vPEF = np.einsum('ij...,j...->i...', R, vTEME) + cross(
-            angular_velocity, rPEF, 0, 0).T
+        rPEF = np.einsum("ij...,j...->i...", R, rTEME)
+        vPEF = (
+            np.einsum("ij...,j...->i...", R, vTEME)
+            + cross(angular_velocity, rPEF, 0, 0).T
+        )
 
     if xp == 0.0 and yp == 0.0:
         rITRF = rPEF
@@ -317,26 +330,26 @@ def alfano_approx2():
     rhoS, rhoE, rhoZ = rhoSEZ[0], rhoSEZ[1], rhoSEZ[2]
     # compute azimuth, elevation, and range
     azm = np.arctan(rhoE / -rhoS)
-    elev = np.arctan(rhoZ / np.sqrt(rhoS**2 + rhoE**2))
-    rng = np.sqrt(rhoS**2 + rhoE**2 + rhoZ**2)
+    elev = np.arctan(rhoZ / np.sqrt(rhoS ** 2 + rhoE ** 2))
+    rng = np.sqrt(rhoS ** 2 + rhoE ** 2 + rhoZ ** 2)
 
     f_azm_lim = rhoE - rhoS * np.tan()
 
 
-def razel_from_t(tend=None, sec_per_query=120, sat='iss'):
+def razel_from_t(tend=None, sec_per_query=120, sat="iss"):
     """Use skyfield to calculate azimuth, elevation from satellite object"""
     sat_data = {
-        'iss': {
-            'url': 'http://celestrak.com/NORAD/elements/stations.txt',
-            'name': 'ISS (ZARYA)'
+        "iss": {
+            "url": "http://celestrak.com/NORAD/elements/stations.txt",
+            "name": "ISS (ZARYA)",
         },
-        'spirale a': {
-            'url': 'http://celestrak.com/NORAD/elements/military.txt',
-            'name': 'SPIRALE A'
-        }
+        "spirale a": {
+            "url": "http://celestrak.com/NORAD/elements/military.txt",
+            "name": "SPIRALE A",
+        },
     }
-    satellites = load.tle(sat_data[sat]['url'])
-    iss = satellites[sat_data[sat]['name']]
+    satellites = load.tle(sat_data[sat]["url"])
+    iss = satellites[sat_data[sat]["name"]]
 
     tstart = iss.epoch.utc_datetime()
     if not tend:
@@ -352,10 +365,10 @@ def razel_from_t(tend=None, sec_per_query=120, sat='iss'):
     T = ts.utc(yr, mo, dy, hr, mn, range(sc, sc_interval, sec_per_query))
 
     # Find overpasses
-    myLocation = {'lat': '30.2672 N', 'lon': '097.7431 W', 'tz': 'US/Central'}
+    myLocation = {"lat": "30.2672 N", "lon": "097.7431 W", "tz": "US/Central"}
 
-    tz = timezone(myLocation['tz'])
-    location = Topos(myLocation['lat'], myLocation['lon'])
+    tz = timezone(myLocation["tz"])
+    location = Topos(myLocation["lat"], myLocation["lon"])
     difference = iss - location
 
     tt = []
@@ -365,10 +378,9 @@ def razel_from_t(tend=None, sec_per_query=120, sat='iss'):
     rrsat = []
     for t in T:
         R = iss.at(t).position.km
-        rrsat.append(np.sqrt(np.sum(R**2)))
+        rrsat.append(np.sqrt(np.sum(R ** 2)))
         alt, az, r = difference.at(t).altaz()
-        alt, az = (x.dms()[0] + x.dms()[1] / 60
-                   for x in [alt, az])  # extract degrees
+        alt, az = (x.dms()[0] + x.dms()[1] / 60 for x in [alt, az])  # extract degrees
         t = t.utc_datetime()
         tt.append(t)
         alts.append(alt)
@@ -383,7 +395,7 @@ def razel_from_t(tend=None, sec_per_query=120, sat='iss'):
     return tt, azs, alts, rr, rrsat
 
 
-def get_rho_SEZ_from_t(dt_min, datetime_end, lat, lon, h=0.):
+def get_rho_SEZ_from_t(dt_min, datetime_end, lat, lon, h=0.0):
     pass
 
 
@@ -399,13 +411,14 @@ def compute_alphas(p1, p2, p3, p4):
 def realcbrt(x):
     """Return real result of cube root"""
     if x < 0:
-        return ((-x)**(1 / 3)) * -1
+        return ((-x) ** (1 / 3)) * -1
     else:
-        return x**(1 / 3)
+        return x ** (1 / 3)
 
 
 def para_roots(alph_p):
     from math import sqrt, atan2, cos, degrees, radians, pi
+
     # Find roots T1, T2, T3 of C(T) in interval 0 <= T < 1
     # Rearrange coefficients
     P = alph_p[2] / alph_p[3]
@@ -435,8 +448,8 @@ def para_roots(alph_p):
             return None
     elif delta < -tol:
         E0 = 2 * sqrt(-a / 3)
-        cosphi = -b / (2 * sqrt(-(a**3) / 27))
-        sinphi = sqrt(1 - cosphi**2)
+        cosphi = -b / (2 * sqrt(-(a ** 3) / 27))
+        sinphi = sqrt(1 - cosphi ** 2)
         phi = atan2(sinphi, cosphi)
         z1 = E0 * cos(phi / 3)
         z2 = E0 * cos(phi / 3 + 2 * pi / 3)
@@ -455,14 +468,14 @@ def para_roots(alph_p):
 
 
 def C(a, T):
-    return a[3] * T**3 + a[2] * T**2 + a[1] * T + a[0]
+    return a[3] * T ** 3 + a[2] * T ** 2 + a[1] * T + a[0]
 
 
 def plot_para_blending(alph_p, p):
     fig, ax = plt.subplots()
     xT = np.linspace(0, 1)
     yT = C(alph_p, xT)
-    ax.plot(xT, yT, '-', label='C(T)')
+    ax.plot(xT, yT, "-", label="C(T)")
     ax.grid()
     ax.legend()
     plt.show()
@@ -476,6 +489,7 @@ def parabolic_blending(t, p):
         Vallado, Appendix C.5.1 for finding cubic roots
     """
     from math import sqrt, atan2, cos, degrees, radians, pi
+
     alph_p = compute_alphas(p[0], p[1], p[2], p[3])
     Troots = para_roots(alph_p)
     if not Troots:
@@ -483,21 +497,22 @@ def parabolic_blending(t, p):
     # our roots are x1, x2, x3
     # rescale time dimension from (0,1) -> (t0, t3)
     dt = t[3] - t[0]
-    dT = 1. - 0.
+    dT = 1.0 - 0.0
     # troots = Troots*dt/dT
     # Compute parabolic blending for times
     alph_t = compute_alphas(t[0], t[1], t[2], t[3])
-    C = lambda a, T: a[3] * T**3 + a[2] * T**2 + a[1] * T + a[0]
+    C = lambda a, T: a[3] * T ** 3 + a[2] * T ** 2 + a[1] * T + a[0]
     troots = C(alph_t, Troots)
-    print(f'troots = {troots}')
+    print(f"troots = {troots}")
     import matplotlib.pyplot as plt
+
     fig, ax = plt.subplots()
     xT = np.linspace(0, 1)
     xt = np.linspace(t[0], t[3])
     yT = C(alph_p, xT)
     yTroots = C(alph_p, Troots)
-    ax.plot(xT, yT, '-', label='C(T)')
-    ax.plot(Troots, yTroots, 'o', label='C(Troot)')
+    ax.plot(xT, yT, "-", label="C(T)")
+    ax.plot(Troots, yTroots, "o", label="C(Troot)")
     ax.grid()
     ax.legend()
     plt.show()
@@ -516,7 +531,7 @@ def parabolic_blending(t, p):
     return trise, tset
 
 
-def alfano_approx(t, lat, lon, h=0.):
+def alfano_approx(t, lat, lon, h=0.0):
     """
     From Alfano (1993), described in Vallado p. 914
     """
@@ -532,8 +547,12 @@ def alfano_approx(t, lat, lon, h=0.):
     #     return rho[i,1]
 
     # Lower limit on elevation for viewing satellite, vectorized
-    f_elev = np.arccos(np.cos(elev_lim) / R_sat) - elev_lim - np.arccos(
-        np.cos(elev) / R_sat) + elev_lim
+    f_elev = (
+        np.arccos(np.cos(elev_lim) / R_sat)
+        - elev_lim
+        - np.arccos(np.cos(elev) / R_sat)
+        + elev_lim
+    )
 
     # Find indecies where f_elev changes sign
     # from https://stackoverflow.com/questions/2652368/how-to-detect-a-sign-change-for-elements-in-a-numpy-array
@@ -548,7 +567,7 @@ def alfano_approx(t, lat, lon, h=0.):
     a[4] = (p[0] - 4 * p[1] + 6 * p[2] - 4 * p[3] + p[4]) / 24
 
     # scale t from t1 < t5 to 0 <= T <= 4
-    F = a[4] * T**4 + a[3] * T**3 + a[2] * T**2 + a[1] * T + a[0]  #  0 <= T <= 4
+    F = a[4] * T ** 4 + a[3] * T ** 3 + a[2] * T ** 2 + a[1] * T + a[0]  #  0 <= T <= 4
 
 
 if __name__ == "__main__":

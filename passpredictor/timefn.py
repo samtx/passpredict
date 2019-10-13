@@ -3,7 +3,7 @@ import numpy as np
 from .constants import DAY_S, J2000
 
 
-def utc2tt(UTC, deltaAT=37., deltaUT1=0.):
+def utc2tt(UTC, deltaAT=37.0, deltaUT1=0.0):
     """Compute terrestial time from UTC
 
     deltaAT is posted annualy in the Astronomical Almanac. As of 2019 the offset
@@ -42,7 +42,7 @@ def julian_date(yr, mo=None, dy=None, hr=None, mn=None, sec=None):
             dt = yr
         yr, mo, dy = dt.year, dt.month, dt.day
         hr, mn, sec = dt.hour, dt.minute, dt.second
-        sec += dt.microsecond * (10**-6)
+        sec += dt.microsecond * (10 ** -6)
     jd1 = 367 * yr
     jd2 = 7 * (yr + (mo + 9) // 12) // 4
     jd3 = (275 * mo) // 9
@@ -57,11 +57,13 @@ def julian_date(yr, mo=None, dy=None, hr=None, mn=None, sec=None):
 def julian_day(year, month=1, day=1):
     """Given a proleptic Gregorian calendar date, return a Julian day int."""
     janfeb = month < 3
-    return (day
-            + 1461 * (year + 4800 - janfeb) // 4
-            + 367 * (month - 2 + janfeb * 12) // 12
-            - 3 * ((year + 4900 - janfeb) // 100) // 4
-            - 32075)
+    return (
+        day
+        + 1461 * (year + 4800 - janfeb) // 4
+        + 367 * (month - 2 + janfeb * 12) // 12
+        - 3 * ((year + 4900 - janfeb) // 100) // 4
+        - 32075
+    )
 
 
 def julian_date2(yr, mo=1, dy=1, hr=0, mn=0, sec=0.0):
@@ -73,7 +75,6 @@ def julian_date2(yr, mo=1, dy=1, hr=0, mn=0, sec=0.0):
             dt = yr
         yr, mo, dy = dt.year, dt.month, dt.day
         hr, mn, sec = dt.hour, dt.minute, dt.second
-        sec += dt.microsecond * (10**-6)
+        sec += dt.microsecond * (10 ** -6)
 
-    return julian_day(yr, mo, dy) - 0.5 + (
-        sec + mn * 60.0 + hr * 3600.0) / DAY_S
+    return julian_day(yr, mo, dy) - 0.5 + (sec + mn * 60.0 + hr * 3600.0) / DAY_S

@@ -10,7 +10,7 @@ J2 = np.longdouble(0.0010826267)
 J2000 = 2451545.0
 
 # Various constants required by Skyfield
-AU_M = 149597870700             # per IAU 2012 Resolution B2
+AU_M = 149597870700  # per IAU 2012 Resolution B2
 AU_KM = 149597870.700
 ASEC360 = 1296000.0
 DAY_S = 86400.0

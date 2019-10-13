@@ -6,8 +6,21 @@ from numpy.testing import assert_allclose, assert_almost_equal
 import numpy as np
 from datetime import datetime, timedelta
 from ..constants import (
-    R_EARTH, R2_EARTH, e_EARTH, e2_EARTH, MU, J2, J2000, AU_M, AU_KM, ASEC360,
-    DAY_S, ASEC2RAD, DEG2RAD, RAD2DEG, tau
+    R_EARTH,
+    R2_EARTH,
+    e_EARTH,
+    e2_EARTH,
+    MU,
+    J2,
+    J2000,
+    AU_M,
+    AU_KM,
+    ASEC360,
+    DAY_S,
+    ASEC2RAD,
+    DEG2RAD,
+    RAD2DEG,
+    tau,
 )
 
 
@@ -17,7 +30,7 @@ def test_site_declination_and_K():
     """
     # Mt. Evans, Colorado
     phi_gd = 39.586667  # [deg]
-    H_MSL = 4347.667    # [m]
+    H_MSL = 4347.667  # [m]
     rdelta_calc, rK_calc = predict.site_declination_and_K(phi_gd, H_MSL)
     rdelta_true, rK_true = 4925.4298026, 4045.4937426
     assert_almost_equal(rdelta_calc, rdelta_true, decimal=3)
@@ -28,8 +41,8 @@ def test_site_declination_and_K_2():
     """
     Vallado, Eg 7-1, p.431
     """
-    phi_gd = 39.007     # [deg]
-    alt = 2187.    # [m]
+    phi_gd = 39.007  # [deg]
+    alt = 2187.0  # [m]
     rdelta_calc, rK_calc = predict.site_declination_and_K(phi_gd, alt)
     rdelta_true, rK_true = 4964.5377, 3994.2955
     assert_almost_equal(rdelta_calc, rdelta_true, decimal=2)
@@ -47,9 +60,9 @@ def test_site_ECEF():
     """
     Vallado, Eg 7-1, p.431
     """
-    phi_gd = 39.007     # [deg]
-    lmda = -104.883     # [deg]
-    alt = 2187.         # [m]
+    phi_gd = 39.007  # [deg]
+    lmda = -104.883  # [deg]
+    alt = 2187.0  # [m]
     r_ECEF = predict.site_ECEF(phi_gd, lmda, alt)
     r_ECEFtrue = np.array([-1275.1219, -4797.9890, 3994.2975])
     for i in [0, 1, 2]:
@@ -60,9 +73,9 @@ def test_site_ECEF2():
     """
     Vallado, Eg 7-1, p.431
     """
-    phi_gd = 39.007     # [deg]
-    lmda = -104.883     # [deg]
-    alt = 2187.         # [m]
+    phi_gd = 39.007  # [deg]
+    lmda = -104.883  # [deg]
+    alt = 2187.0  # [m]
     r_ECEF = predict.site_ECEF2(phi_gd, lmda, alt)
     r_ECEFtrue = np.array([-1275.1219, -4797.9890, 3994.2975])
     for i in [0, 1, 2]:
@@ -70,9 +83,9 @@ def test_site_ECEF2():
 
 
 def test_site_ECEF2_v2():
-    phi = 42.38    # latitude, deg
+    phi = 42.38  # latitude, deg
     lmda = -71.13  # longitude, deg
-    h = 24         # height, m
+    h = 24  # height, m
     rsite = predict.site_ECEF2(phi, lmda, h)
     rtrue = np.array([1526.122, -4465.064, 4276.894])
     print(rsite)
@@ -137,12 +150,12 @@ def test_satellite_visible():
     Vallado, Eg. 11-6, p.913
     """
     rsat = np.array([[-2811.2769, 3486.2632, 5069.5763]]).T  # ECI coords
-    rsite = np.array([[-3414.0283, 3258.1636, 4276.1212]]).T      # ECI coords
-    rho = np.array([[-773.8654, -581.4980, 328.8145]]).T   # SEZ coords
+    rsite = np.array([[-3414.0283, 3258.1636, 4276.1212]]).T  # ECI coords
+    rho = np.array([[-773.8654, -581.4980, 328.8145]]).T  # SEZ coords
     dt = datetime(1997, 4, 2, 1, 8)  # April 2, 1997, 01:08:0.00 UTC
     jdt = np.array([timefn.julian_date2(dt)])
-    vis = predict.satellite_visible(rsat, rsite, rho, jdt )
-    assert(vis[0] > 2)
+    vis = predict.satellite_visible(rsat, rsite, rho, jdt)
+    assert vis[0] > 2
 
 
 # def test_riseset():
@@ -161,6 +174,7 @@ def test_satellite_visible():
 #         (   8,       12.41552416, 0.0036498,  74.0186, 0.,    0., 0.),
 #         (   9,       13.84150848, 0.0048964, 144.6414, 0.,    0., 0.)
 #     ]
+
 
 def test_sun_sat_orthogonal_distance():
     """
@@ -191,7 +205,7 @@ def test_apredictendix_c_conversion_from_TEME_to_ITRF_UTC1():
 
     # Polar motion
     xp = -0.140682  # arcseconds
-    yp = 0.333309   # arcseconds
+    yp = 0.333309  # arcseconds
     xp *= ASEC2RAD
     yp *= ASEC2RAD
     # xp = yp = 0.
@@ -257,15 +271,14 @@ if __name__ == "__main__":
     # test_site_declination_and_K()
     # test_site_ECEF2()
     # test_ECEF_to_SEZ()
-#     test_satellite_visible()
+    #     test_satellite_visible()
 
     def azm(s, e):
-        out = np.arctan2(s, e) * 180/np.pi + 90
+        out = np.arctan2(s, e) * 180 / np.pi + 90
         print(out)
-        if s<0 and e<0:
+        if s < 0 and e < 0:
             out = out % 360
         return out
 
     s, e = -1, 1
     print(azm(s, e))
-

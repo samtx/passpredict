@@ -12,10 +12,10 @@ def test_ECEF_to_SEZ():
     """
     Vallado, Eg. 11-6, p.912
     """
-    phi = 42.38    # latitude, deg
+    phi = 42.38  # latitude, deg
     lmda = -71.13  # longitude, deg
     # lmda = 136.2944
-    h = 24         # height, m
+    h = 24  # height, m
     rsat = np.array([885.7296, -4389.3856, 5070.1765])
     rsite = predict.site_ECEF2(phi, lmda, h)
     rhoECEF = rsat - rsite
@@ -35,9 +35,9 @@ def test_fk5_precession():
     # April 6, 2004, 07:51:28.386009 UTC
     tt = 0.0426236319  # Julian centuries since J2000
     zeta, theta, z = rotations.fk5_precession(tt)
-    assert_almost_equal(zeta, 0.0273055*constants.DEG2RAD, decimal=9)
-    assert_almost_equal(theta, 0.0237306*constants.DEG2RAD, decimal=9)
-    assert_almost_equal(z, 0.0273059*constants.DEG2RAD, decimal=9)
+    assert_almost_equal(zeta, 0.0273055 * constants.DEG2RAD, decimal=9)
+    assert_almost_equal(theta, 0.0237306 * constants.DEG2RAD, decimal=9)
+    assert_almost_equal(z, 0.0273059 * constants.DEG2RAD, decimal=9)
 
 
 def test_precess_rotation():
@@ -87,11 +87,12 @@ def test_IJK2SEZ():
     Curtis, Eg. 5.9, p.270
     """
     from math import sin, cos, radians, asin, acos, degrees
+
     # Satellite position
     r = np.array([-2032.4, 4591.2, -4544.8])  # km, geocentric equatorial pos.
     # Location position
-    H = 0   # elevation, sea level
-    phi = -40    # deg latitude
+    H = 0  # elevation, sea level
+    phi = -40  # deg latitude
     theta = 110  # deg, local sidereal time
     R_obs = np.array([-1673.0, 4598.0, -4078.0])  # km, from Eq. 5.56
 
@@ -101,18 +102,28 @@ def test_IJK2SEZ():
     theta_rad = radians(theta)
 
     # rotation matrix, from Eq. 5.62a
-    Q = np.array([
-       [-sin(theta_rad), cos(theta_rad), 0.],
-       [-sin(phi_rad)*cos(theta_rad), -sin(phi_rad)*sin(theta_rad), cos(phi_rad)],
-       [cos(phi_rad)*cos(theta_rad), cos(phi_rad)*sin(theta_rad), sin(phi_rad)]
-    ])
+    Q = np.array(
+        [
+            [-sin(theta_rad), cos(theta_rad), 0.0],
+            [
+                -sin(phi_rad) * cos(theta_rad),
+                -sin(phi_rad) * sin(theta_rad),
+                cos(phi_rad),
+            ],
+            [
+                cos(phi_rad) * cos(theta_rad),
+                cos(phi_rad) * sin(theta_rad),
+                sin(phi_rad),
+            ],
+        ]
+    )
 
     rho2 = np.dot(Q, rho)
 
-    rho2_hat = (1/np.linalg.norm(rho))*rho2
+    rho2_hat = (1 / np.linalg.norm(rho)) * rho2
 
     a = degrees(asin(rho2_hat[2]))
-    A = degrees(acos(rho2_hat[1]/cos(radians(a))))
+    A = degrees(acos(rho2_hat[1] / cos(radians(a))))
 
     A_true = 129.8  # deg, azimuth
     a_true = 41.41  # deg, angular elevation
