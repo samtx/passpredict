@@ -201,29 +201,64 @@ def satellite_visible(rsatECI, rsiteECEF, rho, jdt):
             else:
                 # satellite is in shadow
                 visible[idx] = 2
-
     return visible
 
 
 def sun_sat_angle(rsat, rsun):
     """Compute the sun-satellite angle
-
+    Args:
+        rsat : satellite position vector in ECI coordinates
+        rsun : sun position vector in ECI coordinates
+    Output:
+        angle in radians between the two vectors
     References:
         Vallado, p. 912, Alg. 74
     """
-    # print(f'rsun.shape={rsun.shape}')
-    # print(f'rsat.shape={rsat.shape}')
     sinzeta = norm(np.cross(rsun, rsat, axisa=0, axisb=0))/(norm(rsun)*norm(rsat))
     return np.arcsin(sinzeta)
 
 
 def sun_sat_orthogonal_distance(rsat, zeta):
+    """
+    Args:
+        rsat : satellite position vector in ECI coordinates
+        zeta : angle in radians between the satellite and sun vectors
+    Output:
+        distance from satellite to center of Earth orthogonal to sun vector
+    """
     return norm(rsat) * np.cos(zeta-math.pi*0.5)
+
 
 def is_sat_illuminated(rsat, rsun):
     zeta = sun_sat_angle(rsat, rsun)
     dist = sun_sat_orthogonal_distance(rsat, zeta)
     return dist > R_EARTH
+
+
+def azm(s, e):
+    """Compute azimuth from topocentric horizon coordinates SEZ
+    Args:
+        s : south vector from SEZ coordinate
+        e : east vector from SEZ coordinate
+    Output:
+        azimuth angle in radians with 0 at north.
+    """
+    out = np.arctan2(s, e) + pi*0.5
+    # print(out)
+    if s < 0 and  e < 0:
+        out = out % (2*pi)
+    return out
+
+
+def elev(z, rhomag):
+    """Compute elevation angle from topocentric horizon coordinates SEZ
+    Args:
+        z : Z vector from SEZ coordinate
+        rhomag : magnitude of SEZ coordinate vector
+    Output:
+        elevation angle in radians with 0 at horizon, pi/2 straight up
+    """
+    return np.arcsin(z / rhomag)
 
 
 def fk5(r, xp=0., yp=0.):
@@ -233,7 +268,6 @@ def fk5(r, xp=0., yp=0.):
         r : position vector in ECI (ITRF) coordinates
         xp : polar motion along x axis in radians
         yp : polar motion along y axis in radians
-
     References:
         Vallado, Alg. 24, p.228
     """
@@ -253,9 +287,8 @@ def fk5(r, xp=0., yp=0.):
 def utc2tt(UTC, deltaAT=37., deltaUT1=0.):
     """Compute terrestial time from UTC
 
-    deltaAT is posted annualy in the Astronomical Almanac
-        As of 2019 the offset is 37 seconds.
-    deltaUT1 is posted daily by the US Navy
+    deltaAT is posted annualy in the Astronomical Almanac. As of 2019 the offset
+    is 37 seconds. deltaUT1 is posted daily by the US Navy
 
     Returns:
         TT : dynamic terrestial time in Julian Centuries
