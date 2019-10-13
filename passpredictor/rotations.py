@@ -1,0 +1,250 @@
+import numpy as np
+import math
+from .constants import (
+    R_EARTH, R2_EARTH, e_EARTH, e2_EARTH, MU, J2, J2000, AU_M, AU_KM, ASEC360,
+    DAY_S, ASEC2RAD, DEG2RAD, RAD2DEG, tau
+)
+from math import pi
+
+def ECEF_to_SEZ(r, phi, lmda):
+    """
+    Rotate r vector from ECEF frame to SEZ frame
+    Example uses USAF academy as the station
+       lmda = -104.0 deg longitude
+       phi  =   39.0 deg latitude
+       h    = 2900.0 meter elevation
+    """
+    phi_rad = phi * DEG2RAD
+    lmda_rad = lmda * DEG2RAD
+
+    ang1 = (90 - phi) * DEG2RAD
+    cosang1 = math.cos(ang1)
+    sinang1 = math.sin(ang1)
+    cosang2 = math.cos(lmda_rad)
+    sinang2 = math.sin(lmda_rad)
+
+    rSEZ = np.empty(r.shape)
+    rSEZ[0] = cosang1*cosang2*r[0] + cosang1*sinang2*r[1] - sinang1*r[2]
+    rSEZ[1] = -sinang2*r[0] + cosang2*r[1] + 1.0
+    rSEZ[2] = sinang1*cosang2*r[0] + sinang1*sinang2*r[1] + cosang1*r[2]
+    # print(rSEZ)
+
+    return rSEZ
+
+
+def fk5(r, xp=0., yp=0.):
+    """IAU-76 / FK5 reductions for polar motion, nutation, precession
+
+    Args
+        r : position vector in ECI (ITRF) coordinates
+        xp : polar motion along x axis in radians
+        yp : polar motion along y axis in radians
+    References:
+        Vallado, Alg. 24, p.228
+    """
+
+    # polar motion using small angle approximations
+    # Ref: Vallado, Eq 3-78
+    rW = np.empty(r.shape)
+    rW[0] = (1 + xp) * r[0]
+    rW[1] = (1 - yp) * r[1]
+    rW[2] = (1 - xp + yp) * r[2]
+
+    # nutation, from IAU-1980 Theory of Nutation
+
+    # We need to find the precession and nutation angles:
+    # z, Theta, zeta, epsilon, deltaPsi1980, epsbar1980, thetaGAST1982
+
+
+def eps1982(tt):
+    """Compute the average eps 1982
+
+    Args:
+        tt : terrestial time
+
+    References:
+        Vallado, p. 225, Eq. 3-81
+    """
+    return 23.439291*DEG2RAD + (-0.0130042 + (-1.64e-7 + 5.04e-7*tt) * tt) * tt
+
+
+def theta_GMST1982(jd_ut1):
+    """Return the angle of Greenwich Mean Standard Time 1982 given the JD.
+
+    This angle defines the difference between the idiosyncratic True
+    Equator Mean Equinox (TEME) frame of reference used by SGP4 and the
+    more standard Pseudo Earth Fixed (PEF) frame of reference.
+
+    Args:
+        jd_ut1 (float): Julian date since Jan 1, 2000
+
+    Returns:
+        theta (float): GMST in radians
+        thetadt (float): time derivative of GMST in rad/s
+
+    References:
+        Vallado, et al. "Revisiting Spacetrack Report #3", AIAA, 2006-6753, Appendix C.
+        Rhodes, Skyfield library, github.com/skyfielders/python-skyfield --> sgp4lib.py
+    """
+    tau = 2 * pi
+    _second = 1.0 / (24.0 * 60.0 * 60.0)
+    T0 = 2451545.0  # JD for Jan 1, 2000
+    t = (jd_ut1 - T0) / 36525.0
+    g = 67310.54841 + (8640184.812866 + (0.093104 + (-6.2e-6) * t) * t) * t
+    dg = 8640184.812866 + (0.093104 * 2.0 + (-6.2e-6 * 3.0) * t) * t
+    theta = (jd_ut1 % 1.0 + g * _second % 1.0) * tau
+    theta_dot = (1.0 + dg * _second / 36525.0) * tau
+    return theta, theta_dot
+
+
+def omega_moon(tt):
+    """Nutation parameters for the moon
+
+    Args:
+        tt : terrestial time
+
+    References:
+        Vallado, p. 225, Eq. 3-82
+    """
+    r = 360 * 60
+    omega_moon_deg = 125.04455501
+    omega_moon_deg += (-5*r - 134.1361851 + (0.0020756 + 2.139e-6*tt)*tt)*tt
+    return omega_moon_deg * DEG2RAD
+
+
+def equinox1982(dPsi1980, eps1980, omega_moon):
+    """Return the equation of equinoxes for sidereal time
+    for IAU-76/FK5 reductions
+
+    Args:
+        t : time
+
+    References:
+        Vallado, p.224
+    """
+    eq = dPsi1980 * np.cos(eps1980)
+    eq += 0.00264*ASEC2RAD*np.sin(omega_moon)
+    eq += 0.000063*np.sin(2*omega_moon)
+    return eq
+
+
+def theta_GAST1982(Eq, gmst):
+    """Return the Greenwich apparent sidereal time
+
+    Sidereal time for IAU-76/FK5 reductions
+
+    Args:
+        Eq : equinox1982
+        gmst : Greenwich mean sidreal time
+
+    References:
+        Vallado, p.224
+    """
+    return Eq + gmst
+
+
+def nutation_coeff():
+    i = np.array([      1,      9,    31,    2,   10,  32,   11,   33,   34,   12, 35, 13, 36, 38, 37], dtype=np.int)
+    A = np.array([-171996, -13187, -2274, 2062, 1426, 712, -517, -386, -301,  217, -158, 129, 123, 63, 63], dtype=np.float64)
+    B = np.array([ -174.2,   -1.6,  -0.2,  0.2, -3.4, 0.1,  1.2, -0.4,  0.0, -0.5, 0.0, 0.1, 0.0, 0.1, 0.0 ])
+    C = np.array([  92025,   5736,   977, -895,   54,  -7,  224,  200,  129,  -95, -1, -70, -53, -33, -2])
+    D = np.array([    8.9,   -3.1,  -0.5,  0.5, -0.1, 0.0, -0.6,  0.0, -0.1,  0.3, 0.0, 0.0, 0.0, 0.0, 0.0])
+    an = np.array([
+        [ 0,  0,  0,  0,  1],
+        [ 0,  0,  2, -2,  2],
+        [ 0,  0,  2,  0,  2],
+        [ 0,  0,  0,  0,  2],
+        [ 0,  1,  0,  0,  0],
+        [ 1,  0,  0,  0,  0],
+        [ 0,  1,  2, -2,  2],
+        [ 0,  0,  2,  0,  1]
+    ])
+
+def fk5_nutation(tt):
+    """
+    Ref: Table D-6, p. 1043
+    """
+    api = an1*M_moon + an2*M_sun + an3*Um_moon + an4*D_sun + an5*Omega_moon
+    psi_tmp = np.sum(A + B*tt)*np.sin(api)
+    eps_tmp = np.sum(C + D*tt)*np.cos(api)
+
+    return dPsi1980, dEps1980
+
+def fk5_precession(Td):
+    """Calculate precession angle Theta
+
+    Assume JD2000 epoch, T0 = 0
+
+    Args
+        Td: terrestial time
+
+    References:
+        Vallado, p. 227, Eq. 3-87
+    """
+    # Td = (jdt - J2000)/36525
+    zeta  = (2306.2181 + ( 0.30188 + 0.017998*Td)*Td)*Td
+    theta = (2004.3109 + (-0.42665 - 0.041833*Td)*Td)*Td
+    z     = (2306.2181 + ( 1.09468 + 0.018203*Td)*Td)*Td
+    # Convert to radians
+    zeta  *= ASEC2RAD
+    theta *= ASEC2RAD
+    z     *= ASEC2RAD
+
+    return zeta, theta, z
+
+
+def precess_rotation(r, zeta, theta, z):
+    """Perform precession rotations on position vector r
+    From IAU 80 Precession Theory. Rotation from MOD to GCRF.
+
+    Args:
+        r : (3, n), n is the number of observations
+        zeta, theta, z (n): precession angles in radians
+
+    References:
+        Vallado, p. 228, Eq. 3-89
+    """
+    coszeta = np.cos(zeta)
+    sinzeta = np.sin(zeta)
+    costheta = np.cos(theta)
+    sintheta = np.sin(theta)
+    cosz = np.cos(z)
+    sinz = np.sin(z)
+
+    rGCRF = np.empty(r.shape, dtype=np.float)
+    rGCRF[0] = (costheta*cosz*coszeta - sinz*sinzeta)*r[0] + (sinz*costheta*coszeta + sinzeta*cosz)*r[1] + sintheta*coszeta*r[2]
+    rGCRF[1] = (-sinzeta*costheta*cosz - sinz*coszeta)*r[0] + (-sinz*sinzeta*costheta + cosz*coszeta)*r[1] - sintheta*sinzeta*r[2]
+    rGCRF[2] = -sintheta*cosz*r[0] - sintheta*sinz*r[1] + costheta*r[2]
+    return rGCRF
+
+
+def rot1(a):
+    """Compute Euler angle rotation matrix, first angle
+
+    References:
+        Vallado, Eq. 3-15
+    """
+    mtx = np.array([[1., 0., 0.], [0., math.cos(a), math.sin(a)], [0., -math.sin(a), math.cos(a)]])
+    return mtx
+
+
+def rot2(a):
+    """Compute Euler angle rotation matrix, second angle
+
+    References:
+        Vallado, Eq. 3-15
+    """
+    mtx = np.array([[math.cos(a), 0., -math.sin(a)], [0., math.cos(a), 0.],
+                    [math.sin(a), 0., math.cos(a)]])
+    return mtx
+
+
+def rot3(a):
+    """Compute Euler angle rotation matrix, third angle
+
+    References:
+        Vallado, Eq. 3-15
+    """
+    mtx = np.array([[math.cos(a), math.sin(a), 0.], [-math.sin(a), math.cos(a), 0.],
+                    [0., 0., 1.]])
+    return mtx

@@ -79,6 +79,39 @@ def test_coe2rv_to_rv2coe():
     assert_almost_equal(nu, coeT['nu'], decimal=3)
 
 
+def test_nu2anomaly():
+    """
+    Vallado, p.87
+    """
+    nu = 60   # [deg]
+    e = 0.999
+    E_calc = kepler.nu2anomaly(nu, e)
+    E_true = 1.4796584  # [deg]
+    assert_almost_equal(E_calc, E_true)
+
+
+def test_anomaly2nu():
+    """
+    Vallado, p.87
+    """
+    E = 1.4796584  # [deg]
+    e = 0.999
+    nu_calc = kepler.anomaly2nu(e, E)
+    nu_true = 60.  # [deg]
+    assert_almost_equal(nu_calc, nu_true, decimal=6)
+
+
+def test_kepEqtnE():
+    """
+    Vallado, Eg 2-1, p.66
+    """
+    M = 235.4  # [deg]
+    e = 0.4
+    E_calc = kepler.kepEqtnE(M, e)
+    E_true = 220.512074767522  # [deg]
+    assert_almost_equal(E_calc, E_true, decimal=12)
+
+
 # def test_coe2rv_2():
 #     """
 #     Vallado, Eg.11-6, COE from 2.4.2

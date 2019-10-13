@@ -1,9 +1,14 @@
 # Test using pytest
 
 from .. import predict
+from .. import timefn
 from numpy.testing import assert_allclose, assert_almost_equal
 import numpy as np
 from datetime import datetime, timedelta
+from ..constants import (
+    R_EARTH, R2_EARTH, e_EARTH, e2_EARTH, MU, J2, J2000, AU_M, AU_KM, ASEC360,
+    DAY_S, ASEC2RAD, DEG2RAD, RAD2DEG, tau
+)
 
 
 def test_site_declination_and_K():
@@ -75,32 +80,12 @@ def test_site_ECEF2_v2():
         assert_almost_equal(rsite[i], rtrue[i], decimal=3, verbose=True)
 
 
-def test_ECEF_to_SEZ():
-    """
-    Vallado, Eg. 11-6, p.912
-    """
-    phi = 42.38    # latitude, deg
-    lmda = -71.13  # longitude, deg
-    # lmda = 136.2944
-    h = 24         # height, m
-    rsat = np.array([885.7296, -4389.3856, 5070.1765])
-    rsite = predict.site_ECEF2(phi, lmda, h)
-    rhoECEF = rsat - rsite
-    print(rhoECEF)
-    rSEZ = predict.ECEF_to_SEZ(rhoECEF, phi, lmda)
-    rSEZ_true = np.array([-773.8654, -581.4980, 328.8145])
-    np.set_printoptions(precision=8)
-    # print(rSEZ)
-    for i in [0, 1, 2]:
-        assert_almost_equal(rSEZ[i], rSEZ_true[i], decimal=0, verbose=True)
-
-
 def test_sun_pos():
     """
     Vallado, Eg. 5-1, p. 280
     """
     dt = datetime(2006, 4, 2)  # April 2, 2006, 00:00 UTC
-    jdt = predict.julian_date2(dt)
+    jdt = timefn.julian_date2(dt)
     assert_almost_equal(jdt, 2453827.5, decimal=12)
     jdt = np.asarray(jdt)
     r = predict.sun_pos(jdt)
@@ -114,9 +99,9 @@ def test_sun_pos_2():
     Vallado, Eg. 11-6, p. 913
     """
     dt = datetime(1997, 4, 2, 1, 8)  # April 2, 1997, 01:08:0.00 UTC
-    jdt = predict.julian_date2(dt)
+    jdt = timefn.julian_date2(dt)
     jdt = np.asarray(jdt)
-    r = predict.sun_pos(jdt) / predict.AU_KM
+    r = predict.sun_pos(jdt) / AU_KM
     r_true = np.array([0.9765, 0.1960, 0.0850], dtype=np.float)
     r_true = np.reshape(r_true, (3, 1))
     assert_allclose(r, r_true, rtol=1e-3)
@@ -127,13 +112,13 @@ def test_sun_sat_angle():
     Vallado, Eg. 11-6, p.913
     """
     dt = datetime(1997, 4, 2, 1, 8)  # April 2, 1997, 01:08:0.00 UTC
-    jdt = predict.julian_date2(dt)
+    jdt = timefn.julian_date2(dt)
     jdt = np.asarray(jdt)
     rsun = predict.sun_pos(jdt)
     rsat = np.array([-2811.2769, 3486.2632, 5069.5763])
     rsun = np.atleast_2d(rsun)
     rsat = np.atleast_2d(rsat).T
-    sunangle = predict.sun_sat_angle(rsat, rsun) * predict.RAD2DEG
+    sunangle = predict.sun_sat_angle(rsat, rsun) * RAD2DEG
     assert_almost_equal(sunangle, 76.0407, decimal=3)
 
 
@@ -142,8 +127,8 @@ def test_sun_sat_angle2():
     Vallado, Eg. 11-6, p.913
     """
     rsat = np.array([-2811.2769, 3486.2632, 5069.5763])
-    rsun = np.array([0.9765, 0.1960, 0.0850]) * predict.AU_KM
-    sunangle = predict.sun_sat_angle(rsat, rsun) * predict.RAD2DEG
+    rsun = np.array([0.9765, 0.1960, 0.0850]) * AU_KM
+    sunangle = predict.sun_sat_angle(rsat, rsun) * RAD2DEG
     assert_almost_equal(sunangle, 76.0407, decimal=3)
 
 
@@ -155,44 +140,9 @@ def test_satellite_visible():
     rsite = np.array([[-3414.0283, 3258.1636, 4276.1212]]).T      # ECI coords
     rho = np.array([[-773.8654, -581.4980, 328.8145]]).T   # SEZ coords
     dt = datetime(1997, 4, 2, 1, 8)  # April 2, 1997, 01:08:0.00 UTC
-    jdt = np.array([predict.julian_date2(dt)])
+    jdt = np.array([timefn.julian_date2(dt)])
     vis = predict.satellite_visible(rsat, rsite, rho, jdt )
     assert(vis[0] > 2)
-
-
-def test_fk5_precession():
-    """
-    Vallado, Eg. 3-15, p.231
-    """
-    # April 6, 2004, 07:51:28.386009 UTC
-    tt = 0.0426236319  # Julian centuries since J2000
-    zeta, theta, z = predict.fk5_precession(tt)
-    assert_almost_equal(zeta, 0.0273055*predict.DEG2RAD, decimal=9)
-    assert_almost_equal(theta, 0.0237306*predict.DEG2RAD, decimal=9)
-    assert_almost_equal(z, 0.0273059*predict.DEG2RAD, decimal=9)
-
-
-def test_precess_rotation():
-    """
-    Vallado, Eg. 3-15, p.231
-    """
-    rMOD = np.array([5094.0283745, 6127.8708164, 6380.2485164])
-    zeta = 0.0273055 * predict.DEG2RAD
-    theta = 0.0237306 * predict.DEG2RAD
-    z = 0.0273059 * predict.DEG2RAD
-    rGCRF = predict.precess_rotation(rMOD, zeta, theta, z)
-    rGCRF_true = np.array([5102.508958, 6123.011401, 6378.136928])
-    assert_allclose(rGCRF, rGCRF_true)
-
-
-def test_sun_sat_orthogonal_distance():
-    """
-    Vallado, Eg. 11-6, p.913
-    """
-    r = np.array([-2811.2769, 3486.2632, 5069.5763])  # sat, ECI coordinates
-    zeta = 76.0407  # deg
-    dist = predict.sun_sat_orthogonal_distance(r, zeta * predict.DEG2RAD)
-    assert_almost_equal(dist, 6564.6870, decimal=4)
 
 
 # def test_riseset():
@@ -212,121 +162,14 @@ def test_sun_sat_orthogonal_distance():
 #         (   9,       13.84150848, 0.0048964, 144.6414, 0.,    0., 0.)
 #     ]
 
-
-def test_utc2tt():
-    """Vallado, Eg. 3-7"""
-    # Mountain standard time (UTC-6)
-    dt = datetime(2004, 5, 14, 10, 43, 0)
-    deltaAT = 32  # sec
-    deltaUT1 = -0.463326  # sec
-    # get UTC by adjusting from MST timezone
-    dt += timedelta(hours=6)
-    jd_utc = predict.julian_date(dt)
-    tt = predict.utc2tt(jd_utc, deltaAT=deltaAT, deltaUT1=deltaUT1)
-    assert_almost_equal(tt, 0.043674121031, decimal=12)
-
-
-def test_nu2anomaly():
+def test_sun_sat_orthogonal_distance():
     """
-    Vallado, p.87
+    Vallado, Eg. 11-6, p.913
     """
-    nu = 60   # [deg]
-    e = 0.999
-    E_calc = predict.nu2anomaly(nu, e)
-    E_true = 1.4796584  # [deg]
-    assert_almost_equal(E_calc, E_true)
-
-
-def test_anomaly2nu():
-    """
-    Vallado, p.87
-    """
-    E = 1.4796584  # [deg]
-    e = 0.999
-    nu_calc = predict.anomaly2nu(e, E)
-    nu_true = 60.  # [deg]
-    assert_almost_equal(nu_calc, nu_true, decimal=6)
-
-
-def test_kepEqtnE():
-    """
-    Vallado, Eg 2-1, p.66
-    """
-    M = 235.4  # [deg]
-    e = 0.4
-    E_calc = predict.kepEqtnE(M, e)
-    E_true = 220.512074767522  # [deg]
-    assert_almost_equal(E_calc, E_true, decimal=12)
-
-
-def test_julian_date():
-    """
-    Vallado, eg.3-4
-    """
-    yr, mo, dy = 1996, 10., 26.
-    hr, mn, sec = 14., 20., 0.
-    jd = predict.julian_date(yr, mo, dy, hr, mn, sec)
-    jdT = 2450383.09722222
-    assert_almost_equal(jd, jdT, decimal=8)
-
-
-def test_julian_date_datetime():
-    """
-    Vallado, eg.3-4
-    """
-    yr, mo, dy = 1996, 10, 26
-    hr, mn, sec = 14, 20, 0
-    dt = datetime(yr, mo, dy, hr, mn, sec)
-    jd = predict.julian_date(dt)
-    jdT = 2450383.09722222
-    assert_almost_equal(jd, jdT, decimal=8)
-
-
-# def test_julian_date_datetime2():
-#     """
-#     Vallado, eg. 3-15, p. 230
-#     """
-#     dt = datetime(2004, 4, 6, 7, 51, )
-#     jd = predict.julian_date(dt)
-#     jdT = 2450383.09722222
-#     assert_almost_equal(jd, jdT, decimal=8)
-
-
-def test_julian_date_vectorized():
-    """Use an array of datetimes to find the Julian Date"""
-    dt_ary = np.arange('2019-09-14T00:00:00', '2019-10-07T00:00:00', 200, dtype='datetime64')
-    jd_vectorized = np.vectorize(predict.julian_date)
-    jd_ary = jd_vectorized(dt_ary)
-    # print(jd_ary)
-
-
-def test_theta_GMST1982():
-    """Compute the Greenwich Mean Sidereal Time
-
-    References:
-        Vallado, Eg 3-5, p.188
-    """
-    dt = datetime(1992, 8, 20, 12, 14, 0)  # Aug 20, 1992, 12:14 PM UT1
-    jd = predict.julian_date(dt)
-    theta, thetadt = predict.theta_GMST1982(jd)
-    theta *= predict.RAD2DEG  # convert from radians to degrees
-    assert_almost_equal(theta, 152.578787810, decimal=9)  # degrees
-    # assert_almost_equal(thetadt, 152.578787810)  # degrees
-
-
-def test_theta_GMST1982_2():
-    """Compute the Greenwich Mean Sidereal Time
-
-    References
-        Vallado, Eg. 3-15, p.230
-    """
-    # April 6, 2004, 07:51:28.386 009UTC, not UTC1
-    ms = int(1e6) + 386000 - 439961
-    dt = datetime(2004, 4, 6, 7, 51, 27, ms)
-    jd = predict.julian_date(dt)
-    theta, thetadt = predict.theta_GMST1982(jd)
-    theta *= predict.RAD2DEG
-    assert_almost_equal(theta, 312.8098943, decimal=6)
+    r = np.array([-2811.2769, 3486.2632, 5069.5763])  # sat, ECI coordinates
+    zeta = 76.0407  # deg
+    dist = predict.sun_sat_orthogonal_distance(r, zeta * predict.DEG2RAD)
+    assert_almost_equal(dist, 6564.6870, decimal=4)
 
 
 def test_apredictendix_c_conversion_from_TEME_to_ITRF_UTC1():
@@ -344,13 +187,13 @@ def test_apredictendix_c_conversion_from_TEME_to_ITRF_UTC1():
     # deltaUTC1 = -0.439961 seconds
     ms = int(1e6) + 386000 - 439961
     dt = datetime(2004, 4, 6, 7, 51, 27, ms)
-    jd = predict.julian_date(dt)
+    jd = timefn.julian_date(dt)
 
     # Polar motion
     xp = -0.140682  # arcseconds
     yp = 0.333309   # arcseconds
-    xp *= predict.ASEC2RAD
-    yp *= predict.ASEC2RAD
+    xp *= ASEC2RAD
+    yp *= ASEC2RAD
     # xp = yp = 0.
     rITRF, vITRF = predict.TEME_to_ITRF(jd, rTEME, vTEME, xp, yp)
 
@@ -359,47 +202,6 @@ def test_apredictendix_c_conversion_from_TEME_to_ITRF_UTC1():
     assert_almost_equal(rITRF[1], 7901.29527540, decimal=4)
     assert_almost_equal(rITRF[2], 6380.35659580, decimal=4)
 
-
-def test_jd_from_skyfield():
-    """From skyfield.tests.test_earth_satellites.py"""
-    ms = int(1e6) + 386000 - 439961
-    dt = datetime(2004, 4, 6, 7, 51, 27, ms)
-    jd = predict.julian_date(dt)
-    assert_almost_equal(jd, 2453101.8274067827, decimal=12)
-
-
-def test_jd_from_skyfield2():
-    """From skyfield.tests.test_earth_satellites.py"""
-    ms = int(1e6) + 386000 - 439961
-    dt = datetime(2004, 4, 6, 7, 51, 27, ms)
-    jd = predict.julian_date2(dt)
-    jd_desired = 2453101.8274067827
-    print(f'jd   ={jd:20.15f}')
-    print(f'jddes={jd_desired:20.15f}')
-    print(f'diff ={jd-jd_desired:0.15f}')
-    assert_almost_equal(jd, 2453101.8274067827, decimal=12)
-
-
-def test_jd_from_skyfield3():
-    """From skyfield.tests.test_earth_satellites.py"""
-    sec = 28.386 - 0.439961
-    yr, mo, dy = 2004, 4, 6
-    hr, mn = 7, 51
-    jd = predict.julian_date2(yr, mo, dy, hr, mn, sec)
-    jd_desired = 2453101.8274067827
-    print(f'jd   ={jd:20.15f}')
-    print(f'jddes={jd_desired:20.15f}')
-    print(f'diff ={jd-jd_desired:0.15f}')
-    assert_almost_equal(jd, jd_desired, decimal=12)
-
-
-def test_thetaGMST_from_skyfield():
-    """From skyfield.tests.test_earth_satellites.py"""
-    ms = int(1e6) + 386000 - 439961
-    dt = datetime(2004, 4, 6, 7, 51, 27, ms)
-    jd = predict.julian_date(dt)
-    theta, thetadt = predict.theta_GMST1982(jd)
-    assert_almost_equal(theta, 5.459562584754709, decimal=15)
 
 # def test_sgp4():
 #     """
@@ -414,44 +216,6 @@ def test_thetaGMST_from_skyfield():
 #     v0T = np.array([-1.1157766, 4.6316816, 6.0149576])
 #     jd0T = 2450540.400
 #     assert_almost_equal(predict.julian_date(sat.epoch),jd0T)
-
-
-def test_IJK2SEZ():
-    """
-    Curtis, Eg. 5.9, p.270
-    """
-    from math import sin, cos, radians, asin, acos, degrees
-    # Satellite position
-    r = np.array([-2032.4, 4591.2, -4544.8])  # km, geocentric equatorial pos.
-    # Location position
-    H = 0   # elevation, sea level
-    phi = -40    # deg latitude
-    theta = 110  # deg, local sidereal time
-    R_obs = np.array([-1673.0, 4598.0, -4078.0])  # km, from Eq. 5.56
-
-    # sez = predict.IJK2SEZ(r, phi, theta, H)
-    rho = r - R_obs  # relative position vector
-    phi_rad = radians(phi)
-    theta_rad = radians(theta)
-
-    # rotation matrix, from Eq. 5.62a
-    Q = np.array([
-       [-sin(theta_rad), cos(theta_rad), 0.],
-       [-sin(phi_rad)*cos(theta_rad), -sin(phi_rad)*sin(theta_rad), cos(phi_rad)],
-       [cos(phi_rad)*cos(theta_rad), cos(phi_rad)*sin(theta_rad), sin(phi_rad)]
-    ])
-
-    rho2 = np.dot(Q, rho)
-
-    rho2_hat = (1/np.linalg.norm(rho))*rho2
-
-    a = degrees(asin(rho2_hat[2]))
-    A = degrees(acos(rho2_hat[1]/cos(radians(a))))
-
-    A_true = 129.8  # deg, azimuth
-    a_true = 41.41  # deg, angular elevation
-    assert_almost_equal(A, A_true, decimal=1)
-    assert_almost_equal(a, a_true, decimal=1)
 
 
 # def test_IJK2SEZ_2():

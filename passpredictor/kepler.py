@@ -277,3 +277,63 @@ def pkepler_coe(a0,
     return r, v
 
 
+def kepEqtnE(M, e):
+    """
+    References:
+        Vallado, Algorithm 2, p.65
+    """
+    M_rad = radians(M)
+    if (-pi < M_rad < 0) or (M_rad > pi):
+        E0 = M_rad - e
+    else:
+        E0 = M_rad + e
+    atol = 1e-8
+    E1 = 1.
+    k = 0
+    while k < 1000:
+        E1 = E0 + (M_rad - E0 + e * sin(E0)) / (1 - e * cos(E0))
+        if np.abs(E1 - E0) < atol:
+            break
+        E0 = E1
+        k += 1
+    return degrees(E1)
+
+
+def nu2anomaly(nu, e):
+    """Compute anomaly from nu and eccentricity
+
+    References:
+        Vallado, p.77
+    """
+    if e < 1.0:
+        cosNu = cos(radians(nu))
+        cosE = (e + cosNu) / (1 + e * cosNu)
+        E = degrees(acos(cosE))
+        out = E
+    elif float(e) == 1.0:
+        B = tan(nu / 2)
+        out = B
+    else:
+        cosNu = cos(radians(nu))
+        coshH = (e + cosNu) / (1 + e * cosNu)
+        H = degrees(acosh(coshH))
+        out = H
+    return out
+
+
+def anomaly2nu(e, E, B=0, p=0, r=1, H=0):
+    """Compute nu from anomaly and eccentricity.
+
+    References:
+        Vallado, Algorithm 6, p.77
+    """
+    if e < 1.0:
+        cosE = cos(radians(E))
+        cosNu = (cosE - e) / (1 - e * cosE)
+    elif float(e) == 1.0:
+        cosNu = (p - r) / r
+    else:
+        coshH = cosh(radians(H))
+        cosNu = (coshH - e) / (1 - e * coshH)
+    nu = acos(cosNu)
+    return degrees(nu)
