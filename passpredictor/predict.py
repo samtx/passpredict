@@ -45,13 +45,9 @@ def site_ECEF(phi_gd, lmda, h_ellp):
     References:
         Vallado, Algorithm 51, p.430
     """
-
     r_delta, r_K = site_declination_and_K(phi_gd, h_ellp)
-
     lmda_rad = radians(lmda)
-
     r_site_ECEF = np.array([r_delta * cos(lmda_rad), r_delta * sin(lmda_rad), r_K])
-
     return r_site_ECEF
 
 
@@ -97,20 +93,14 @@ def sun_pos(t):
     """
     t_ut1 = (t - 2451545.0) / 36525
     t_tdb = t_ut1
-    # print(f't_tdb={t_tdb}')
     lmda_Msun = (280.4606184 + 36000.77005361 * t_tdb) % 360
-    # print(f'lmda_Msun={lmda_Msun}')
     # M_sun = (357.5291092 + 35999.05034*t_tdb) % 360
     M_sun = (357.5277233 + 35999.05034 * t_tdb) % 360
-    # print(f'M_sun={M_sun}')
     lmda_eclp = lmda_Msun + 1.914666471 * np.sin(M_sun * DEG2RAD)
     lmda_eclp += 0.019994643 * np.sin(2 * M_sun * DEG2RAD)
-    # print(f'lmda_eclp={lmda_eclp}')
     r_sun_mag = 1.000140612 - 0.016708617 * np.cos(M_sun * DEG2RAD)
     r_sun_mag -= 0.000139589 * np.cos(2 * M_sun * DEG2RAD)
-    # print(f'r_sun_mag ={r_sun_mag}')
     eps = 23.439291 - 0.0130042 * t_tdb
-    # print(f'eps={eps}')
     coslmda = np.cos(lmda_eclp * DEG2RAD)
     sinlmda = np.sin(lmda_eclp * DEG2RAD)
     coseps = np.cos(eps * DEG2RAD)
@@ -119,7 +109,6 @@ def sun_pos(t):
     r[0] = r_sun_mag * coslmda
     r[1] = r_sun_mag * coseps * sinlmda
     r[2] = r_sun_mag * sineps * sinlmda
-    # print(r)
     r *= AU_KM
     return r
 
@@ -140,9 +129,7 @@ def satellite_visible(rsatECI, rsiteECEF, rho, jdt):
     visible = np.zeros(jdt.size)
     # First, determine if satellite is above the horizon
     # find indecies where rho[2] > 0 --> idx
-
     vis_idx = np.nonzero(rho[2] > 0)[0]
-
     # Loop over indecies for times that satellite is over horizon
     for i in range(len(vis_idx)):
         idx = vis_idx[i]
@@ -150,15 +137,12 @@ def satellite_visible(rsatECI, rsiteECEF, rho, jdt):
         rsatECI_i = rsatECI[:, idx]
         rsiteECEF_i = rsiteECEF[:, idx]
         rho_i = rho[:, idx]
-
         # Check if site is in daylight, compute dot product of sun position.
         rsun = sun_pos(jdt_i)
         if len(rsun.shape) > 1:
             rsun = rsun.flatten()
-
         # TODO: compute ECI vector for site position
         rsiteECI = rsiteECEF_i
-
         if np.dot(rsun, rsiteECI) > 0:
             # site is in daylight
             visible[idx] = 1
@@ -213,7 +197,6 @@ def azm(s, e):
         azimuth angle in radians with 0 at north.
     """
     out = np.arctan2(s, e) + pi * 0.5
-    # print(out)
     if s < 0 and e < 0:
         out = out % (2 * pi)
     return out
@@ -285,7 +268,6 @@ def TEME_to_ITRF(jd_ut1, rTEME, vTEME, xp=0.0, yp=0.0):
     zero = theta_dot * 0.0
     angular_velocity = np.array([zero, zero, -theta_dot])
     R = rot3(-theta).T
-
     if len(rTEME.shape) == 1:
         rPEF = np.dot(R, rTEME)
         vPEF = np.dot(R, vTEME) + cross(angular_velocity, rPEF)
@@ -295,7 +277,6 @@ def TEME_to_ITRF(jd_ut1, rTEME, vTEME, xp=0.0, yp=0.0):
             np.einsum("ij...,j...->i...", R, vTEME)
             + cross(angular_velocity, rPEF, 0, 0).T
         )
-
     if xp == 0.0 and yp == 0.0:
         rITRF = rPEF
         vITRF = vPEF
@@ -322,7 +303,6 @@ def alfano_approx2():
     rhoIJK = rsatIJK - rsiteIJK
     phi = 10.0  # degree geodetic latitude
     lmda = 100  # degree east longitude
-
     angle2 = radians(90 - phi)
     angle3 = radians(lmda)
     R = np.dot(rot2(angle2), rot3(angle3))
@@ -332,7 +312,6 @@ def alfano_approx2():
     azm = np.arctan(rhoE / -rhoS)
     elev = np.arctan(rhoZ / np.sqrt(rhoS ** 2 + rhoE ** 2))
     rng = np.sqrt(rhoS ** 2 + rhoE ** 2 + rhoZ ** 2)
-
     f_azm_lim = rhoE - rhoS * np.tan()
 
 
@@ -350,7 +329,6 @@ def razel_from_t(tend=None, sec_per_query=120, sat="iss"):
     }
     satellites = load.tle(sat_data[sat]["url"])
     iss = satellites[sat_data[sat]["name"]]
-
     tstart = iss.epoch.utc_datetime()
     if not tend:
         tend = tstart + timedelta(hours=72)
@@ -363,14 +341,11 @@ def razel_from_t(tend=None, sec_per_query=120, sat="iss"):
     sc_interval = int((tend - tstart).total_seconds())
     ts = load.timescale()
     T = ts.utc(yr, mo, dy, hr, mn, range(sc, sc_interval, sec_per_query))
-
     # Find overpasses
     myLocation = {"lat": "30.2672 N", "lon": "097.7431 W", "tz": "US/Central"}
-
     tz = timezone(myLocation["tz"])
     location = Topos(myLocation["lat"], myLocation["lon"])
     difference = iss - location
-
     tt = []
     alts = []
     azs = []
@@ -391,7 +366,6 @@ def razel_from_t(tend=None, sec_per_query=120, sat="iss"):
     alts = np.asarray(alts)
     rr = np.asarray(rr)
     rrsat = np.asarray(rrsat)
-
     return tt, azs, alts, rr, rrsat
 
 
@@ -418,7 +392,6 @@ def realcbrt(x):
 
 def para_roots(alph_p):
     from math import sqrt, atan2, cos, degrees, radians, pi
-
     # Find roots T1, T2, T3 of C(T) in interval 0 <= T < 1
     # Rearrange coefficients
     P = alph_p[2] / alph_p[3]
@@ -429,9 +402,7 @@ def para_roots(alph_p):
     delta = a * a * a / 27 + b * b / 4
     tol = 1e-8
     Troots = None
-
     # plot_para_blending(alph_p)
-
     if delta > tol:
         # Use Cardan's solution, Eq. C-31
         sqrt_delta = sqrt(delta)
@@ -505,7 +476,6 @@ def parabolic_blending(t, p):
     troots = C(alph_t, Troots)
     print(f"troots = {troots}")
     import matplotlib.pyplot as plt
-
     fig, ax = plt.subplots()
     xT = np.linspace(0, 1)
     xt = np.linspace(t[0], t[3])
@@ -536,16 +506,13 @@ def alfano_approx(t, lat, lon, h=0.0):
     From Alfano (1993), described in Vallado p. 914
     """
     elev_lim = radians(10)  # elevation lower limit
-
     rho = get_rho_SEZ_from_t(dt_min, datetime_end, lat=lat, lon=lon, h=h)
     elev = get_elev_from_rho(rho)
     R_sat = get_Rsat_norm(dt_min, datetime_end)
     # def f_range(i):
     #     return sqrt(rho[i,0]**2+rho[i,1]**2+rho[i,2]**2) - rho_lim
-
     # def f_beta_lim(i):
     #     return rho[i,1]
-
     # Lower limit on elevation for viewing satellite, vectorized
     f_elev = (
         np.arccos(np.cos(elev_lim) / R_sat)
@@ -553,11 +520,9 @@ def alfano_approx(t, lat, lon, h=0.0):
         - np.arccos(np.cos(elev) / R_sat)
         + elev_lim
     )
-
     # Find indecies where f_elev changes sign
     # from https://stackoverflow.com/questions/2652368/how-to-detect-a-sign-change-for-elements-in-a-numpy-array
     idx = np.where(np.sign(f_elev[:-1]) != np.sign(f_elev[1:]))[0] + 1
-
     # Note: could also use scipy.interpolate.UnivariateSpline(k=4 or 5) to create quartic and quintic polynomials and splines
     a = np.zeros(5)
     a[0] = p[0]
@@ -565,7 +530,6 @@ def alfano_approx(t, lat, lon, h=0.0):
     a[2] = (35 * p[0] - 104 * p[1] + 114 * p[2] - 56 * p[3] + 11 * p[4]) / 24
     a[3] = (-10 * p[0] + 36 * p[1] - 48 * p[2] + 28 * p[3] - 6 * p[4]) / 24
     a[4] = (p[0] - 4 * p[1] + 6 * p[2] - 4 * p[3] + p[4]) / 24
-
     # scale t from t1 < t5 to 0 <= T <= 4
     F = a[4] * T ** 4 + a[3] * T ** 3 + a[2] * T ** 2 + a[1] * T + a[0]  #  0 <= T <= 4
 
