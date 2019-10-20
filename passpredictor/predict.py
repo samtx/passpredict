@@ -4,7 +4,7 @@ import math
 from math import sqrt, sin, cos, cosh, acosh, tan, atan, acos, radians, degrees, pi
 import datetime
 from numpy.linalg import norm
-from .constants import (
+from passpredictor.constants import (
     R_EARTH,
     R2_EARTH,
     e_EARTH,
