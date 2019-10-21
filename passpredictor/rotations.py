@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from .constants import (
+from passpredictor.constants import (
     R_EARTH,
     R2_EARTH,
     e_EARTH,
@@ -285,6 +285,62 @@ def precess_rotation(r, zeta, theta, z):
     )
     rGCRF[2] = -sintheta * cosz * r[0] - sintheta * sinz * r[1] + costheta * r[2]
     return rGCRF
+
+
+def TEME_to_ECEF(r, jdt):
+    """Convert TEME vectors to ECEF vectors
+
+    Args:
+        r : float (3, n) : TEME vectors
+        jdt : float (n) : julian dates
+    Returns:
+        rECEF : float (3, n): ECEF vectors
+
+    References:
+        teme2ecef.m Vallado software
+    """
+    # find GMST
+    gmst = theta_GMST1982(jdt)[0]
+
+    gmst = np.mod(gmst, tau)
+
+    costheta = np.cos(gmst)
+    sintheta = np.sin(gmst)
+    rPEF = np.empty(r.shape)
+    rPEF[0] = costheta*r[0] - sintheta*r[1]
+    rPEF[1] = sintheta*r[0] + costheta*r[1]
+    rPEF[2] = r[2]
+    rECEF = rPEF
+
+    return rECEF
+
+
+def ecef2eci(r, jdt):
+    """Convert ECEF vectors to ECI vectors
+
+    Args:
+        r : float (3, n) : ECEF vectors
+        jdt : float (n) : julian dates
+    Returns:
+        rECI : float (3, n): ECI vectors
+
+    References:
+        teme2ecef.m Vallado software
+    """
+    # find GMST
+    gmst = theta_GMST1982(jdt)
+
+    gmst = np.mod(gmst, tau)
+
+    costheta = np.cos(gmstg)
+    sintheta = np.sin(gmstg)
+    rPEF = np.empty(r.shape)
+    rPEF[0] = costheta*r[0] - sintheta*r[1]
+    rPEF[1] = sintheta*r[0] + costheta*r[1]
+    rPEF[2] = r[2]
+    rECEF = rPEF
+
+    return rECEF
 
 
 def rot1(a):

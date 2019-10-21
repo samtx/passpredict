@@ -1,11 +1,11 @@
 # Test using pytest
 
-from .. import predict
-from .. import timefn
+from passpredictor import predict
+from passpredictor import timefn
 from numpy.testing import assert_allclose, assert_almost_equal
 import numpy as np
 from datetime import datetime, timedelta
-from ..constants import (
+from passpredictor.constants import (
     R_EARTH,
     R2_EARTH,
     e_EARTH,

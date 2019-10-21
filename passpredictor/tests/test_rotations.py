@@ -1,8 +1,8 @@
 # test rotations.py
-from .. import rotations
-from .. import predict
-from .. import constants
-from .. import timefn
+from passpredictor import rotations
+from passpredictor import predict
+from passpredictor import constants
+from passpredictor import timefn
 from numpy.testing import assert_allclose, assert_almost_equal
 import numpy as np
 from datetime import datetime, timedelta

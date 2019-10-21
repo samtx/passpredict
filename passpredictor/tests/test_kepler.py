@@ -1,5 +1,5 @@
 # Test using pytest
-from .. import kepler
+from passpredictor import kepler
 from numpy.testing import assert_allclose, assert_almost_equal
 import numpy as np
 from datetime import datetime, timedelta

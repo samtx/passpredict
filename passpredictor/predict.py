@@ -84,6 +84,16 @@ def rng_el(r):
     return el, rng
 
 
+def razel(r):
+    """Get range, azimuth, and elevation from SEZ vector"""
+    rng = np.linalg.norm(r, axis=0)
+    el = np.arcsin(r[2] / rng) * RAD2DEG
+    az = (np.arctan2(r[0], r[1]) + pi * 0.5) * RAD2DEG
+    idx = np.all([r[0] < 0,r[1] < 0], axis=0)
+    az[idx] %= 360
+    return rng, az, el
+
+
 def sun_pos(t):
     """Compute the Sun position vector
 
@@ -124,7 +134,7 @@ def vector_angle(r1, r2):
     return out
 
 
-def satellite_visible(rsatECI, rsiteECEF, rho, jdt):
+def satellite_visible(rsatECI, rsiteECI, rho, jdt):
     """Determine visibility of satellite from Earth"""
     visible = np.zeros(jdt.size)
     # First, determine if satellite is above the horizon
@@ -135,14 +145,13 @@ def satellite_visible(rsatECI, rsiteECEF, rho, jdt):
         idx = vis_idx[i]
         jdt_i = jdt[idx]
         rsatECI_i = rsatECI[:, idx]
-        rsiteECEF_i = rsiteECEF[:, idx]
+        rsiteECI_i = rsiteECI[:, idx]
         rho_i = rho[:, idx]
         # Check if site is in daylight, compute dot product of sun position.
         rsun = sun_pos(jdt_i)
         if len(rsun.shape) > 1:
             rsun = rsun.flatten()
         # TODO: compute ECI vector for site position
-        rsiteECI = rsiteECEF_i
         if np.dot(rsun, rsiteECI) > 0:
             # site is in daylight
             visible[idx] = 1
