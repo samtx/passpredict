@@ -23,8 +23,8 @@ def test_sgp4_tle():
     print(tle1, tle2)
     satrec = twoline2rv(tle1, tle2, wgs84)
     min_per_day = 1440
-    total_days = 7
-    dt_per_min = 60
+    total_days = 1
+    dt_per_min = 10
     t = np.linspace(0, min_per_day*total_days, min_per_day*total_days*dt_per_min)
     r = np.empty((t.size, 3))
     v = np.empty((t.size, 3))
@@ -35,11 +35,4 @@ def test_sgp4_tle():
         r[i] = ri
         v[i] = vi
     # print(satrec)
-
-    np.savez('out.npz', rTEME=r, vTEME=v, tsince=t, tle1=tle1, tle2=tle2)
-
-
-
-
-if __name__ == "__main__":
-    test_sgp4_tle()
+    assert True

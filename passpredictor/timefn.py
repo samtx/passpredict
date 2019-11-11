@@ -162,7 +162,7 @@ def invjday(jd):
     return year, mon, day, hr, minute, sec
 
 
-def invjday_to_npdatetime64(year, mon, day, hr, minute, sec):
+def invjday_to_datetimeary(year, mon, day, hr, minute, sec):
     """Take arrays of datetime values and return array of datetime objects
 
     Args:
@@ -178,6 +178,28 @@ def invjday_to_npdatetime64(year, mon, day, hr, minute, sec):
         # dtstr = f'{year[i]:4d}-{int(mon[i]):02d}-{int(day[i]):02d}T{int(hr[i]):02d}:{int(minute[i]):02d}:{sec[i]:05.2f}'
         dtary[i] = datetime.datetime(year[i], int(mon[i]), int(day[i]), int(hr[i]), int(minute[i]), s[i], us[i])
     return dtary
+
+
+def jday2datetime(jdt):
+    """Turn julian day into datetime object"""
+    datetuple = invjday(jdt)
+    yr, mo, date, hr, mn, sec = datetuple
+    ms = int((sec % 1)*(10**6))
+    sec = int(sec)
+    dt = datetime.datetime(yr, mo, date, hr, mn, sec, ms)
+    return dt
+
+
+def jday2npdatetime64(jdt):
+    """Turn julian day into np.datetime64 object"""
+    datetuple = invjday(jdt)
+    yr, mo, date, hr, mn, sec = datetuple
+    ms = int((sec % 1)*(10**6))
+    sec = int(sec)
+    dt = datetime.datetime(yr, mo, date, hr, mn, sec, ms)
+    return np.datetime64(dt)
+
+
 
 def jdt_tsince(tstart, tsince):
     """Return a vector of julian dates from tstart with points at tsince
