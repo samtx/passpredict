@@ -3,46 +3,77 @@ import datetime
 import numpy as np
 
 
-class Orbit():
-    """Results from propagating a TLE"""
-    def __init__(self, dt, tsince, rTEME, rECEF, tle_str, sat_id, dt_start):
-         self.dt = dt
-         self.tsince = tsince
-         self.rTEME = rTEME
-         self.rECEF = rECEF
-         self.tle_str = tle_str
-         self.sat_id = sat_id
-         self.dt_start = dt_start
-         self.modified = None
-
-    def update_modified(self):
-        self.modified = datetime.datetime.now()
-
-class Point():
-    """A point in the sky in topocentric horizon coordinates"""
-    def __init__(self, dt, az, el, rng):
-        self.dt = dt
-        self.az = az
-        self.el = el
-        self.rng = rng
-
+class Point(object):
+    def __init__(self, datetime, azimuth, elevation, range_):
+        self.datetime = datetime
+        self.azimuth = azimuth
+        self.elevation = elevation
+        self.range = range_
     def __repr__(self):
-        dtstr = self.dt.strftime(r'%b %d %Y, %H:%M:%S')
-        s = f'{dtstr}, az={self.az:.1f} deg, el={self.el:.1f} deg, rng={self.rng:.1f} km'
+        dtstr = self.datetime.strftime("%b %d %Y, %H:%M:%S")
+        s = "{}UTC el={:.1f}d, az={:.1f}d, rng={:.1f}km".format(
+            dtstr, self.elevation, self.azimuth, self.range)
         return s
 
 
-class Overpass():
-    """An overpass of a satellite"""
-    def __init__(self, start_point, max_point, end_point):
-        self.start_point = start_point
-        self.max_point = max_point
-        self.end_point = end_point
-        self.t = None
-        self.r = None
-        self.el = None
-        self.az = None
-        self.rng = None
+class Overpass(object):
+    def __init__(self, start_pt, max_pt, end_pt, t, r):
+        self.start_pt = start_pt
+        self.max_pt = max_pt
+        self.end_pt = end_pt
+        self.t = t
+        self.r = r
+        self.sat = None
+        self.location = None
+
+
+class Location(object):
+    def __init__(self, lat, lon, h, name=None, tz=None):
+        self.lat = lat
+        self.lon = lon
+        self.h = h
+        self.name = name
+        self.tz = tz
+    def __repr__(self):
+        return self.name
+
+
+class SatelliteRV(object):
+    def __init__(self):
+        self.satellite = None
+        self.tle = None
+        self.rsun = None
+        self.dt = None
+        self.jdt = None
+        self.rECEF = None
+        self.rECI = None
+        self.modified = None
+        self.deltaT = None
+        self.lat = None
+        self.lon = None
+        self.alt = None
+        self.is_illum = None
+
+
+class SunPosition(object):
+    def __init__(self):
+        self.rECI = None
+        self.jdt = None
+        self.dt_ary = None
+
+
+class TLE(object):
+    def __init__(self, tle1, tle2, dt):
+        self.tle1 = tle1
+        self.tle2 = tle2
+        self.dt = dt
+        self.satellite = None
+
+
+class SatelliteDetail(object):
+    def __init__(self, satid, name):
+        self.id = satid
+        self.name = name
 
 
 def process_overpasses(overpasses, t, az, el, rng, dt_start):
