@@ -287,7 +287,7 @@ def precess_rotation(r, zeta, theta, z):
     return rGCRF
 
 
-def TEME_to_ECEF(r, jdt):
+def teme2ecef(r, jdt):
     """Convert TEME vectors to ECEF vectors
 
     Args:

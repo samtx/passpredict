@@ -213,3 +213,10 @@ def jdt_tsince(tstart, tsince):
         Vallado, 'Revisiting Spacetrack Report #3'
     """
     return tstart + (tsince * 60.0) / 86400.0
+
+
+def truncate_datetime(dt):
+    """ Truncate datetime object to nearest second """
+    us = dt.microsecond
+    dt2 = dt - datetime.timedelta(microseconds=us)
+    return dt2
