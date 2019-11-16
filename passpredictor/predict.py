@@ -163,7 +163,8 @@ def sun_sat_angle(rsat, rsun):
     References:
         Vallado, p. 912, Alg. 74
     """
-    sinzeta = norm(np.cross(rsun, rsat, axisa=0, axisb=0)) / (norm(rsun) * norm(rsat))
+    crossproduct = np.cross(rsun, rsat, axisa=0, axisb=0).T
+    sinzeta = norm(crossproduct, axis=0) / (norm(rsun, axis=0) * norm(rsat, axis=0))
     return np.arcsin(sinzeta)
 
 
@@ -175,7 +176,7 @@ def sun_sat_orthogonal_distance(rsat, zeta):
     Output:
         distance from satellite to center of Earth orthogonal to sun vector
     """
-    return norm(rsat) * np.cos(zeta - math.pi * 0.5)
+    return norm(rsat, axis=0) * np.cos(zeta - math.pi * 0.5)
 
 
 def is_sat_illuminated(rsat, rsun):

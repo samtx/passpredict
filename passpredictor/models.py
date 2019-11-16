@@ -98,6 +98,3 @@ def tsince_to_datetime(tsince, dt_start):
     dt_end = dt_start + datetime.timedelta(minutes=tsince[n-1])
     dt_ary = np.arange(dt_start, dt_end, minute_step)
     return dt_ary.astype(datetime.datetime)
-
-
-def
