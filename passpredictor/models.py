@@ -62,7 +62,7 @@ class SunPosition(object):
         self.dt_ary = None
 
 
-class TLE(object):
+class Tle(object):
     def __init__(self, tle1, tle2, dt):
         self.tle1 = tle1
         self.tle2 = tle2

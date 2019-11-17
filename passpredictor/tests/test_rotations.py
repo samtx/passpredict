@@ -8,7 +8,7 @@ import numpy as np
 from datetime import datetime, timedelta
 
 
-def test_ECEF_to_SEZ():
+def test_ecef2sez():
     """
     Vallado, Eg. 11-6, p.912
     """
@@ -20,7 +20,7 @@ def test_ECEF_to_SEZ():
     rsite = predict.site_ECEF2(phi, lmda, h)
     rhoECEF = rsat - rsite
     print(rhoECEF)
-    rSEZ = rotations.ECEF_to_SEZ(rhoECEF, phi, lmda)
+    rSEZ = rotations.ecef2sez(rhoECEF, phi, lmda)
     rSEZ_true = np.array([-773.8654, -581.4980, 328.8145])
     np.set_printoptions(precision=8)
     # print(rSEZ)

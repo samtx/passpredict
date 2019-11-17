@@ -54,7 +54,7 @@ def propagate(tle1, tle2, dt0=None, dtf=None, dtsec=1.0, use_cython=use_cython):
     if dt0 is None:
         dt0 = satrec.epoch
     if dtf is None:
-        dtf = dt0 + datetime.timedelta(weeks=1)
+        dtf = dt0 + datetime.timedelta(days=5)
     dt0 = truncate_datetime(dt0)
     dtf = truncate_datetime(dtf)
 
@@ -96,6 +96,8 @@ def propagate(tle1, tle2, dt0=None, dtf=None, dtsec=1.0, use_cython=use_cython):
 
     # Return output
     sat = SatelliteRV()
+    sat.tle1 = tle1
+    sat.tle2 = tle2
     sat.rECEF = rECEF
     sat.rECI = rECI
     sat.is_illum = sat_illum

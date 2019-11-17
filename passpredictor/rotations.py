@@ -20,7 +20,7 @@ from passpredictor.constants import (
 from math import pi
 
 
-def ECEF_to_SEZ(r, phi, lmda):
+def ecef2sez(r, phi, lmda):
     """
     Rotate r vector from ECEF frame to SEZ frame
     Example uses USAF academy as the station
