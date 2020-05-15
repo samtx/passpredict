@@ -3,6 +3,7 @@ from passpredictor import rotations
 from passpredictor import predict
 from passpredictor import constants
 from passpredictor import timefn
+from passpredictor import topocentric
 from numpy.testing import assert_allclose, assert_almost_equal
 import numpy as np
 from datetime import datetime, timedelta
@@ -17,7 +18,7 @@ def test_ecef2sez():
     # lmda = 136.2944
     h = 24  # height, m
     rsat = np.array([885.7296, -4389.3856, 5070.1765])
-    rsite = predict.site_ECEF2(phi, lmda, h)
+    rsite = topocentric.site_ECEF2(phi, lmda, h)
     rhoECEF = rsat - rsite
     print(rhoECEF)
     rSEZ = rotations.ecef2sez(rhoECEF, phi, lmda)
