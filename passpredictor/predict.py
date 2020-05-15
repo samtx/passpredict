@@ -1,85 +1,14 @@
 import numpy as np
 from numpy import dot, cross
 from numpy.linalg import norm
-import math
-from math import sqrt, sin, cos, cosh, acosh, tan, atan, acos, radians, degrees, pi
 import datetime
-from passpredictor.rotations import rot1, rot2, rot3, theta_GMST1982
+from passpredictor.rotations import rot1, rot2, rot3, theta_GMST1982, site_sat_rotations
 from passpredictor.solar import sun_pos, is_sat_illuminated
+from passpredictor.topocentric import razel
 from passpredictor.constants import (
     R_EARTH, R2_EARTH, e_EARTH, e2_EARTH, MU, J2, J2000, AU_M, AU_KM, ASEC360,
     DAY_S, ASEC2RAD, DEG2RAD, RAD2DEG, tau
 )
-
-
-def site_declination_and_K(phi_gd, h_ellp):
-    """
-    Vallado, Eq.3-7
-    Get declination and K vectors for site on Earth
-    Note: currently only precise to 0.1 km
-    """
-    phi_gd_rad = radians(np.float64(phi_gd))  # convert [deg] to [rad]
-    h_ellp_km = np.float64(h_ellp) * (1 / 1000)  # convert [m] to [km]
-    C = R_EARTH / np.sqrt(1 - e2_EARTH * sin(phi_gd_rad) ** 2)
-    S = C * (1 - e2_EARTH)
-    r_delta = (C + h_ellp_km) * cos(phi_gd_rad)
-    r_K = (S + h_ellp_km) * sin(phi_gd_rad)
-    return (r_delta, r_K)
-
-
-def site_ECEF(phi_gd, lmda, h_ellp):
-    """Compute ECEF coordinates for tracking site on Earth
-
-    References:
-        Vallado, Algorithm 51, p.430
-    """
-    r_delta, r_K = site_declination_and_K(phi_gd, h_ellp)
-    lmda_rad = radians(lmda)
-    r_site_ECEF = np.array([r_delta * cos(lmda_rad), r_delta * sin(lmda_rad), r_K])
-    return r_site_ECEF
-
-
-def site_ECEF2(phi_gd, lmda, h_ellp):
-    """Compute ECEF coordinates for tracking site on Earth
-
-    Args:
-        phi_gd: (float) geodetic latitutde of site in degrees
-        lmda: (float) east longitude of site in degrees
-        h_ellp: (float) height above the reference ellipse in meters
-
-    References:
-        Vallado, p. 428, Eq. 7-1
-    """
-    phi_gd_rad = phi_gd * DEG2RAD
-    lmda_rad = lmda * DEG2RAD
-    cosphi = math.cos(phi_gd_rad)
-    sinphi = math.sin(phi_gd_rad)
-    C = R_EARTH / math.sqrt(1 - e2_EARTH * (sinphi ** 2))
-    S = C * (1 - e2_EARTH)
-    h_ellp *= 0.001  # convert to km
-    tmp = (C + h_ellp) * cosphi
-    r_site_ECEF = np.array(
-        [tmp * math.cos(lmda_rad), tmp * math.sin(lmda_rad), (S + h_ellp) * sinphi]
-    )
-    return r_site_ECEF
-
-
-def rng_el(r):
-    """Get range and elevation from SEZ vector"""
-    rng = np.linalg.norm(r, axis=1)
-    el = np.arcsin(r[2] / rng)
-    el *= RAD2DEG
-    return el, rng
-
-
-def razel(r):
-    """Get range, azimuth, and elevation from SEZ vector"""
-    rng = np.linalg.norm(r, axis=0)
-    el = np.arcsin(r[2] / rng) * RAD2DEG
-    az = (np.arctan2(r[0], r[1]) + pi * 0.5) * RAD2DEG
-    idx = np.all([r[0] < 0,r[1] < 0], axis=0)
-    az[idx] %= 360
-    return rng, az, el
 
 
 def vector_angle(r1, r2):
@@ -125,38 +54,7 @@ def satellite_visible(rsatECI, rsiteECI, rho, jdt):
     return visible
 
 
-def azm(s, e):
-    """Compute azimuth from topocentric horizon coordinates SEZ
-    Args:
-        s : south vector from SEZ coordinate
-        e : east vector from SEZ coordinate
-    Output:
-        azimuth angle in radians with 0 at north.
-    """
-    out = np.arctan2(s, e) + pi * 0.5
-    if s < 0 and e < 0:
-        out = out % (2 * pi)
-    return out
-
-
-def elev(z, rhomag):
-    """Compute elevation angle from topocentric horizon coordinates SEZ
-    Args:
-        z : Z vector from SEZ coordinate
-        rhomag : magnitude of SEZ coordinate vector
-    Output:
-        elevation angle in radians with 0 at horizon, pi/2 straight up
-    """
-    return np.arcsin(z / rhomag)
-
-
-def get_overpass_idx(el):
-    """Compute overpasses based on elevation angle and return indecies
-    Args:
-        el : float (n), elevation angle in degrees
-    Returns:
-        overpasses : list, list of indecies of overpasses
-    """
+def get_overpasses(el, azm, rng, dt_ary, rSEZ, jdt=None, rsiteECI=None, rsatECI=None, loc=None, sat=None):
     el0 = el[:-1]
     el1 = el[1:]
     el_change_sign = (el0*el1 < 0)
@@ -164,25 +62,6 @@ def get_overpass_idx(el):
     start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]
     # Find the end of an overpass
     end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]
-
-    # Iterate over start/end indecies and gather inbetween indecies
-    overpasses = np.empty(start_idx.size, dtype=object)
-    for j, idx in enumerate(start_idx):
-        # Store indecies of overpasses in a list
-        overpasses[j] = np.arange(idx, end_idx[j]+1, dtype=int)
-    return overpasses
-
-
-def get_overpasses(el, azm, rng, dt_ary, rhoSEZ, sat, loc):
-    el0 = el[:-1]
-    el1 = el[1:]
-    el_change_sign = (el0*el1 < 0)
-    # Find the start of an overpass
-    start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]
-    # Find the end of an overpass
-    end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]
-    # print(f'start shape {start_idx.shape}  end shape = start shape {end_idx.shape}')
-
     # Iterate over start/end indecies and gather inbetween indecies
     overpasses = np.empty(start_idx.size, dtype=object)
     for j in range(start_idx.size):
@@ -191,51 +70,29 @@ def get_overpasses(el, azm, rng, dt_ary, rhoSEZ, sat, loc):
         idxf = end_idx[j]
         overpass_idx = np.arange(idx0, idxf+1, dtype=int)
         idxmax = np.argmax(el[overpass_idx])
-        start_pt = Point(
-            dt_ary[idx0],
-            az[idx0],
-            el[idx0],
-            rng[idx0]
-        ),
-        max_pt = Point(
-            dt_ary[idxmax],
-            az[idxmax],
-            el[idxmax],
-            rng[idxmax]
-        )
-        end_pt = Point(
-            dt_ary[idxf],
-            az[idxf],
-            el[idxf],
-            rng[idxf]
-        ),
+        start_pt = Point(dt_ary[idx0], az[idx0], el[idx0], rng[idx0])
+        max_pt = Point(dt_ary[idxmax], az[idxmax], el[idxmax], rng[idxmax])
+        end_pt = Point(dt_ary[idxf], az[idxf], el[idxf], rng[idxf])
+        sat_vis = satellite_visible(rsatECI, rsiteECI, rSEZ, jdt)
         overpass = Overpass(
+            loc,
+            sat,
             start_pt,
             max_pt,
             end_pt,
             dt_ary[overpass_idx],
-            rhoSEZ[:,overpass_idx]
+            rSEZ[:,overpass_idx]
         )
-        overpass.location = loc
         overpasses[j] = overpass
-
     return overpasses
 
 
-def site_rotations(lat, lon, h, rECEF):
-    rsiteECEF = site_ECEF(lat, lon, h)
-    rho = rECEF - np.atleast_2d(rsiteECEF).T
-    rSEZ = rotations.ecef2sez(rho, lat, lon)
+def predict_passes(lat, lon, h, rsatECEF, rsatECI, jdt, rsun, loc=None, sat=None):
+    rSEZ = site_sat_rotations(lat, lon, h, rsatECEF)
+    rsiteECI = rotations.site2eci(lat, lon, h, jdt)
     rng, az, el = razel(rSEZ)
-    return rng, az, el
-
-
-def realtime_compute(lat, lon, h, rECEF, jdt):
-    rsiteECEF = predict.site_ECEF(lat, lon, h)
-    rho = rECEF - np.atleast_2d(rsiteECEF).T
-    rSEZ = rotations.ecef2sez(rho, lat, lon)
-    rng, az, el = predict.razel(rSEZ)
-    np.savez('out2.npz', az=az, el=el, rng=rng, rSEZ=rSEZ, jdt=jdt)
+    overpasses = get_overpasses(el, az, rng, dt_ary, rSEZ, jdt=None, rsiteECI=None, rsatECI=None, loc=loc, sat=sat)
+    return overpasses
 
 
 ##################
