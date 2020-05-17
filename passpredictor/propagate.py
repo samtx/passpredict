@@ -1,25 +1,24 @@
 
 import numpy as np
 import functools
-from passpredictor.sgp4io import twoline2rv, Satellite, wgs72, wgs84
 from passpredictor.timefn import julian_date, jdt_tsince, invjday, jday2datetime, \
                                  jday2npdatetime64, truncate_datetime
-from passpredictor.predict import is_sat_illuminated, sun_pos
-from passpredictor.models import SatelliteRV, SunPosition
+from passpredictor.solar import is_sat_illuminated, sun_pos
+from passpredictor.models import SatelliteRV
 from passpredictor.rotations import teme2ecef
 import datetime
+from sgp4.api import Satrec, WGS84
 
-
-use_cython = False
-try:
-    from passpredictor._sgp4 import sgp4 as sgp4_pyx
-    use_cython = True
-except ImportError:
-    pass
-from passpredictor.sgp4 import sgp4
+# use_cython = False
+# try:
+#     from passpredictor._sgp4 import sgp4 as sgp4_pyx
+#     use_cython = True
+# except ImportError:
+#     pass
+# from passpredictor.sgp4 import sgp4
 
 @functools.lru_cache(maxsize=64)
-def propagate(tle1, tle2, dt0=None, dtf=None, dtsec=1.0, use_cython=use_cython):
+def propagate(tle1, tle2, dt0=None, dtf=None, dtsec=1.0):
     """Propagate satellite position forward in time.
 
     Parameters:
@@ -41,54 +40,63 @@ def propagate(tle1, tle2, dt0=None, dtf=None, dtsec=1.0, use_cython=use_cython):
             satellite velocity vector in TEME coordinates
     """
 
-    if not use_cython:
-        sgp4fn = sgp4
-    else:
-        sgp4fn = sgp4_pyx
+    # if not use_cython:
+    #     sgp4fn = sgp4
+    # else:
+    #     sgp4fn = sgp4_pyx
 
-    satrec = twoline2rv(tle1, tle2, wgs84)
-
-    # get start and end time to neareast second
+    satrec = Satrec.twoline2rv(tle1, tle2, WGS84)
 
     # truncate start and end time to the second
-    if dt0 is None:
-        dt0 = satrec.epoch
-    if dtf is None:
-        dtf = dt0 + datetime.timedelta(days=5)
-    dt0 = truncate_datetime(dt0)
-    dtf = truncate_datetime(dtf)
+    # if dt0 is None:
+    #     dt0 = satrec.epoch
+    # if dtf is None:
+    #     dtf = dt0 + datetime.timedelta(days=5)
+    # dt0 = truncate_datetime(dt0)
+    # dtf = truncate_datetime(dtf)
 
-    # find total minutes between start and end times
-    totmin = (dtf - dt0).total_seconds()/60.0
+    # # find total minutes between start and end times
+    # totmin = (dtf - dt0).total_seconds()/60.0
 
-    # create array t of propagation minutes
-    t0 = (dt0 - satrec.epoch).total_seconds()/60.0
-    dtmin = dtsec/60.0
-    tf = t0 + totmin + dtmin
-    t = np.arange(t0, tf, dtmin, dtype=float)
+    # # create array of julian dates to pass into sgp4
+    total_minutes = 14 * 1440
+    jdt0 = satrec.jdsatepoch
 
-    r = np.empty((3, t.size))
-    v = np.empty((3, t.size))
-    for i in range(t.size):
-        # if i % (min_per_day*dt_per_min) == 0:
-        #     print(f'i = {i}')
-        ri, vi = sgp4fn(satrec, t[i], wgs84)
-        r[:, i] = ri
-        v[:, i] = vi
+    # t0 = (jdt0 - satrec.jdtsatepoch).total_seconds()/60.0
+    dt_minutes = dtsec/60.0
+    jdt = np.arange(jdt0, jdt0 + total_minutes, dt_minutes, dtype=float)
+    jd_array, fr_array = np.divmod(jdt, 1)
+
+    # r = np.empty((3, t.size))
+    # v = np.empty((3, t.size))
+    # for i in range(t.size):
+    #     # if i % (min_per_day*dt_per_min) == 0:
+    #     #     print(f'i = {i}')
+    #     ri, vi = sgp4fn(satrec, t[i], wgs84)
+    #     r[:, i] = ri
+    #     v[:, i] = vi
+
+    # breakpoint()
+    # r = np.empty((3, jd_array.size) , order='F')
+    # v = np.empty((3, jd_array.size) , order='F')
+    error, r, v = satrec.sgp4_array(jd_array, fr_array)
+
+    # Change arrays from column major to row major while keeping C-continuous
+    r = np.reshape(r.ravel(order='F'), (3, r.shape[0]))
+    v = np.reshape(v.ravel(order='F'), (3, v.shape[0]))
 
     # perform rotations to fixed earth coordinates
-    jdt0 = julian_date(dt0)
-    jdt = jdt_tsince(jdt0, t)
+    # jdt = jdt_tsince(jdt0, t)
     rECI = r.copy()
     rECEF = teme2ecef(r, jdt)
 
     # get array of corresponding datetime and np.datetime64 objects
-    dt64_0 = jday2npdatetime64(jdt[0])
-    dt64_step = jday2npdatetime64(jdt[1]) - dt64_0
-    dt64_n = jday2npdatetime64(jdt[-1])
-    dt64_ary = np.arange(dt64_0, dt64_n+dt64_step, dt64_step, dtype=np.datetime64)
-    dt_ary = dt64_ary.astype(datetime.datetime)
-    dt_step = dt64_step.astype(datetime.timedelta)
+    # dt64_0 = jday2npdatetime64(jdt[0])
+    # dt64_step = jday2npdatetime64(jdt[1]) - dt64_0
+    # dt64_n = jday2npdatetime64(jdt[-1])
+    # dt64_ary = np.arange(dt64_0, dt64_n+dt64_step, dt64_step, dtype=np.datetime64)
+    # dt_ary = dt64_ary.astype(datetime.datetime)
+    # dt_step = dt64_step.astype(datetime.timedelta)
 
     # Compute sun-satellite quantities
     rsunECI = sun_pos(jdt)
@@ -101,19 +109,19 @@ def propagate(tle1, tle2, dt0=None, dtf=None, dtsec=1.0, use_cython=use_cython):
     sat.rECEF = rECEF
     sat.rECI = rECI
     sat.is_illum = sat_illum
-    sat.dt = dt_ary
-    sat.dt64 = dt64_ary
+    # sat.dt = dt_ary
+    # sat.dt64 = dt64_ary
     sat.jdt = jdt
 
-    sun = SunPosition()
-    sun.rECI = rsunECI
-    sun.jdt = jdt
-    sun.dt = dt_ary
-    sun.dt64 = dt64_ary
+    # sun = Sun()
+    # sun.rECI = rsunECI
+    # sun.jdt = jdt
+    # sun.dt = dt_ary
+    # sun.dt64 = dt64_ary
 
     out = {
         'sat': sat,
-        'sun': sun,
+        # 'sun': sun,
     }
     return out
 
@@ -134,11 +142,15 @@ if __name__ == "__main__":
     print('start 1')
     out = propagate(tle1, tle2, dtsec=10)
     sat = out['sat']
-    sun = out['sun']
-    assert np.all(sat.dt == sun.dt)
-    assert np.all(sat.jdt == sun.jdt)
+    # sun = out['sun']
+    # assert np.all(sat.dt == sun.dt)
+    # assert np.all(sat.jdt == sun.jdt)
     print('end 1')
     print('start 2')
     out = propagate(tle1, tle2, dtsec=10)
     print('end 2')
+
+    # save position data
+    r = out['sat'].rECI
+    # np.save('r.npy', )
 

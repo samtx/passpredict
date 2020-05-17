@@ -1,30 +1,38 @@
 # models
 import datetime
 import numpy as np
+from dataclasses import dataclass
 
+class Sun(object):
+    def __init__(self):
+        self.rECI = None
+        self.jdt = None
+        self.dt_ary = None
 
-class Point(object):
-    def __init__(self, datetime, azimuth, elevation, range_):
-        self.datetime = datetime
-        self.azimuth = azimuth
-        self.elevation = elevation
-        self.range = range_
-    def __repr__(self):
-        dtstr = self.datetime.strftime("%b %d %Y, %H:%M:%S")
-        s = "{}UTC el={:.1f}d, az={:.1f}d, rng={:.1f}km".format(
-            dtstr, self.elevation, self.azimuth, self.range)
-        return s
+@dataclass
+class Point:
+    __slots__ = ['datetime', 'azimuth', 'elevation', 'range']
+    datetime: datetime.datetime
+    azimuth: float
+    elevation: float
+    range: float
+
+    # def __repr__(self):
+    #     dtstr = self.datetime.strftime("%b %d %Y, %H:%M:%S")
+    #     s = "{}UTC el={:.1f}d, az={:.1f}d, rng={:.1f}km".format(
+    #         dtstr, self.elevation, self.azimuth, self.range)
+    #     return s
 
 
 class Overpass(object):
-    def __init__(self, start_pt, max_pt, end_pt, t, r):
+    def __init__(self, location, satellite, start_pt, max_pt, end_pt, t, r):
+        self.location = location
+        self.satellite = satellite
         self.start_pt = start_pt
         self.max_pt = max_pt
         self.end_pt = end_pt
         self.t = t
         self.r = r
-        self.sat = None
-        self.location = None
 
 
 class Location(object):
@@ -54,14 +62,6 @@ class SatelliteRV(object):
         self.alt = None
         self.is_illum = None
 
-
-class SunPosition(object):
-    def __init__(self):
-        self.rECI = None
-        self.jdt = None
-        self.dt_ary = None
-
-
 class Tle(object):
     def __init__(self, tle1, tle2, dt):
         self.tle1 = tle1
@@ -69,8 +69,7 @@ class Tle(object):
         self.dt = dt
         self.satellite = None
 
-
-class SatelliteDetail(object):
+class SatelliteDetail:
     def __init__(self, satid, name):
         self.id = satid
         self.name = name
@@ -85,7 +84,8 @@ def process_overpasses(overpasses, t, az, el, rng, dt_start):
 
 
 def tsince_to_datetime(tsince, dt_start):
-    """Convert vector of minutes since epoch to an array of corresponding
+    """
+    Convert vector of minutes since epoch to an array of corresponding
     datetime values. Assumes that tsince is evenly spaced.
     Args:
         tsince : float (n)

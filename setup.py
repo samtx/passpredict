@@ -8,6 +8,8 @@ setup(
     version="0.0.1",
     packages=find_packages(),
 
+    python_requires='>=3.7',  # uses dataclass so we need at least 3.7
+
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     install_requires=[
