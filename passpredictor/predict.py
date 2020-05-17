@@ -95,68 +95,48 @@ def predict_passes(lat, lon, h, rsatECEF, rsatECI, jdt, rsun, loc=None, sat=None
     return overpasses
 
 
-##################
-# From sgp4lib.py in skyfield
-###################
+def predict(lat, lon, h, satid, dt0, dtf, dt=1):
+    """
+    Full prediction algorithm:
+      1. Download TLE data
+      2. Propagate satellite using SGP4
+      3. Predict overpasses based on site location
+      4. Return overpass object and print to screen
 
-
-def ITRF_position_velocity_error(t):
-    """Return the ITRF position, velocity, and error at time `t`.
-
-    The position is an x,y,z vector measured in au, the velocity is
-    an x,y,z vector measured in au/day, and the error is a vector of
-    possible error messages for the time or vector of times `t`.
+    Params:
+        lat : float
+            latitude of site location, in decimal, north is positive
+        lon : float
+            longitude of site location, in decimal, east is positive
+        h : float
+            elevation of site in meters
+        satid: int
+            satellite ID number in Celestrak, ISS is 25544
 
     """
-    rTEME, vTEME, error = sgp4(tle, t)
-    rTEME /= AU_KM
-    vTEME /= AU_KM
-    vTEME *= DAY_S
-    rITRF, vITRF = TEME_to_ITRF(t.ut1, rTEME, vTEME)
-    return rITRF, vITRF, error
+
+    satid = 25544
+    # ISS
 
 
-def _at(self, t):
-    """Compute this satellite's GCRS position and velocity at time `t`."""
-    rITRF, vITRF, error = self.ITRF_position_velocity_error(t)
-    rGCRS, vGCRS = ITRF_to_GCRS2(t, rITRF, vITRF)
-    return rGCRS, vGCRS, rGCRS, error
-
-
-def TEME_to_ITRF(jd_ut1, rTEME, vTEME, xp=0.0, yp=0.0):
-    """Convert TEME position and velocity into standard ITRS coordinates.
-
-    This converts a position and velocity vector in the idiosyncratic
-    True Equator Mean Equinox (TEME) frame of reference used by the SGP4
-    theory into vectors into the more standard ITRS frame of reference.
-    The velocity should be provided in units per day, not per second.
-
-    From AIAA 2006-6753 Appendix C.
-    """
-    theta, theta_dot = theta_GMST1982(jd_ut1)
-    zero = theta_dot * 0.0
-    angular_velocity = np.array([zero, zero, -theta_dot])
-    R = rot3(-theta).T
-    if len(rTEME.shape) == 1:
-        rPEF = np.dot(R, rTEME)
-        vPEF = np.dot(R, vTEME) + cross(angular_velocity, rPEF)
-    else:
-        rPEF = np.einsum("ij...,j...->i...", R, rTEME)
-        vPEF = (
-            np.einsum("ij...,j...->i...", R, vTEME)
-            + cross(angular_velocity, rPEF, 0, 0).T
-        )
-    if xp == 0.0 and yp == 0.0:
-        rITRF = rPEF
-        vITRF = vPEF
-    else:
-        W = (rot1(yp)).dot(rot2(xp))
-        W = W.T
-        rITRF = (W).dot(rPEF)
-        vITRF = (W).dot(vPEF)
-    return rITRF, vITRF
 
 
 if __name__ == "__main__":
-    import pickle
-    import matplotlib.pyplot as plt
+    tle1 = "1 25544U 98067A   19293.90487327  .00016717  00000-0  10270-3 0  9034"
+    tle2 = "2 25544  51.6426  97.8977 0006846 170.6875 189.4404 15.50212100 34757"
+
+    print('start 1')
+    out = propagate(tle1, tle2, dtsec=10)
+    sat = out['sat']
+    # sun = out['sun']
+    # assert np.all(sat.dt == sun.dt)
+    # assert np.all(sat.jdt == sun.jdt)
+    print('end 1')
+    print('start 2')
+    out = propagate(tle1, tle2, dtsec=10)
+    print('end 2')
+
+    # save position data
+    r = out['sat'].rECI
+    # np.save('r.npy', )
+

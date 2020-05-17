@@ -50,54 +50,6 @@ def plot_razel():
     ax[1].grid()
     plt.show()
 
-def get_overpasses(el, azm, rng, dt_ary, rhoSEZ, sat, loc):
-    el0 = el[:-1]
-    el1 = el[1:]
-    el_change_sign = (el0*el1 < 0)
-    # Find the start of an overpass
-    start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]
-    # Find the end of an overpass
-    end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]
-    # print(f'start shape {start_idx.shape}  end shape = start shape {end_idx.shape}')
-
-    # Iterate over start/end indecies and gather inbetween indecies
-    overpasses = np.empty(start_idx.size, dtype=object)
-    for j in range(start_idx.size):
-        # Store indecies of overpasses in a list
-        idx0 = start_idx[j]
-        idxf = end_idx[j]
-        overpass_idx = np.arange(idx0, idxf+1, dtype=int)
-        idxmax = np.argmax(el[overpass_idx])
-        start_pt = Point(
-            dt_ary[idx0],
-            az[idx0],
-            el[idx0],
-            rng[idx0]
-        ),
-        max_pt = Point(
-            dt_ary[idxmax],
-            az[idxmax],
-            el[idxmax],
-            rng[idxmax]
-        )
-        end_pt = Point(
-            dt_ary[idxf],
-            az[idxf],
-            el[idxf],
-            rng[idxf]
-        ),
-        overpass = Overpass(
-            start_pt,
-            max_pt,
-            end_pt,
-            dt_ary[overpass_idx],
-            rhoSEZ[:,overpass_idx]
-        )
-        overpass.location = loc
-        overpasses[j] = overpass
-
-    return overpasses
-
 
 if __name__ == "__main__":
 
@@ -116,7 +68,7 @@ if __name__ == "__main__":
     sat.tle = tle
 
     loc = Location(lat, lon, h, 'Tucson')
-    # realtime_compute(loc.lat, loc.lon, loc.h, rsatECEF, jdt)
+    predict.realtime_compute(loc.lat, loc.lon, loc.h, rsatECEF, jdt)
 
     with np.load('out2.npz') as data:
         el = data['el']

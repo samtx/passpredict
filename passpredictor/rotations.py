@@ -36,14 +36,21 @@ def ecef2sez(r, phi, lmda):
     sinang1 = math.sin(ang1)
     cosang2 = math.cos(lmda_rad)
     sinang2 = math.sin(lmda_rad)
-
     rSEZ = np.empty(r.shape)
     rSEZ[0] = cosang1 * cosang2 * r[0] + cosang1 * sinang2 * r[1] - sinang1 * r[2]
     rSEZ[1] = -sinang2 * r[0] + cosang2 * r[1] + 1.0
     rSEZ[2] = sinang1 * cosang2 * r[0] + sinang1 * sinang2 * r[1] + cosang1 * r[2]
-    # print(rSEZ)
-
     return rSEZ
+
+
+def site2eci(lat, lon, h, jdt):
+    """Compute site ECI vector for jdt array
+
+    TO DO: write this function
+
+    """
+    rsiteECI = 0
+    return rsiteECI
 
 
 def fk5(r, xp=0.0, yp=0.0):
@@ -389,3 +396,72 @@ def rot3(a):
         ]
     )
     return mtx
+
+
+def site_sat_rotations(lat, lon, h, rsatECEF):
+    rsiteECEF = site_ECEF(lat, lon, h)
+    rho = rsatECEF - np.atleast_2d(rsiteECEF).T
+    rSEZ = ecef2sez(rho, lat, lon)
+    return rSEZ
+
+
+##################
+# From sgp4lib.py in skyfield
+###################
+
+
+def ITRF_position_velocity_error(t):
+    """Return the ITRF position, velocity, and error at time `t`.
+
+    The position is an x,y,z vector measured in au, the velocity is
+    an x,y,z vector measured in au/day, and the error is a vector of
+    possible error messages for the time or vector of times `t`.
+
+    """
+    rTEME, vTEME, error = sgp4(tle, t)
+    rTEME /= AU_KM
+    vTEME /= AU_KM
+    vTEME *= DAY_S
+    rITRF, vITRF = TEME_to_ITRF(t.ut1, rTEME, vTEME)
+    return rITRF, vITRF, error
+
+
+def _at(self, t):
+    """Compute this satellite's GCRS position and velocity at time `t`."""
+    rITRF, vITRF, error = self.ITRF_position_velocity_error(t)
+    rGCRS, vGCRS = ITRF_to_GCRS2(t, rITRF, vITRF)
+    return rGCRS, vGCRS, rGCRS, error
+
+
+def TEME_to_ITRF(jd_ut1, rTEME, vTEME, xp=0.0, yp=0.0):
+    """Convert TEME position and velocity into standard ITRS coordinates.
+
+    This converts a position and velocity vector in the idiosyncratic
+    True Equator Mean Equinox (TEME) frame of reference used by the SGP4
+    theory into vectors into the more standard ITRS frame of reference.
+    The velocity should be provided in units per day, not per second.
+
+    From AIAA 2006-6753 Appendix C.
+    """
+    theta, theta_dot = theta_GMST1982(jd_ut1)
+    zero = theta_dot * 0.0
+    angular_velocity = np.array([zero, zero, -theta_dot])
+    R = rot3(-theta).T
+    if len(rTEME.shape) == 1:
+        rPEF = np.dot(R, rTEME)
+        vPEF = np.dot(R, vTEME) + cross(angular_velocity, rPEF)
+    else:
+        rPEF = np.einsum("ij...,j...->i...", R, rTEME)
+        vPEF = (
+            np.einsum("ij...,j...->i...", R, vTEME)
+            + cross(angular_velocity, rPEF, 0, 0).T
+        )
+    if xp == 0.0 and yp == 0.0:
+        rITRF = rPEF
+        vITRF = vPEF
+    else:
+        W = (rot1(yp)).dot(rot2(xp))
+        W = W.T
+        rITRF = (W).dot(rPEF)
+        vITRF = (W).dot(vPEF)
+    return rITRF, vITRF
