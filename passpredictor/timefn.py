@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
 from passpredictor.constants import DAY_S, J2000
+import itertools
 
 
 def utc2tt(UTC, deltaAT=37.0, deltaUT1=0.0):
@@ -139,7 +140,7 @@ def invjday(jd):
     jd = np.atleast_1d(jd)
     temp = jd - 2415019.5
     tu = temp / 365.25  # julian centuries from 0 h jan 0, 1900
-    year = 1900 + np.floor_divide(tu, 1.0).astype(int)
+    year = (1900 + np.floor_divide(tu, 1.0).astype(int)).astype(int)
     leapyrs = np.floor_divide(((year - 1901) * 0.25), 1.0).astype(int)  # number of leap years from 1900
     # optional nudge by 8.64x10-7 sec to get even outputs
     # day of year plus fractional portion of a day
@@ -151,10 +152,10 @@ def invjday(jd):
     days[day1_idx] = temp[day1_idx] - ((year[day1_idx] - 1900) * 365.0 + leapyrs[day1_idx])
     # find remaing data
     jd_size = len(jd)
-    mon = np.empty(jd_size)
-    day = np.empty(jd_size)
-    hr = np.empty(jd_size)
-    minute = np.empty(jd_size)
+    mon = np.empty(jd_size, dtype=int)
+    day = np.empty(jd_size, dtype=int)
+    hr = np.empty(jd_size, dtype=int)
+    minute = np.empty(jd_size, dtype=int)
     sec = np.empty(jd_size)
     for i in range(jd_size):
         mon[i], day[i], hr[i], minute[i], sec[i] = days2mdhms(year[i], days[i])
@@ -162,7 +163,7 @@ def invjday(jd):
     return year, mon, day, hr, minute, sec
 
 
-def invjday_to_datetimeary(year, mon, day, hr, minute, sec):
+def datetimes_to_datetimeary(year, mon, day, hr, minute, sec):
     """Take arrays of datetime values and return array of datetime objects
 
     Args:
@@ -184,10 +185,16 @@ def jday2datetime(jdt):
     """Turn julian day into datetime object"""
     datetuple = invjday(jdt)
     yr, mo, date, hr, mn, sec = datetuple
-    ms = int((sec % 1)*(10**6))
-    sec = int(sec)
-    dt = datetime.datetime(yr, mo, date, hr, mn, sec, ms)
-    return dt
+    sec, us = np.divmod(sec, 1)
+    sec = sec.astype(int)
+    us = us.astype(int)
+    us *= 10**6
+    dt_array = np.empty(yr.size, dtype=object)
+    for i, data in enumerate(zip(yr, mo, date, hr, mn, sec, us)):
+        dt_array[i] = datetime.datetime(*data)
+    if not isinstance(jdt, np.ndarray):
+        dt_array = dt_array[0]
+    return dt_array
 
 
 def jday2npdatetime64(jdt):
@@ -198,7 +205,6 @@ def jday2npdatetime64(jdt):
     sec = int(sec)
     dt = datetime.datetime(yr, mo, date, hr, mn, sec, ms)
     return np.datetime64(dt)
-
 
 
 def jdt_tsince(tstart, tsince):
@@ -220,3 +226,31 @@ def truncate_datetime(dt):
     us = dt.microsecond
     dt2 = dt - datetime.timedelta(microseconds=us)
     return dt2
+
+
+def datetime_linspace(datetime_start, datetime_end, dt_seconds):
+    """
+    Use numpy.arange to create an array of datetime objects
+
+    """
+    return np.arange(
+        dt_start.isoformat(),
+        dt_end.isoformat(),
+        np.timedelta64(dt_seconds,'s'),
+        dtype="datetime64[s]"
+    )
+
+if __name__ == "__main__":
+    julian_date = 2450383.09722222  # 1996-10-26 14:20:0
+    jd_array = np.arange(julian_date, julian_date + 3, 1/24.)
+    dt_array = jday2datetime(jd_array)
+    print(dt_array)
+
+    dt_array = jday2datetime(julian_date)
+    print(dt_array)
+
+    # now = datetime.datetime.now()
+    # then = now + datetime.timedelta(days=7)
+    # dt_seconds = datetime.timedelta(seconds=5)
+    # for d in range(now, then, dt_seconds):
+    #     print(d)

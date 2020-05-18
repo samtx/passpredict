@@ -1,7 +1,7 @@
 # test timefn.py
 from passpredictor import timefn
 import numpy as np
-from numpy.testing import assert_allclose, assert_almost_equal
+from numpy.testing import assert_allclose, assert_almost_equal, assert_equal
 from datetime import datetime, timedelta
 
 
@@ -92,3 +92,16 @@ def test_jd_from_skyfield3():
     print(f"jddes={jd_desired:20.15f}")
     print(f"diff ={jd-jd_desired:0.15f}")
     assert_almost_equal(jd, jd_desired, decimal=12)
+
+def test_jday2datetime():
+    """Convert a Julian date to a datetime and back"""
+    # jd = timefn.julian_date(dt)
+    julian_date = 2450383.09722222  # 1996-10-26 14:20:0
+    dt_computed = timefn.jday2datetime(julian_date)
+    dt_desired = datetime(1996, 10, 26, 14, 20, 0)
+    dt_difference = dt_computed - dt_desired
+    assert abs(dt_difference.total_seconds()) < 500e-6  # 500 microseconds
+
+if __name__ == "__main__":
+    julian_date = 2450383.09722222  # 1996-10-26 14:20:0
+    jd_array = np.arange(julian_date, julian_date + 3,)

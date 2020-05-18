@@ -6,7 +6,7 @@ from passpredictor import timefn
 from passpredictor import topocentric
 from numpy.testing import assert_allclose, assert_almost_equal
 import numpy as np
-from datetime import datetime, timedelta
+import datetime
 
 
 def test_ecef2sez():
@@ -60,7 +60,7 @@ def test_theta_GMST1982():
     References:
         Vallado, Eg 3-5, p.188
     """
-    dt = datetime(1992, 8, 20, 12, 14, 0)  # Aug 20, 1992, 12:14 PM UT1
+    dt = datetime.datetime(1992, 8, 20, 12, 14, 0)  # Aug 20, 1992, 12:14 PM UT1
     jd = timefn.julian_date(dt)
     theta, thetadt = rotations.theta_GMST1982(jd)
     theta *= predict.RAD2DEG  # convert from radians to degrees
@@ -76,7 +76,7 @@ def test_theta_GMST1982_2():
     """
     # April 6, 2004, 07:51:28.386 009UTC, not UTC1
     ms = int(1e6) + 386000 - 439961
-    dt = datetime(2004, 4, 6, 7, 51, 27, ms)
+    dt = datetime.datetime(2004, 4, 6, 7, 51, 27, ms)
     jd = timefn.julian_date(dt)
     theta, thetadt = rotations.theta_GMST1982(jd)
     theta *= predict.RAD2DEG
@@ -135,7 +135,38 @@ def test_IJK2SEZ():
 def test_thetaGMST_from_skyfield():
     """From skyfield.tests.test_earth_satellites.py"""
     ms = int(1e6) + 386000 - 439961
-    dt = datetime(2004, 4, 6, 7, 51, 27, ms)
+    dt = datetime.datetime(2004, 4, 6, 7, 51, 27, ms)
     jd = timefn.julian_date(dt)
     theta, thetadt = rotations.theta_GMST1982(jd)
     assert_almost_equal(theta, 5.459562584754709, decimal=15)
+
+
+def test_apredictendix_c_conversion_from_TEME_to_ITRF_UTC1():
+    """Test TEME to ITRF conversion
+
+    References:
+        Vallado et al., Revision 2
+        Rhodes, Skyfield library, test_earth_satellites.py
+    """
+    rTEME = np.array([5094.18016210, 6127.64465950, 6380.34453270])
+    vTEME = np.array([-4.746131487, 0.785818041, 5.531931288])
+    vTEME = vTEME * 24.0 * 60.0 * 60.0  # km/s to km/day
+
+    # Apr 6, 2004,  07:51:28.386 UTC
+    # deltaUTC1 = -0.439961 seconds
+    ms = int(1e6) + 386000 - 439961
+    dt = datetime.datetime(2004, 4, 6, 7, 51, 27, ms)
+    jd = timefn.julian_date(dt)
+
+    # Polar motion
+    xp = -0.140682  # arcseconds
+    yp = 0.333309  # arcseconds
+    xp *= constants.ASEC2RAD
+    yp *= constants.ASEC2RAD
+    # xp = yp = 0.
+    rITRF, vITRF = rotations.TEME_to_ITRF(jd, rTEME, vTEME, xp, yp)
+
+    print(rITRF)
+    assert_almost_equal(rITRF[0], -1033.47938300, decimal=4)
+    assert_almost_equal(rITRF[1], 7901.29527540, decimal=4)
+    assert_almost_equal(rITRF[2], 6380.35659580, decimal=4)

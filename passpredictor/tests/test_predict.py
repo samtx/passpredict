@@ -38,32 +38,4 @@ def test_satellite_visible():
 #     ]
 
 
-def test_apredictendix_c_conversion_from_TEME_to_ITRF_UTC1():
-    """Test TEME to ITRF conversion
 
-    References:
-        Vallado et al., Revision 2
-        Rhodes, Skyfield library, test_earth_satellites.py
-    """
-    rTEME = np.array([5094.18016210, 6127.64465950, 6380.34453270])
-    vTEME = np.array([-4.746131487, 0.785818041, 5.531931288])
-    vTEME = vTEME * 24.0 * 60.0 * 60.0  # km/s to km/day
-
-    # Apr 6, 2004,  07:51:28.386 UTC
-    # deltaUTC1 = -0.439961 seconds
-    ms = int(1e6) + 386000 - 439961
-    dt = datetime.datetime(2004, 4, 6, 7, 51, 27, ms)
-    jd = timefn.julian_date(dt)
-
-    # Polar motion
-    xp = -0.140682  # arcseconds
-    yp = 0.333309  # arcseconds
-    xp *= ASEC2RAD
-    yp *= ASEC2RAD
-    # xp = yp = 0.
-    rITRF, vITRF = predict.TEME_to_ITRF(jd, rTEME, vTEME, xp, yp)
-
-    print(rITRF)
-    assert_almost_equal(rITRF[0], -1033.47938300, decimal=4)
-    assert_almost_equal(rITRF[1], 7901.29527540, decimal=4)
-    assert_almost_equal(rITRF[2], 6380.35659580, decimal=4)

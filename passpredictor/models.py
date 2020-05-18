@@ -25,6 +25,7 @@ class Point:
 
 
 class Overpass(object):
+    __slots__ = ['location', 'satellite', 'start_pt', 'max_pt', 'end_pt', 't', 'r']
     def __init__(self, location, satellite, start_pt, max_pt, end_pt, t, r):
         self.location = location
         self.satellite = satellite
@@ -35,44 +36,45 @@ class Overpass(object):
         self.r = r
 
 
-class Location(object):
-    def __init__(self, lat, lon, h, name=None, tz=None):
-        self.lat = lat
-        self.lon = lon
-        self.h = h
-        self.name = name
-        self.tz = tz
-    def __repr__(self):
-        return self.name
+
+@dataclass
+class Location:
+    lat: float
+    lon: float
+    h: float
+    name: str = None
+    tz: float = None
 
 
 class SatelliteRV(object):
+    __slots__ = ['satellite','tle','rsun','datetime','julian_date','rECEF',
+                 'rECI','latitude','longitude','altitude','visible']
     def __init__(self):
         self.satellite = None
         self.tle = None
         self.rsun = None
-        self.dt = None
-        self.jdt = None
+        self.datetime = None
+        self.julian_date = None
         self.rECEF = None
         self.rECI = None
-        self.modified = None
-        self.deltaT = None
-        self.lat = None
-        self.lon = None
-        self.alt = None
-        self.is_illum = None
+        self.latitude = None
+        self.longitude = None
+        self.altitude = None
+        self.visible = None
 
 class Tle(object):
-    def __init__(self, tle1, tle2, dt):
+    __slots__ = ['tle1','tle2','epoch','satellite']
+    def __init__(self, tle1, tle2, epoch, satellite):
         self.tle1 = tle1
         self.tle2 = tle2
-        self.dt = dt
-        self.satellite = None
+        self.epoch = epoch
+        self.satellite = satellite
 
-class SatelliteDetail:
-    def __init__(self, satid, name):
-        self.id = satid
-        self.name = name
+
+@dataclass
+class Satellite:
+    id: int
+    name: str
 
 
 def process_overpasses(overpasses, t, az, el, rng, dt_start):
