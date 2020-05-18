@@ -18,6 +18,7 @@ from passpredictor.constants import (
     tau,
 )
 
+
 def site_declination_and_K(phi_gd, h_ellp):
     """
     Vallado, Eq.3-7
@@ -82,7 +83,7 @@ def razel(r):
     """Get range, azimuth, and elevation from SEZ vector"""
     rng = np.linalg.norm(r, axis=0)
     el = np.arcsin(r[2] / rng) * RAD2DEG
-    az = (np.arctan2(r[0], r[1]) + pi * 0.5) * RAD2DEG
+    az = (np.arctan2(r[0], r[1]) + math.pi * 0.5) * RAD2DEG
     idx = np.all([r[0] < 0,r[1] < 0], axis=0)
     az[idx] %= 360
     return rng, az, el
@@ -96,9 +97,9 @@ def azimuth(s, e):
     Output:
         azimuth angle in radians with 0 at north.
     """
-    out = np.arctan2(s, e) + pi * 0.5
+    out = np.arctan2(s, e) + math.pi * 0.5
     if s < 0 and e < 0:
-        out = out % (2 * pi)
+        out = out % (2 * math.pi)
     return out
 
 

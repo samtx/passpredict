@@ -18,6 +18,7 @@ from passpredictor.constants import (
     tau,
 )
 from math import pi
+from passpredictor.topocentric import site_ECEF, site_declination_and_K
 
 
 def ecef2sez(r, phi, lmda):
@@ -449,12 +450,12 @@ def TEME_to_ITRF(jd_ut1, rTEME, vTEME, xp=0.0, yp=0.0):
     R = rot3(-theta).T
     if len(rTEME.shape) == 1:
         rPEF = np.dot(R, rTEME)
-        vPEF = np.dot(R, vTEME) + cross(angular_velocity, rPEF)
+        vPEF = np.dot(R, vTEME) + np.cross(angular_velocity, rPEF)
     else:
         rPEF = np.einsum("ij...,j...->i...", R, rTEME)
         vPEF = (
             np.einsum("ij...,j...->i...", R, vTEME)
-            + cross(angular_velocity, rPEF, 0, 0).T
+            + np.cross(angular_velocity, rPEF, 0, 0).T
         )
     if xp == 0.0 and yp == 0.0:
         rITRF = rPEF

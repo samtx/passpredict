@@ -9,6 +9,9 @@ from passpredictor.constants import (
     R_EARTH, R2_EARTH, e_EARTH, e2_EARTH, MU, J2, J2000, AU_M, AU_KM, ASEC360,
     DAY_S, ASEC2RAD, DEG2RAD, RAD2DEG, tau
 )
+from passpredictor.propagate import propagate, get_TLE
+from passpredictor.timefn import jday2datetime
+from passpredictor.models import Point, Overpass
 
 
 def vector_angle(r1, r2):
@@ -54,7 +57,13 @@ def satellite_visible(rsatECI, rsiteECI, rho, jdt):
     return visible
 
 
-def get_overpasses(el, azm, rng, dt_ary, rSEZ, jdt=None, rsiteECI=None, rsatECI=None, loc=None, sat=None):
+def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, loc=None, sat=None):
+    # # change julian dates to datetimes
+    # num_jdt = jdt_ary.size
+    # dt_array = np.empty(num_jdt, dtype=object)
+    # for i in range(num_jdt):
+    #     dt_array[i] = jday2datetime(jdt_ary[i])
+
     el0 = el[:-1]
     el1 = el[1:]
     el_change_sign = (el0*el1 < 0)
@@ -63,39 +72,60 @@ def get_overpasses(el, azm, rng, dt_ary, rSEZ, jdt=None, rsiteECI=None, rsatECI=
     # Find the end of an overpass
     end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]
     # Iterate over start/end indecies and gather inbetween indecies
-    overpasses = np.empty(start_idx.size, dtype=object)
-    for j in range(start_idx.size):
+    num_overpasses = min(start_idx.size, end_idx.size)
+    if start_idx.size < end_idx.size:
+        end_idx = end_idx[1:]
+    overpasses = np.empty(num_overpasses, dtype=object)
+
+    for j in range(num_overpasses):
         # Store indecies of overpasses in a list
         idx0 = start_idx[j]
         idxf = end_idx[j]
         overpass_idx = np.arange(idx0, idxf+1, dtype=int)
         idxmax = np.argmax(el[overpass_idx])
-        start_pt = Point(dt_ary[idx0], az[idx0], el[idx0], rng[idx0])
-        max_pt = Point(dt_ary[idxmax], az[idxmax], el[idxmax], rng[idxmax])
-        end_pt = Point(dt_ary[idxf], az[idxf], el[idxf], rng[idxf])
-        sat_vis = satellite_visible(rsatECI, rsiteECI, rSEZ, jdt)
+
+        start_pt = Point(
+            jday2datetime(jdt_ary[idx0]),
+            azm[idx0],
+            el[idx0],
+            rng[idx0]
+        )
+        max_pt = Point(
+            jday2datetime(jdt_ary[idx0 + idxmax]),
+            azm[idx0 + idxmax],
+            el[idx0 + idxmax],
+            rng[idx0 + idxmax]
+        )
+        end_pt = Point(
+            jday2datetime(jdt_ary[idxf]),
+            azm[idxf],
+            el[idxf],
+            rng[idxf]
+        )
+        # sat_vis = satellite_visible(rsatECI, rsiteECI, rSEZ, jdt)
         overpass = Overpass(
             loc,
             sat,
             start_pt,
             max_pt,
             end_pt,
-            dt_ary[overpass_idx],
+            jdt_ary,
             rSEZ[:,overpass_idx]
         )
         overpasses[j] = overpass
     return overpasses
 
 
-def predict_passes(lat, lon, h, rsatECEF, rsatECI, jdt, rsun, loc=None, sat=None):
+def predict_passes(lat, lon, h, rsatECEF, rsatECI, jdt, rsun=None, loc=None, sat=None):
     rSEZ = site_sat_rotations(lat, lon, h, rsatECEF)
-    rsiteECI = rotations.site2eci(lat, lon, h, jdt)
+    # rsiteECI = site2eci(lat, lon, h, jdt)
     rng, az, el = razel(rSEZ)
-    overpasses = get_overpasses(el, az, rng, dt_ary, rSEZ, jdt=None, rsiteECI=None, rsatECI=None, loc=loc, sat=sat)
+    plot_elevation(np.arange(el.size), el)
+    overpasses = get_overpasses(el, az, rng, jdt, rSEZ, rsiteECI=None, rsatECI=None, loc=loc, sat=sat)
     return overpasses
 
 
-def predict(lat, lon, h, satid, dt0, dtf, dt=1):
+def predict(lat, lon, h, satellite, dt_begin=None, dt_end=None, dt_seconds=1):
     """
     Full prediction algorithm:
       1. Download TLE data
@@ -114,29 +144,72 @@ def predict(lat, lon, h, satid, dt0, dtf, dt=1):
             satellite ID number in Celestrak, ISS is 25544
 
     """
+    if dt_begin is None:
+        dt_begin = datetime.datetime.now()
+    if dt_end is None:
+        dt_end = dt_begin + datetime.timedelta(days=14)
+    tle = get_TLE(satellite)
+    print(f'begin propagation from {dt_begin} to {dt_end}')
+    satellite_rv = propagate(tle.tle1, tle.tle2, dt_begin, dt_end, dt_seconds)
+    satellite_rv.satellite = satellite
+    satellite_rv.tle = tle
+    print('begin prediction...')
+    overpasses = predict_passes(lat, lon, h, satellite_rv.rECEF, satellite_rv.rECI, satellite_rv.julian_date)
+    return overpasses
 
-    satid = 25544
-    # ISS
 
+def overpass_table(overpasses=None):
+    """
+    Return a formatted string for tabular output
 
+    Params:
+        overpasses: list
+            A list of Overpass objects
+
+    Return:
+        table : str
+            tabular formatted string
+    """
+    point_header = "  Time     Az\u00B0   El\u00B0"
+    point_header_underline = "--------  ----  ----"
+    header =  "Date      St[{0}]  Mx[{0}]  En[{0}]\n".format(point_header)
+    header_length = len(header)
+    header += "--------     "
+    header += point_header_underline + " "*6
+    header += point_header_underline + " "*6
+    header += point_header_underline + " "*6
+    print(header)
+    # print(header_length)
+
+    def point_string(point):
+        point_line = point.datetime.strftime("%I:%M:%S")
+        point_line += " "*2 + "{:>4}".format(int(point.azimuth))
+        point_line += " "*2 + "{:>4}".format(int(point.elevation))
+        return point_line
+
+    for overpass in overpasses:
+        line = "{}".format(overpass.start_pt.datetime.strftime("%m/%d/%y"))
+        line += " "*5 + point_string(overpass.start_pt)
+        line += " "*6 + point_string(overpass.max_pt)
+        line += " "*6 + point_string(overpass.end_pt)
+        print(line)
+
+def plot_elevation(date, elevation):
+    import matplotlib.pyplot as plt
+    plt.plot(date, elevation)
+    plt.grid()
+    plt.show()
 
 
 if __name__ == "__main__":
-    tle1 = "1 25544U 98067A   19293.90487327  .00016717  00000-0  10270-3 0  9034"
-    tle2 = "2 25544  51.6426  97.8977 0006846 170.6875 189.4404 15.50212100 34757"
 
-    print('start 1')
-    out = propagate(tle1, tle2, dtsec=10)
-    sat = out['sat']
-    # sun = out['sun']
-    # assert np.all(sat.dt == sun.dt)
-    # assert np.all(sat.jdt == sun.jdt)
-    print('end 1')
-    print('start 2')
-    out = propagate(tle1, tle2, dtsec=10)
-    print('end 2')
 
-    # save position data
-    r = out['sat'].rECI
-    # np.save('r.npy', )
+    from passpredictor.models import Location, Satellite
+    from pprint import pprint
+    austin = Location(30.2672, -97.7431, 0.0, 'Austin')
+    satellite = Satellite(25544, "Int. Space Station")
+    dt_end = datetime.datetime.now() + datetime.timedelta(days=1)
+    overpasses = predict(austin.lat, austin.lon, austin.h, satellite, dt_end=dt_end)
+    print('begin printing table...')
+    overpass_table(overpasses)
 
