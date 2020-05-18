@@ -1,7 +1,8 @@
 from setuptools import setup, find_packages
-from Cython.Build import cythonize
 
-ext = cythonize(['passpredictor/_sgp4.pyx'])
+ext = []
+# from Cython.Build import cythonize
+# ext.append(cythonize(['passpredictor/timefn_ext.pyx']))
 
 setup(
     name="passpredictor",
