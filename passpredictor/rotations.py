@@ -31,7 +31,6 @@ def ecef2sez(r, phi, lmda):
     """
     phi_rad = phi * DEG2RAD
     lmda_rad = lmda * DEG2RAD
-
     ang1 = (90 - phi) * DEG2RAD
     cosang1 = math.cos(ang1)
     sinang1 = math.sin(ang1)
