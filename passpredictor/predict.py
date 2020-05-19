@@ -12,7 +12,7 @@ from passpredictor.constants import (
 from passpredictor.propagate import propagate, get_TLE
 from passpredictor.timefn import jday2datetime
 from passpredictor.models import Point, Overpass
-
+import pickle
 
 def vector_angle(r1, r2):
     """Compute the angle between two vectors
@@ -120,12 +120,12 @@ def predict_passes(lat, lon, h, rsatECEF, rsatECI, jdt, rsun=None, loc=None, sat
     rSEZ = site_sat_rotations(lat, lon, h, rsatECEF)
     # rsiteECI = site2eci(lat, lon, h, jdt)
     rng, az, el = razel(rSEZ)
-    plot_elevation(np.arange(el.size), el)
+    # plot_elevation(np.arange(el.size), el)
     overpasses = get_overpasses(el, az, rng, jdt, rSEZ, rsiteECI=None, rsatECI=None, loc=loc, sat=sat)
     return overpasses
 
 
-def predict(lat, lon, h, satellite, dt_begin=None, dt_end=None, dt_seconds=1):
+def predict(location, satellite, dt_begin=None, dt_end=None, dt_seconds=1, reload=True):
     """
     Full prediction algorithm:
       1. Download TLE data
@@ -134,27 +134,33 @@ def predict(lat, lon, h, satellite, dt_begin=None, dt_end=None, dt_seconds=1):
       4. Return overpass object and print to screen
 
     Params:
-        lat : float
+        location : Location object
             latitude of site location, in decimal, north is positive
-        lon : float
-            longitude of site location, in decimal, east is positive
-        h : float
-            elevation of site in meters
-        satid: int
+        satellite: Satellite object
             satellite ID number in Celestrak, ISS is 25544
-
     """
+
     if dt_begin is None:
         dt_begin = datetime.datetime.now()
     if dt_end is None:
         dt_end = dt_begin + datetime.timedelta(days=14)
     tle = get_TLE(satellite)
     print(f'begin propagation from {dt_begin} to {dt_end}')
-    satellite_rv = propagate(tle.tle1, tle.tle2, dt_begin, dt_end, dt_seconds)
-    satellite_rv.satellite = satellite
-    satellite_rv.tle = tle
+
+    if reload:
+        satellite_rv = propagate(tle.tle1, tle.tle2, dt_begin, dt_end, dt_seconds)
+        satellite_rv.satellite = satellite
+        satellite_rv.tle = tle
+        with open(f'satellite_{satellite.id:d}.pkl', 'wb') as f:
+            pickle.dump(satellite_rv, f)
+    else:
+        with open(f'satellite_{satellite.id:d}.pkl', 'rb') as f:
+            satellite_rv = pickle.load(f)
+
     print('begin prediction...')
-    overpasses = predict_passes(lat, lon, h, satellite_rv.rECEF, satellite_rv.rECI, satellite_rv.julian_date)
+    overpasses = predict_passes(
+        location.lat, location.lon, location.h,
+        satellite_rv.rECEF, satellite_rv.rECI, satellite_rv.julian_date)
     return overpasses
 
 
@@ -206,10 +212,11 @@ if __name__ == "__main__":
 
     from passpredictor.models import Location, Satellite
     from pprint import pprint
+    import cProfile
     austin = Location(30.2672, -97.7431, 0.0, 'Austin')
     satellite = Satellite(25544, "Int. Space Station")
-    dt_end = datetime.datetime.now() + datetime.timedelta(days=1)
-    overpasses = predict(austin.lat, austin.lon, austin.h, satellite, dt_end=dt_end)
+    dt_end = datetime.datetime.today() + datetime.timedelta(days=14)
+    overpasses = predict(austin, satellite, dt_end=dt_end, reload=False)
     print('begin printing table...')
     overpass_table(overpasses)
 
