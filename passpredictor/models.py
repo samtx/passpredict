@@ -2,6 +2,7 @@
 import datetime
 import numpy as np
 from dataclasses import dataclass
+import pytz
 
 class Sun(object):
     def __init__(self):
@@ -11,11 +12,13 @@ class Sun(object):
 
 @dataclass
 class Point:
-    __slots__ = ['datetime', 'azimuth', 'elevation', 'range']
+    # __slots__ = ['datetime', 'azimuth', 'elevation', 'range', 'declination', 'right_ascension']
     datetime: datetime.datetime
     azimuth: float
     elevation: float
     range: float
+    declination: float = None
+    right_ascension: float = None
 
     # def __repr__(self):
     #     dtstr = self.datetime.strftime("%b %d %Y, %H:%M:%S")
@@ -39,11 +42,12 @@ class Overpass(object):
 
 @dataclass
 class Location:
-    lat: float
-    lon: float
-    h: float
+    # __slots__ = ['lat', 'lon', 'h', 'name', 'tz']
+    lat: float       # latitude, decimal degrees, positive is North
+    lon: float       # longitude, decimal degrees, positive is East
+    h: float = 0.0   # elevation [m]
     name: str = None
-    tz: float = None
+    tz: pytz.tzinfo = pytz.utc  # timezone object
 
 
 class SatelliteRV(object):
