@@ -24,7 +24,6 @@ def test_ecef2sez():
     rSEZ = rotations.ecef2sez(rhoECEF, phi, lmda)
     rSEZ_true = np.array([-773.8654, -581.4980, 328.8145])
     np.set_printoptions(precision=8)
-    # print(rSEZ)
     for i in [0, 1, 2]:
         assert_almost_equal(rSEZ[i], rSEZ_true[i], decimal=0, verbose=True)
 

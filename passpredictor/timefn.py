@@ -2,7 +2,9 @@ import datetime
 import numpy as np
 from passpredictor.constants import DAY_S, J2000
 import itertools
+import pytz
 
+tz_utc = pytz.utc
 
 def utc2tt(UTC, deltaAT=37.0, deltaUT1=0.0):
     """Compute terrestial time from UTC
@@ -177,7 +179,7 @@ def datetimes_to_datetimeary(year, mon, day, hr, minute, sec):
     dtary = np.empty(n, dtype=object)
     for i in range(len(year)):
         # dtstr = f'{year[i]:4d}-{int(mon[i]):02d}-{int(day[i]):02d}T{int(hr[i]):02d}:{int(minute[i]):02d}:{sec[i]:05.2f}'
-        dtary[i] = datetime.datetime(year[i], int(mon[i]), int(day[i]), int(hr[i]), int(minute[i]), s[i], us[i])
+        dtary[i] = datetime.datetime(year[i], int(mon[i]), int(day[i]), int(hr[i]), int(minute[i]), s[i], us[i], tzinfo=tz_utc)
     return dtary
 
 
@@ -191,7 +193,7 @@ def jday2datetime(jdt):
     us *= 10**6
     dt_array = np.empty(yr.size, dtype=object)
     for i, data in enumerate(zip(yr, mo, date, hr, mn, sec, us)):
-        dt_array[i] = datetime.datetime(*data)
+        dt_array[i] = datetime.datetime(*data, tzinfo=tz_utc)
     if not isinstance(jdt, np.ndarray):
         dt_array = dt_array[0]
     return dt_array
@@ -203,7 +205,7 @@ def jday2npdatetime64(jdt):
     yr, mo, date, hr, mn, sec = datetuple
     ms = int((sec % 1)*(10**6))
     sec = int(sec)
-    dt = datetime.datetime(yr, mo, date, hr, mn, sec, ms)
+    dt = datetime.datetime(yr, mo, date, hr, mn, sec, ms, tzinfo=tz_utc)
     return np.datetime64(dt)
 
 
