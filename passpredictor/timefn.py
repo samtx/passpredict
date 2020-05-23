@@ -189,10 +189,9 @@ def jday2datetime(jdt):
     yr, mo, date, hr, mn, sec = datetuple
     sec, us = np.divmod(sec, 1)
     sec = sec.astype(int)
-    us = us.astype(int)
     us *= 10**6
     dt_array = np.empty(yr.size, dtype=object)
-    for i, data in enumerate(zip(yr, mo, date, hr, mn, sec, us)):
+    for i, data in enumerate(zip(yr, mo, date, hr, mn, sec, us.astype(int))):
         dt_array[i] = datetime.datetime(*data, tzinfo=tz_utc)
     if not isinstance(jdt, np.ndarray):
         dt_array = dt_array[0]
@@ -224,7 +223,7 @@ def jdt_tsince(tstart, tsince):
 
 
 def truncate_datetime(dt):
-    """ Truncate datetime object to nearest second """
+    """ Truncate datetime object to the previous second """
     us = dt.microsecond
     dt2 = dt - datetime.timedelta(microseconds=us)
     return dt2

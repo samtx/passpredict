@@ -63,7 +63,6 @@ def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min
     # dt_array = np.empty(num_jdt, dtype=object)
     # for i in range(num_jdt):
     #     dt_array[i] = jday2datetime(jdt_ary[i])
-
     el0 = el[:-1] - min_elevation
     el1 = el[1:] - min_elevation
     el_change_sign = (el0*el1 < 0)
@@ -76,7 +75,6 @@ def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min
     if start_idx.size < end_idx.size:
         end_idx = end_idx[1:]
     overpasses = np.empty(num_overpasses, dtype=object)
-
     for j in range(num_overpasses):
         # Store indecies of overpasses in a list
         idx0 = start_idx[j]
@@ -139,7 +137,6 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
         satellite: Satellite object
             satellite ID number in Celestrak, ISS is 25544
     """
-
     if dt_start is None:
         dt_start = datetime.datetime.now()
     if dt_end is None:
@@ -157,11 +154,8 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
     else:
         with open(f'satellite_{satellite.id:d}.pkl', 'rb') as f:
             satellite_rv = pickle.load(f)
-
     print('begin prediction...')
-
     # set minimum elevation parameter: min_elevation = 10 degrees
-
     overpasses = predict_passes(
         location.lat, location.lon, location.h,
         satellite_rv.rECEF, satellite_rv.rECI, satellite_rv.julian_date,
@@ -169,7 +163,7 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
     return overpasses
 
 
-def overpass_table(overpasses, location, tle):
+def overpass_table(overpasses, location, tle, twentyfourhour=True):
     """
     Return a formatted string for tabular output
 
@@ -183,7 +177,6 @@ def overpass_table(overpasses, location, tle):
         table : str
             tabular formatted string
     """
-
     satellite_name = tle.satellite.name
     tz = location.tz
     # Print datetimes with the correct timezone
@@ -193,29 +186,38 @@ def overpass_table(overpasses, location, tle):
     table_title += f"Using TLE\n"
     table_title += f"{tle.tle1:s}\n"
     table_title += f"{tle.tle2:s}\n\n"
-    point_header = "  Time     El\u00B0   Az\u00B0"
-    point_header_underline = "--------  ----  ----"
-    table_header =  "Date      St[{0}]  Mx[{0}]  En[{0}]\n".format(point_header)
-    table_header += "--------     "
-    table_header += point_header_underline + " "*6
-    table_header += point_header_underline + " "*6
-    table_header += point_header_underline + " "*6
+    if not twentyfourhour:
+        point_header = "  Time    El\u00B0 Az\u00B0"
+        point_header_underline = "--------- --- ---"
+    else:
+        point_header = "  Time   El\u00B0 Az\u00B0"
+        point_header_underline = "-------- --- ---"
+    table_header =  "Date     St[{0}] Mx[{0}] En[{0}]\n".format(point_header)
+    table_header += "--------    "
+    table_header += point_header_underline + " "*5
+    table_header += point_header_underline + " "*5
+    table_header += point_header_underline + " "*5
     table_header += "\n"
 
     def point_string(point):
-        point_line = point.datetime.astimezone(tz).strftime("%I:%M:%S")
-        point_line += " "*2 + "{:>4}".format(int(point.elevation))
-        point_line += " "*2 + "{:>4}".format(int(point.azimuth))
+        time = point.datetime.astimezone(tz)
+        if not twentyfourhour:
+            point_line = time.strftime("%I:%M:%S") + time.strftime("%p")[0].lower()
+        else:
+            point_line = time.strftime("%H:%M:%S")
+        point_line += " " + "{:>3}".format(int(point.elevation))
+        point_line += " " + "{:3}".format(point.direction_from_azimuth())
         return point_line
 
     table_data = ""
     for overpass in overpasses:
         table_data += "{}".format(overpass.start_pt.datetime.astimezone(tz).strftime("%m/%d/%y"))
-        table_data += " "*5 + point_string(overpass.start_pt)
-        table_data += " "*6 + point_string(overpass.max_pt)
-        table_data += " "*6 + point_string(overpass.end_pt)
+        table_data += " "*4 + point_string(overpass.start_pt)
+        table_data += " "*5 + point_string(overpass.max_pt)
+        table_data += " "*5 + point_string(overpass.end_pt)
         table_data += "\n"
     return table_title + table_header + table_data
+
 
 def plot_elevation(date, elevation):
     import matplotlib.pyplot as plt
@@ -225,23 +227,24 @@ def plot_elevation(date, elevation):
 
 
 if __name__ == "__main__":
-
-
     from passpredictor.models import Location, Satellite, Tle
+    from passpredictor.timefn import truncate_datetime
     from pprint import pprint
     import pytz
 
-    tle1 = "1 25544U 98067A   20144.05946705  .00016717  00000-0  10270-3 0  9060"
-    tle2 = "2 25544  51.6397 112.8409 0001237 325.9375  34.1696 15.49401715 28113"
+    # tle1 = "1 25544U 98067A   20144.05946705  .00016717  00000-0  10270-3 0  9060"
+    # tle2 = "2 25544  51.6397 112.8409 0001237 325.9375  34.1696 15.49401715 28113"
+    tle1 = "1 25544U 98067A   20145.02695725  .00016717  00000-0  10270-3 0  9072"
+    tle2 = "2 25544  51.6412 108.0531 0001249 337.3712  22.7382 15.49390188 28261"
     epoch = datetime.datetime(2020, 5, 23, 1, 25, 37, tzinfo=pytz.utc)  # 23 May 2020 01:25:37 UTC
     austin = Location(30.2711, -97.7437, 0.0, 'Austin', pytz.timezone('US/Central'))
     satellite = Satellite(25544, "Int. Space Station")
     tle = Tle(tle1, tle2, epoch, satellite)
-    dt_start = datetime.datetime.today() - datetime.timedelta(days=1)
+    dt_start = truncate_datetime(datetime.datetime(2020,5,21,0,0,0))# - datetime.timedelta(days=1)
     dt_end = dt_start + datetime.timedelta(days=5)
-    min_elevation = 10 # degrees
+    min_elevation = 10.1 # degrees
     overpasses = predict(austin, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=1, min_elevation=min_elevation, reload=True)
     print('begin printing table...')
-    table_str = overpass_table(overpasses, austin, tle)
+    table_str = overpass_table(overpasses, austin, tle, False)
     print(table_str)
 
