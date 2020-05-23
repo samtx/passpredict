@@ -10,6 +10,8 @@ class Sun(object):
         self.jdt = None
         self.dt_ary = None
 
+COORDINATES = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N']
+
 @dataclass
 class Point:
     # __slots__ = ['datetime', 'azimuth', 'elevation', 'range', 'declination', 'right_ascension']
@@ -19,6 +21,15 @@ class Point:
     range: float
     declination: float = None
     right_ascension: float = None
+
+    def direction_from_azimuth(self):
+        ''' Return direction from azimuth degree '''
+        azm = self.azimuth % 360
+        mod = 360/16. # number of degrees per coordinate heading
+        start = 0 - mod/2
+        n = np.floor((azm-start)/mod).astype(int)
+        return COORDINATES[n]
+
 
     # def __repr__(self):
     #     dtstr = self.datetime.strftime("%b %d %Y, %H:%M:%S")

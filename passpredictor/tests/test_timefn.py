@@ -3,6 +3,7 @@ from passpredictor import timefn
 import numpy as np
 from numpy.testing import assert_allclose, assert_almost_equal, assert_equal
 from datetime import datetime, timedelta
+import pytz
 
 
 def test_utc2tt():
@@ -95,13 +96,16 @@ def test_jd_from_skyfield3():
 
 def test_jday2datetime():
     """Convert a Julian date to a datetime and back"""
+    from datetime import timezone
     # jd = timefn.julian_date(dt)
     julian_date = 2450383.09722222  # 1996-10-26 14:20:0
     dt_computed = timefn.jday2datetime(julian_date)
-    dt_desired = datetime(1996, 10, 26, 14, 20, 0)
+    dt_desired = datetime(1996, 10, 26, 14, 20, 0, tzinfo=timezone.utc)
     dt_difference = dt_computed - dt_desired
     assert abs(dt_difference.total_seconds()) < 500e-6  # 500 microseconds
 
 if __name__ == "__main__":
-    julian_date = 2450383.09722222  # 1996-10-26 14:20:0
-    jd_array = np.arange(julian_date, julian_date + 3,)
+    # test_jd_from_skyfield()
+    # test_jd_from_skyfield2()
+    # test_jd_from_skyfield3()
+    test_jday2datetime()
