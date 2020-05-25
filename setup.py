@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 ext = []
 # from Cython.Build import cythonize
-# ext.append(cythonize(['passpredictor/timefn_ext.pyx']))
+# ext.append(cythonize(['passpredict/timefn_ext.pyx']))
 
 setup(
-    name="passpredictor",
+    name="passpredict",
     version="0.0.1",
     packages=find_packages(),
 
