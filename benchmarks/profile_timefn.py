@@ -1,5 +1,5 @@
-from passpredictor.timefn_ext import jday2datetime as jday2datetime_cython
-from passpredictor.timefn import jday2datetime
+from passpredict.timefn_ext import jday2datetime as jday2datetime_cython
+from passpredict.timefn import jday2datetime
 import cProfile
 import numpy as np
 
