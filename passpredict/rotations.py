@@ -322,8 +322,8 @@ def teme2ecef(r, jdt):
     costheta = np.cos(gmst)
     sintheta = np.sin(gmst)
     rPEF = np.empty(r.shape)
-    rPEF[0] = costheta*r[0] - sintheta*r[1]
-    rPEF[1] = sintheta*r[0] + costheta*r[1]
+    rPEF[0] = costheta*r[0] + sintheta*r[1]
+    rPEF[1] = -sintheta*r[0] + costheta*r[1]
     rPEF[2] = r[2]
 
     rECEF = rPEF
