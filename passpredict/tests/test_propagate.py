@@ -31,4 +31,4 @@ def test_propagate_iss():
 
 if __name__ == "__main__":
     import pytest
-    pytest.main(['-q', __file__])
+    pytest.main(['-v', __file__])
