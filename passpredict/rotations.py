@@ -302,12 +302,19 @@ def precess_rotation(r, zeta, theta, z):
     return rGCRF
 
 
-def teme2ecef(r, jdt):
+def teme2ecef(r, jdt, xp=0.0, yp=0.0):
     """Convert TEME vectors to ECEF vectors
 
     Args:
-        r : float (3, n) : TEME vectors
-        jdt : float (n) : julian dates
+        r : float (3, n)
+            TEME vectors
+        jdt : float (n)
+            julian dates with delta UTC1 added
+        xp: float (n)
+            polar motion, x-axis
+        yp: float (n)
+            polar motion, y-axis
+
     Returns:
         rECEF : float (3, n): ECEF vectors
 
@@ -326,7 +333,12 @@ def teme2ecef(r, jdt):
     rPEF[1] = -sintheta*r[0] + costheta*r[1]
     rPEF[2] = r[2]
 
-    rECEF = rPEF
+    # Polar motion, use IAU-76/FK5
+    # Vallado, Eq. 3-78, p.223
+    rECEF = np.empty(rPEF.shape)
+    rECEF[0] = rPEF[0] + xp*rPEF[2]
+    rECEF[1] = rPEF[1] - yp*rPEF[2]
+    rECEF[2] = -xp*rPEF[0] + yp*rPEF[1] + rPEF[2]
     return rECEF
 
 
