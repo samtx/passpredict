@@ -6,6 +6,9 @@ import pytz
 
 tz_utc = pytz.utc
 
+def jd2utc1(jd, deltaUT1=0.0):
+    pass
+
 def utc2tt(UTC, deltaAT=37.0, deltaUT1=0.0):
     """Compute terrestial time from UTC
 

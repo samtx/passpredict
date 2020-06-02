@@ -146,9 +146,10 @@ def test_appendix_c_conversion_from_TEME_to_ITRF_UTC1():
         Vallado et al., Revision 2
         Rhodes, Skyfield library, test_earth_satellites.py
     """
+    seconds_per_day = 24.0 * 60.0 * 60.0
     rTEME = np.array([5094.18016210, 6127.64465950, 6380.34453270])
     vTEME = np.array([-4.746131487, 0.785818041, 5.531931288])
-    vTEME = vTEME * 24.0 * 60.0 * 60.0  # km/s to km/day
+    vTEME = vTEME * seconds_per_day  # km/s to km/day
 
     # Apr 6, 2004,  07:51:28.386 UTC
     deltaUTC1 = -439961 # microseconds
@@ -162,8 +163,44 @@ def test_appendix_c_conversion_from_TEME_to_ITRF_UTC1():
     yp = 0.333309  # arcseconds
     xp *= constants.ASEC2RAD
     yp *= constants.ASEC2RAD
-    # xp = yp = 0.
     rITRF, vITRF = rotations.TEME_to_ITRF(jd, rTEME, vTEME, xp, yp)
+
+    print(rITRF)
+    assert_almost_equal(rITRF[0], -1033.47938300, decimal=4)
+    assert_almost_equal(rITRF[1], 7901.29527540, decimal=4)
+    assert_almost_equal(rITRF[2], 6380.35659580, decimal=4)
+
+    vITRF /= seconds_per_day  # km/day to km/s
+    print(vITRF)
+    assert_almost_equal(vITRF[0], -3.225636520, decimal=6)
+    assert_almost_equal(vITRF[1], -2.872451450, decimal=6)
+    assert_almost_equal(vITRF[2], 5.531924446, decimal=6)
+
+
+
+def test_appendix_c_conversion_from_TEME_to_ITRF_with_teme2ecef():
+    """Test TEME to ITRF conversion
+
+    References:
+        Vallado et al., Revision 2
+        Rhodes, Skyfield library, test_earth_satellites.py
+    """
+    rTEME = np.array([[5094.18016210], [6127.64465950], [6380.34453270]])
+    
+    # Apr 6, 2004,  07:51:28.386 UTC
+    seconds = 28.386
+    deltaUTC1 = -0.439961 # seconds
+    s, us = np.divmod(seconds + deltaUTC1, 1)
+    us *= 1e6  # microseconds
+    dt = datetime.datetime(2004, 4, 6, 7, 51, int(s), int(us))
+    jd = timefn.julian_date(dt)
+
+    # Polar motion
+    xp = -0.140682  # arcseconds
+    yp = 0.333309  # arcseconds
+    xp *= constants.ASEC2RAD
+    yp *= constants.ASEC2RAD
+    rITRF = rotations.teme2ecef(rTEME, jd, xp, yp)
 
     print(rITRF)
     assert_almost_equal(rITRF[0], -1033.47938300, decimal=4)
@@ -173,4 +210,4 @@ def test_appendix_c_conversion_from_TEME_to_ITRF_UTC1():
 
 if __name__ == "__main__":
     import pytest
-    pytest.main(['-q', __file__])
+    pytest.main(['-v', __file__])
