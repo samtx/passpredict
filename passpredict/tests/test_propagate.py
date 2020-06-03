@@ -1,38 +1,34 @@
 
 # from passpredict.sgp4io import twoline2rv, Satellite, wgs72, wgs84
 import numpy as np
+from passpredict import propagate
+import pytz
+import datetime
+from pathlib import Path
+import os
 
-# use_cython = False
-# try:
-#     from passpredict._sgp4 import sgp4 as sgp4_pyx
-#     use_cython = True
-# except ImportError:
-#     pass
+def test_propagate_iss():
+    """
+    Compare results of propagate() with skyfield EarthSatellite.at()
 
-# from passpredict.sgp4 import sgp4
+    datetime_start = 2020-06-01:00:00:00 UTC
+    datetime_end   = 2020-06-11:00:00:00 UTC
+    dt_seconds = 5
+    
+    data/skyfield_iss_rECEF.npy
+    """
+    tle1 = "1 25544U 98067A   20154.57277630  .00016717  00000-0  10270-3 0  9118"
+    tle2 = "2 25544  51.6443  60.8122 0001995  12.6931 347.4269 15.49438452 29742"
+    datetime_start = datetime.datetime(2020, 6, 1, 0, 0, 0, tzinfo=pytz.utc)
+    datetime_end = datetime.datetime(2020, 6, 11, 0, 0, 0, tzinfo=pytz.utc)
+    dt_seconds = 5
+    passpredict_rECEF = propagate.propagate(tle1, tle2, datetime_start, datetime_end, dt_seconds).rECEF
+    fname = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data/skyfield_iss_rECEF.npy'))
+    skyfield_rECEF = np.load(fname, allow_pickle=True)
+    diff = np.linalg.norm(passpredict_rECEF - skyfield_rECEF, axis=0)
+    np.testing.assert_array_less(diff, 1.0, verbose=True)  # difference less than 1 km
 
 
-ISS_TLE = (
-"1 25544U 98067A   19293.90487327  .00016717  00000-0  10270-3 0  9034",
-"2 25544  51.6426  97.8977 0006846 170.6875 189.4404 15.50212100 34757"
-)
-
-# def test_sgp4_tle():
-#     print(ISS_TLE)
-#     tle1, tle2 = ISS_TLE
-#     print(tle1, tle2)
-#     satrec = twoline2rv(tle1, tle2, wgs84)
-#     min_per_day = 1440
-#     total_days = 1
-#     dt_per_min = 10
-#     t = np.linspace(0, min_per_day*total_days, min_per_day*total_days*dt_per_min)
-#     r = np.empty((t.size, 3))
-#     v = np.empty((t.size, 3))
-#     for i in range(t.size):
-#         if i % 43200 == 0:
-#             print(f'i = {i}')
-#         ri, vi = sgp4(satrec, t[i], wgs84)
-#         r[i] = ri
-#         v[i] = vi
-#     # print(satrec)
-#     assert True
+if __name__ == "__main__":
+    import pytest
+    pytest.main(['-v', __file__])
