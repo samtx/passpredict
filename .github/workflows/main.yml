@@ -34,6 +34,7 @@ jobs:
       run: |
         pipenv run pytest --junitxml=junit/test-results-${{ matrix.python-version }}.xml
     - name: Upload pytest test results
+      if: ${{ always() }}
       uses: actions/upload-artifact@v1
       with:
         name: pytest-results-${{ matrix.python-version }}
