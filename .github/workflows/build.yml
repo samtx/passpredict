@@ -32,7 +32,6 @@ jobs:
       run: pipenv run python setup.py build_ext
     - name: Test with pytest
       run: |
-        pipenv install pytest-cov
         pipenv run pytest --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
     - name: Upload pytest test results
       uses: actions/upload-artifact@v1
