@@ -76,7 +76,7 @@ def save_TLE_data():
 
 
 @functools.lru_cache(maxsize=64)
-def propagate(tle1, tle2, dt0=None, dtf=None, dtsec=1.0):
+def propagate(tle1, tle2, dt0, dtf, dtsec=1.0):
     """Propagate satellite position forward in time.
 
     Parameters:
@@ -124,7 +124,16 @@ def propagate(tle1, tle2, dt0=None, dtf=None, dtsec=1.0):
 
     # perform rotations to fixed earth coordinates
     rECI = r.copy()
-    rECEF = teme2ecef(r, jdt)
+
+    # Get earth orientation parameters deltaUTC1, xp, yp
+    def eop(jdt):
+        # Code this!!
+        return 0, 0, 0
+
+    deltaUTC1, xp, yp = eop(jdt)
+    jdt_utc1 = jdt + deltaUTC1
+    
+    rECEF = teme2ecef(r, jdt_utc1, xp, yp)
 
     # Compute sun-satellite quantities
     # rsunECI = sun_pos(jdt)
@@ -154,12 +163,14 @@ if __name__ == "__main__":
     # tle2 = "2 25544  51.6426  97.8977 0006846 170.6875 189.4404 15.50212100 34757"
 
     tle = get_TLE(satellite)
+    dt0 = datetime.datetime.now()#(2020, 5, 23, 0, 0, 0)
+    dtf = dt0 + datetime.timedelta(days=14)
 
     print('start 1')
-    satellite = propagate(tle.tle1, tle.tle2, dtsec=1)
+    satellite = propagate(tle.tle1, tle.tle2, dt0, dtf, dtsec=1)
     print('end 1')
     print('start 2')
-    satellite = propagate(tle.tle1, tle.tle2, dtsec=10)
+    satellite = propagate(tle.tle1, tle.tle2, dt0, dtf, dtsec=10)
     print('end 2')
 
     # save position data

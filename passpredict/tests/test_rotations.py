@@ -45,9 +45,9 @@ def test_precess_rotation():
     Vallado, Eg. 3-15, p.231
     """
     rMOD = np.array([5094.0283745, 6127.8708164, 6380.2485164])
-    zeta = 0.0273055 * predict.DEG2RAD
-    theta = 0.0237306 * predict.DEG2RAD
-    z = 0.0273059 * predict.DEG2RAD
+    zeta = 0.0273055 * constants.DEG2RAD
+    theta = 0.0237306 * constants.DEG2RAD
+    z = 0.0273059 * constants.DEG2RAD
     rGCRF = rotations.precess_rotation(rMOD, zeta, theta, z)
     rGCRF_true = np.array([5102.508958, 6123.011401, 6378.136928])
     assert_allclose(rGCRF, rGCRF_true)
@@ -62,9 +62,8 @@ def test_theta_GMST1982():
     dt = datetime.datetime(1992, 8, 20, 12, 14, 0)  # Aug 20, 1992, 12:14 PM UT1
     jd = timefn.julian_date(dt)
     theta, thetadt = rotations.theta_GMST1982(jd)
-    theta *= predict.RAD2DEG  # convert from radians to degrees
+    theta *= constants.RAD2DEG  # convert from radians to degrees
     assert_almost_equal(theta, 152.578787810, decimal=9)  # degrees
-    # assert_almost_equal(thetadt, 152.578787810)  # degrees
 
 
 def test_theta_GMST1982_2():
@@ -78,7 +77,7 @@ def test_theta_GMST1982_2():
     dt = datetime.datetime(2004, 4, 6, 7, 51, 27, ms)
     jd = timefn.julian_date(dt)
     theta, thetadt = rotations.theta_GMST1982(jd)
-    theta *= predict.RAD2DEG
+    theta *= constants.RAD2DEG
     assert_almost_equal(theta, 312.8098943, decimal=6)
 
 
@@ -140,20 +139,22 @@ def test_thetaGMST_from_skyfield():
     assert_almost_equal(theta, 5.459562584754709, decimal=15)
 
 
-def test_apredictendix_c_conversion_from_TEME_to_ITRF_UTC1():
+def test_appendix_c_conversion_from_TEME_to_ITRF_UTC1():
     """Test TEME to ITRF conversion
 
     References:
         Vallado et al., Revision 2
         Rhodes, Skyfield library, test_earth_satellites.py
     """
+    seconds_per_day = 24.0 * 60.0 * 60.0
     rTEME = np.array([5094.18016210, 6127.64465950, 6380.34453270])
     vTEME = np.array([-4.746131487, 0.785818041, 5.531931288])
-    vTEME = vTEME * 24.0 * 60.0 * 60.0  # km/s to km/day
+    vTEME = vTEME * seconds_per_day  # km/s to km/day
 
     # Apr 6, 2004,  07:51:28.386 UTC
-    # deltaUTC1 = -0.439961 seconds
-    ms = int(1e6) + 386000 - 439961
+    deltaUTC1 = -439961 # microseconds
+    ms = int(1e6) + 386000# + deltaUTC1
+    ms = 386000 - 439961 + int(1e6)
     dt = datetime.datetime(2004, 4, 6, 7, 51, 27, ms)
     jd = timefn.julian_date(dt)
 
@@ -162,10 +163,51 @@ def test_apredictendix_c_conversion_from_TEME_to_ITRF_UTC1():
     yp = 0.333309  # arcseconds
     xp *= constants.ASEC2RAD
     yp *= constants.ASEC2RAD
-    # xp = yp = 0.
     rITRF, vITRF = rotations.TEME_to_ITRF(jd, rTEME, vTEME, xp, yp)
 
     print(rITRF)
     assert_almost_equal(rITRF[0], -1033.47938300, decimal=4)
     assert_almost_equal(rITRF[1], 7901.29527540, decimal=4)
     assert_almost_equal(rITRF[2], 6380.35659580, decimal=4)
+
+    vITRF /= seconds_per_day  # km/day to km/s
+    print(vITRF)
+    assert_almost_equal(vITRF[0], -3.225636520, decimal=6)
+    assert_almost_equal(vITRF[1], -2.872451450, decimal=6)
+    assert_almost_equal(vITRF[2], 5.531924446, decimal=6)
+
+
+
+def test_appendix_c_conversion_from_TEME_to_ITRF_with_teme2ecef():
+    """Test TEME to ITRF conversion
+
+    References:
+        Vallado et al., Revision 2
+        Rhodes, Skyfield library, test_earth_satellites.py
+    """
+    rTEME = np.array([[5094.18016210], [6127.64465950], [6380.34453270]])
+    
+    # Apr 6, 2004,  07:51:28.386 UTC
+    seconds = 28.386
+    deltaUTC1 = -0.439961 # seconds
+    s, us = np.divmod(seconds + deltaUTC1, 1)
+    us *= 1e6  # microseconds
+    dt = datetime.datetime(2004, 4, 6, 7, 51, int(s), int(us))
+    jd = timefn.julian_date(dt)
+
+    # Polar motion
+    xp = -0.140682  # arcseconds
+    yp = 0.333309  # arcseconds
+    xp *= constants.ASEC2RAD
+    yp *= constants.ASEC2RAD
+    rITRF = rotations.teme2ecef(rTEME, jd, xp, yp)
+
+    print(rITRF)
+    assert_almost_equal(rITRF[0], -1033.47938300, decimal=4)
+    assert_almost_equal(rITRF[1], 7901.29527540, decimal=4)
+    assert_almost_equal(rITRF[2], 6380.35659580, decimal=4)
+
+
+if __name__ == "__main__":
+    import pytest
+    pytest.main(['-v', __file__])
