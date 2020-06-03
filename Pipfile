@@ -7,12 +7,10 @@ verify_ssl = true
 pytest = "*"
 pytest-cov = "*"
 cython = "*"
+passpredict = {editable = true, path = "."}
 
 [packages]
 sgp4 = "==2.8"
 numpy = "*"
 pytz = "*"
-webencodings = {editable = true, path = "."}
-
-[requires]
-python_version = "3.8"
+requests = "*"
