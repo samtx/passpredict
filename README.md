@@ -1,6 +1,6 @@
 # passpredict
 
-![Build](https://github.com/samtx/passpredict/workflows/Build%20and%20Test/badge.svg)
+![Build](https://github.com/samtx/passpredict/workflows/Tests/badge.svg)
 
 Predict upcoming satellite overpasses over a point on Earth.
 
