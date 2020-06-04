@@ -6,7 +6,7 @@ ext = []
 
 setup(
     name="passpredict",
-    version="0.0.1",
+    version="0.0.4",
     packages=find_packages(),
 
     python_requires='>=3.7',  # uses dataclass so we need at least 3.7
@@ -15,7 +15,7 @@ setup(
     # installed or upgraded on the target machine
     install_requires=[
         'docutils>=0.3',
-        'numpy'
+        'numpy',        
     ],
 
     package_data={
