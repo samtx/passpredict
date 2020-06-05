@@ -11,7 +11,7 @@ from passpredict.constants import (
 )
 from passpredict.propagate import propagate, get_TLE
 from passpredict.timefn import jday2datetime
-from passpredict.models import Point, Overpass
+from passpredict.models import Point, Overpass, SatelliteRV, Satellite
 import pickle
 
 def vector_angle(r1, r2):
@@ -149,6 +149,11 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
         satellite_rv = propagate(tle.tle1, tle.tle2, dt_start, dt_end, dt_seconds)
         satellite_rv.satellite = satellite
         satellite_rv.tle = tle
+        # Compute sun-satellite quantities
+        jdt = satellite_rv.julian_date
+        rsunECI = sun_pos(jdt)
+        satellite_rv.visible = is_sat_illuminated(satellite_rv.rECI, rsunECI)
+        
         with open(f'satellite_{satellite.id:d}.pkl', 'wb') as f:
             pickle.dump(satellite_rv, f)
     else:
@@ -190,13 +195,16 @@ def overpass_table(overpasses, location, tle, twentyfourhour=True):
         point_header = "  Time    El\u00B0 Az\u00B0"
         point_header_underline = "--------- --- ---"
     else:
+
+        #   Time   Elx Azx
         point_header = "  Time   El\u00B0 Az\u00B0"
         point_header_underline = "-------- --- ---"
-    table_header =  "Date     St[{0}] Mx[{0}] En[{0}]\n".format(point_header)
-    table_header += "--------    "
-    table_header += point_header_underline + " "*5
-    table_header += point_header_underline + " "*5
-    table_header += point_header_underline + " "*5
+    table_header =  f"           {'Start':^17s}   {'Maximum':^17s}   {'End':^17s}\n"
+    table_header +=  "  Date     {0}   {0}   {0}\n".format(point_header)
+    table_header += "--------   "
+    table_header += point_header_underline + " "*3
+    table_header += point_header_underline + " "*3
+    table_header += point_header_underline + " "*3
     table_header += "\n"
 
     def point_string(point):
@@ -212,12 +220,12 @@ def overpass_table(overpasses, location, tle, twentyfourhour=True):
     table_data = ""
     for overpass in overpasses:
         table_data += "{}".format(overpass.start_pt.datetime.astimezone(tz).strftime("%m/%d/%y"))
-        table_data += " "*4 + point_string(overpass.start_pt)
-        table_data += " "*5 + point_string(overpass.max_pt)
-        table_data += " "*5 + point_string(overpass.end_pt)
+        table_data += " "*3 + point_string(overpass.start_pt) + ' |'
+        table_data += " " + point_string(overpass.max_pt) + ' |'
+        table_data += " " + point_string(overpass.end_pt)
         table_data += "\n"
     return table_title + table_header + table_data
-
+# --------- --- ---
 
 def plot_elevation(date, elevation):
     import matplotlib.pyplot as plt
@@ -243,7 +251,7 @@ if __name__ == "__main__":
     dt_start = truncate_datetime(datetime.datetime(2020,5,21,0,0,0))# - datetime.timedelta(days=1)
     dt_end = dt_start + datetime.timedelta(days=5)
     min_elevation = 10.1 # degrees
-    overpasses = predict(austin, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=1, min_elevation=min_elevation, reload=True)
+    overpasses = predict(austin, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=1, min_elevation=min_elevation, reload=False)
     print('begin printing table...')
     table_str = overpass_table(overpasses, austin, tle, False)
     print(table_str)
