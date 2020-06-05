@@ -237,6 +237,7 @@ def plot_elevation(date, elevation):
 if __name__ == "__main__":
     from passpredict.models import Location, Satellite, Tle
     from passpredict.timefn import truncate_datetime
+    from passpredict.geocoding import geocoder
     from pprint import pprint
     import pytz
 
@@ -245,14 +246,21 @@ if __name__ == "__main__":
     tle1 = "1 25544U 98067A   20145.02695725  .00016717  00000-0  10270-3 0  9072"
     tle2 = "2 25544  51.6412 108.0531 0001249 337.3712  22.7382 15.49390188 28261"
     epoch = datetime.datetime(2020, 5, 23, 1, 25, 37, tzinfo=pytz.utc)  # 23 May 2020 01:25:37 UTC
-    austin = Location(30.2711, -97.7437, 0.0, 'Austin', pytz.timezone('US/Central'))
+
+    # Prompt for location
+    query = input('Enter location: ')
+    data = geocoder(query)
+
+    tz_str = input('Enter timezone: ')
+
+    location = Location(float(data['lat']), float(data['lon']), 0.0, query, pytz.timezone(tz_str))
     satellite = Satellite(25544, "Int. Space Station")
     tle = Tle(tle1, tle2, epoch, satellite)
-    dt_start = truncate_datetime(datetime.datetime(2020,5,21,0,0,0))# - datetime.timedelta(days=1)
-    dt_end = dt_start + datetime.timedelta(days=5)
-    min_elevation = 10.1 # degrees
-    overpasses = predict(austin, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=1, min_elevation=min_elevation, reload=False)
+    dt_start = truncate_datetime(datetime.datetime.now())# - datetime.timedelta(days=1)
+    dt_end = dt_start + datetime.timedelta(days=10)
+    min_elevation = 10.01 # degrees
+    overpasses = predict(location, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=1, min_elevation=min_elevation, reload=False)
     print('begin printing table...')
-    table_str = overpass_table(overpasses, austin, tle, False)
+    table_str = overpass_table(overpasses, location, tle, False)
     print(table_str)
 
