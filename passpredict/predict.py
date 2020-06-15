@@ -83,32 +83,32 @@ def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min
         idxmax = np.argmax(el[overpass_idx])
 
         start_pt = Point(
-            jday2datetime(jdt_ary[idx0]),
-            azm[idx0],
-            el[idx0],
-            rng[idx0]
+            datetime=jday2datetime(jdt_ary[idx0]),
+            azimuth=azm[idx0],
+            elevation=el[idx0],
+            range=rng[idx0]
         )
         max_pt = Point(
-            jday2datetime(jdt_ary[idx0 + idxmax]),
-            azm[idx0 + idxmax],
-            el[idx0 + idxmax],
-            rng[idx0 + idxmax]
+            datetime=jday2datetime(jdt_ary[idx0 + idxmax]),
+            azimuth=azm[idx0 + idxmax],
+            elevation=el[idx0 + idxmax],
+            range=rng[idx0 + idxmax]
         )
         end_pt = Point(
-            jday2datetime(jdt_ary[idxf]),
-            azm[idxf],
-            el[idxf],
-            rng[idxf]
+            datetime=jday2datetime(jdt_ary[idxf]),
+            azimuth=azm[idxf],
+            elevation=el[idxf],
+            range=rng[idxf]
         )
         # sat_vis = satellite_visible(rsatECI, rsiteECI, rSEZ, jdt)
         overpass = Overpass(
-            loc,
-            sat,
-            start_pt,
-            max_pt,
-            end_pt,
-            jdt_ary,
-            rSEZ[:,overpass_idx]
+            location=loc,
+            satellite=sat,
+            start_pt=start_pt,
+            max_pt=max_pt,
+            end_pt=end_pt,
+            # jdt_ary,
+            # rSEZ[:,overpass_idx]
         )
         overpasses[j] = overpass
     return overpasses
@@ -164,11 +164,11 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
     overpasses = predict_passes(
         location.lat, location.lon, location.h,
         satellite_rv.rECEF, satellite_rv.rECI, satellite_rv.julian_date,
-        min_elevation=min_elevation)
+        min_elevation=min_elevation, loc=location, sat=satellite)
     return overpasses
 
 
-def overpass_table(overpasses, location, tle, twentyfourhour=True):
+def overpass_table(overpasses, location, tle, timezone=None, twentyfourhour=True):
     """
     Return a formatted string for tabular output
 
@@ -183,7 +183,10 @@ def overpass_table(overpasses, location, tle, twentyfourhour=True):
             tabular formatted string
     """
     satellite_name = tle.satellite.name
-    tz = location.tz
+    if timezone is None:
+        import pytz
+        timezone = pytz.utc
+    tz = timezone
     # Print datetimes with the correct timezone
     table_title = ""
     table_title += f"{satellite_name:s} overpasses for {location.name:s}\n"
@@ -241,26 +244,29 @@ if __name__ == "__main__":
     from pprint import pprint
     import pytz
 
-    # tle1 = "1 25544U 98067A   20144.05946705  .00016717  00000-0  10270-3 0  9060"
-    # tle2 = "2 25544  51.6397 112.8409 0001237 325.9375  34.1696 15.49401715 28113"
-    tle1 = "1 25544U 98067A   20145.02695725  .00016717  00000-0  10270-3 0  9072"
-    tle2 = "2 25544  51.6412 108.0531 0001249 337.3712  22.7382 15.49390188 28261"
-    epoch = datetime.datetime(2020, 5, 23, 1, 25, 37, tzinfo=pytz.utc)  # 23 May 2020 01:25:37 UTC
-
     # Prompt for location
     query = input('Enter location: ')
     data = geocoder(query)
 
     tz_str = input('Enter timezone: ')
+    tz = pytz.timezone(tz_str)
 
-    location = Location(float(data['lat']), float(data['lon']), 0.0, query, pytz.timezone(tz_str))
-    satellite = Satellite(25544, "Int. Space Station")
-    tle = Tle(tle1, tle2, epoch, satellite)
+    location = Location(
+        lat=float(data['lat']),
+        lon=float(data['lon']),
+        h=0.0,
+        name=query
+    )
+    satellite = Satellite(
+        id=25544,
+        name="Int. Space Station"
+    )
+    tle = get_TLE(satellite)
     dt_start = truncate_datetime(datetime.datetime.now())# - datetime.timedelta(days=1)
     dt_end = dt_start + datetime.timedelta(days=10)
     min_elevation = 10.01 # degrees
-    overpasses = predict(location, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=1, min_elevation=min_elevation, reload=False)
+    overpasses = predict(location, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=5, min_elevation=min_elevation, reload=True)
     print('begin printing table...')
-    table_str = overpass_table(overpasses, location, tle, False)
+    table_str = overpass_table(overpasses, location, tle, tz, twentyfourhour=True)
     print(table_str)
 

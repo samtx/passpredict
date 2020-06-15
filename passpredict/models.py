@@ -3,17 +3,82 @@ import datetime
 import numpy as np
 from dataclasses import dataclass
 import pytz
+from pydantic import BaseModel
+from typing import Any
+from enum import Enum
 
-class Sun(object):
-    def __init__(self):
-        self.rECI = None
-        self.jdt = None
-        self.dt_ary = None
+# From Pydantic, to use Numpy arrays
+# ref: https://github.com/samuelcolvin/pydantic/issues/380#issuecomment-620378743
+class _ArrayMeta(type):
+    def __getitem__(self, t):
+        return type('Array', (Array,), {'__dtype__': t})
+
+class Array(np.ndarray, metaclass=_ArrayMeta):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate_type
+
+    @classmethod
+    def validate_type(cls, val):
+        dtype = getattr(cls, '__dtype__', None)
+        if isinstance(dtype, tuple):
+            dtype, shape = dtype
+        else:
+            shape = tuple()
+
+        result = np.array(val, dtype=dtype, copy=False, ndmin=len(shape))
+        assert not shape or len(shape) == len(result.shape)  # ndmin guarantees this
+
+        if any((shape[i] != -1 and shape[i] != result.shape[i]) for i in range(len(shape))):
+            result = result.reshape(shape)
+        return result
+
+"""
+Example use: 
+
+class Model(pydantic.BaseModel):
+    int_values: Array[float]
+    any_values: Array
+    shaped1_values: Array[float, (-1, )]
+    shaped2_values: Array[float, (2, 1)]
+    shaped3_values: Array[float, (4, -1)]
+    shaped4_values: Array[float, (-1, 4)]
+"""
+
+# Create timezone field
+# ref: https://pydantic-docs.helpmanual.io/usage/types/#enums-and-choices
+# ref: https://pydantic-docs.helpmanual.io/usage/types/#custom-data-types
+# class Timezone(pytz.timezone):
+#     @classmethod
+#     def __get_validators__(cls):
+#         yield cls.validate
+
+#     @classmethod
+#     def validate(cls, v):
+#         if not isinstance(v, pytz.timezone):
+#             raise TypeError('not a pytz timezone')
+        
+#     def __repr__(self):
+#         return super().__repr__()
+
+
+class Timezone(BaseModel):
+    offset: float  # UTC offset
+    name: str = None
+    def __repr__(self):
+        return name
+
+
+class Sun(BaseModel):
+    rECI: Array[float]
+    jdt: Array[float]
+    dt_ary: Array[float]
+
 
 COORDINATES = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N']
 
-@dataclass
-class Point:
+
+class Point(BaseModel):
     # __slots__ = ['datetime', 'azimuth', 'elevation', 'range', 'declination', 'right_ascension']
     datetime: datetime.datetime
     azimuth: float
@@ -37,28 +102,15 @@ class Point:
     #         dtstr, self.elevation, self.azimuth, self.range)
     #     return s
 
+# utc = Timezone(offset=0.0, name='UTC')
 
-class Overpass(object):
-    __slots__ = ['location', 'satellite', 'start_pt', 'max_pt', 'end_pt', 't', 'r']
-    def __init__(self, location, satellite, start_pt, max_pt, end_pt, t, r):
-        self.location = location
-        self.satellite = satellite
-        self.start_pt = start_pt
-        self.max_pt = max_pt
-        self.end_pt = end_pt
-        self.t = t
-        self.r = r
-
-
-
-@dataclass
-class Location:
+class Location(BaseModel):
     # __slots__ = ['lat', 'lon', 'h', 'name', 'tz']
     lat: float       # latitude, decimal degrees, positive is North
     lon: float       # longitude, decimal degrees, positive is East
     h: float = 0.0   # elevation [m]
     name: str = None
-    tz: pytz.tzinfo = pytz.utc  # timezone object
+    # tz: Timezone = None  # timezone object
 
 
 class SatelliteRV(object):
@@ -77,19 +129,29 @@ class SatelliteRV(object):
         self.altitude = None
         self.visible = None
 
-class Tle(object):
-    __slots__ = ['tle1','tle2','epoch','satellite']
-    def __init__(self, tle1, tle2, epoch, satellite):
-        self.tle1 = tle1
-        self.tle2 = tle2
-        self.epoch = epoch
-        self.satellite = satellite
 
-
-@dataclass
-class Satellite:
+class Satellite(BaseModel):
     id: int
     name: str
+
+
+class Tle(BaseModel):
+    # __slots__ = ['tle1','tle2','epoch','satellite']
+    tle1: str
+    tle2: str
+    epoch: datetime.datetime
+    satellite: Satellite
+
+
+class Overpass(BaseModel):
+    # __slots__ = ['location', 'satellite', 'start_pt', 'max_pt', 'end_pt', 't', 'r']
+    location: Location
+    satellite: Satellite
+    start_pt: Point
+    max_pt: Point
+    end_pt: Point
+    # t: Array[float]
+    # r: Array[float]
 
 
 def process_overpasses(overpasses, t, az, el, rng, dt_start):
