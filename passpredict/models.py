@@ -132,7 +132,7 @@ class SatelliteRV(object):
 
 class Satellite(BaseModel):
     id: int
-    name: str
+    name: str = None
 
 
 class Tle(BaseModel):
