@@ -31,14 +31,10 @@ def grouper(iterable, n, fillvalue=None):
     return zip_longest(*args, fillvalue=fillvalue)
 
 
-def get_TLE(satellite):
-    if not os.path.exists('tle_data.json'):
-        tle_data = save_TLE_data()
-    else:
-        with open('tle_data.json', 'r') as file:
-            tle_data = json.load(file)
-    tle1 = tle_data[str(satellite.id)]['tle1']
-    tle2 = tle_data[str(satellite.id)]['tle2']
+def epoch_from_tle(tle1):
+    """
+    Extract epoch as datetime from tle line 1
+    """
     epoch_year = int(tle1[18:20])
     if epoch_year < 57:
         epoch_year += 2000
@@ -50,7 +46,19 @@ def get_TLE(satellite):
     epoch = datetime.datetime(epoch_year, month=1, day=1) + \
             datetime.timedelta(days=int(epoch_day-1)) + \
             datetime.timedelta(microseconds=int(epoch_microseconds))
-    tle = Tle(tle1, tle2, epoch, satellite)
+    return epoch
+
+
+def get_TLE(satellite):
+    if not os.path.exists('tle_data.json'):
+        tle_data = save_TLE_data()
+    else:
+        with open('tle_data.json', 'r') as file:
+            tle_data = json.load(file)
+    tle1 = tle_data[str(satellite.id)]['tle1']
+    tle2 = tle_data[str(satellite.id)]['tle2']
+    epoch = epoch_from_tle(tle1)
+    tle = Tle(tle1=tle1, tle2=tle2, epoch=epoch, satellite=satellite)
     return tle
 
 
