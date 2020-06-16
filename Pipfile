@@ -16,3 +16,5 @@ pytz = "*"
 requests = "*"
 passpredict = {editable = true, path = "."}
 pydantic = "*"
+sqlalchemy = "*"
+pandas = "*"
