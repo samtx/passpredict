@@ -1,8 +1,10 @@
 import datetime
-import numpy as np
-from passpredict.constants import DAY_S, J2000
 import itertools
+
+import numpy as np
 import pytz
+
+from .constants import DAY_S, J2000
 
 tz_utc = pytz.utc
 

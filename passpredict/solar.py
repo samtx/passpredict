@@ -1,8 +1,11 @@
 # solar.py
+import math
+
 import numpy as np
 from numpy.linalg import norm
-import math
-from passpredict.constants import DEG2RAD, RAD2DEG, AU_KM, R_EARTH
+
+from .constants import DEG2RAD, RAD2DEG, AU_KM, R_EARTH
+
 
 def sun_pos(t):
     """Compute the Sun position vector

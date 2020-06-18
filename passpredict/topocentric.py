@@ -1,22 +1,8 @@
-import numpy as np
 import math
-from passpredict.constants import (
-    R_EARTH,
-    R2_EARTH,
-    e_EARTH,
-    e2_EARTH,
-    MU,
-    J2,
-    J2000,
-    AU_M,
-    AU_KM,
-    ASEC360,
-    DAY_S,
-    ASEC2RAD,
-    DEG2RAD,
-    RAD2DEG,
-    tau,
-)
+
+import numpy as np
+
+from .constants import DEG2RAD, R_EARTH, e2_EARTH
 
 
 def site_declination_and_K(phi_gd, h_ellp):
