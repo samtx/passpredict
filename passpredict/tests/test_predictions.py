@@ -1,6 +1,6 @@
 # Test using pytest
 
-from passpredict import predict
+from passpredict import predictions
 from passpredict import timefn
 from numpy.testing import assert_allclose, assert_almost_equal
 import numpy as np
@@ -16,7 +16,7 @@ def test_satellite_visible():
     rho = np.array([[-773.8654, -581.4980, 328.8145]]).T  # SEZ coords
     dt = datetime.datetime(1997, 4, 2, 1, 8)  # April 2, 1997, 01:08:0.00 UTC
     jdt = np.array([timefn.julian_date2(dt)])
-    vis = predict.satellite_visible(rsat, rsite, rho, jdt)
+    vis = predictions.satellite_visible(rsat, rsite, rho, jdt)
     assert vis[0] > 2
 
 

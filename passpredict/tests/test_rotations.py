@@ -1,6 +1,5 @@
 # test rotations.py
 from passpredict import rotations
-from passpredict import predict
 from passpredict import constants
 from passpredict import timefn
 from passpredict import topocentric
@@ -95,7 +94,6 @@ def test_IJK2SEZ():
     theta = 110  # deg, local sidereal time
     R_obs = np.array([-1673.0, 4598.0, -4078.0])  # km, from Eq. 5.56
 
-    # sez = predict.IJK2SEZ(r, phi, theta, H)
     rho = r - R_obs  # relative position vector
     phi_rad = radians(phi)
     theta_rad = radians(theta)
