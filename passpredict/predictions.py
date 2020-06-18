@@ -1,18 +1,17 @@
+import pickle
+import datetime
+
 import numpy as np
 from numpy import dot, cross
 from numpy.linalg import norm
-import datetime
-from passpredict.rotations import rot1, rot2, rot3, theta_GMST1982, site_sat_rotations
-from passpredict.solar import sun_pos, is_sat_illuminated
-from passpredict.topocentric import razel
-from passpredict.constants import (
-    R_EARTH, R2_EARTH, e_EARTH, e2_EARTH, MU, J2, J2000, AU_M, AU_KM, ASEC360,
-    DAY_S, ASEC2RAD, DEG2RAD, RAD2DEG, tau
-)
-from passpredict.propagate import propagate, get_TLE
-from passpredict.timefn import jday2datetime
-from passpredict.models import Point, Overpass, SatelliteRV, Satellite
-import pickle
+
+from .rotations import site_sat_rotations
+from .solar import sun_pos, is_sat_illuminated
+from .topocentric import razel
+from .propagate import propagate, get_TLE
+from .timefn import jday2datetime
+from .models import Point, Overpass, SatelliteRV, Satellite
+
 
 def vector_angle(r1, r2):
     """Compute the angle between two vectors
@@ -167,106 +166,4 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
         min_elevation=min_elevation, loc=location, sat=satellite)
     return overpasses
 
-
-def overpass_table(overpasses, location, tle, timezone=None, twentyfourhour=True):
-    """
-    Return a formatted string for tabular output
-
-    Params:
-        overpasses: list
-            A list of Overpass objects
-        location: Location object
-        tle: Tle object
-
-    Return:
-        table : str
-            tabular formatted string
-    """
-    satellite_name = tle.satellite.name
-    if timezone is None:
-        import pytz
-        timezone = pytz.utc
-    tz = timezone
-    # Print datetimes with the correct timezone
-    table_title = ""
-    table_title += f"{satellite_name:s} overpasses for {location.name:s}\n"
-    table_title += f"Lat={location.lat:.4f}\u00B0, Lon={location.lon:.4f}\u00B0, Timezone {tz.zone}\n"
-    table_title += f"Using TLE\n"
-    table_title += f"{tle.tle1:s}\n"
-    table_title += f"{tle.tle2:s}\n\n"
-    if not twentyfourhour:
-        point_header = "  Time    El\u00B0 Az\u00B0"
-        point_header_underline = "--------- --- ---"
-    else:
-
-        #   Time   Elx Azx
-        point_header = "  Time   El\u00B0 Az\u00B0"
-        point_header_underline = "-------- --- ---"
-    table_header =  f"           {'Start':^17s}   {'Maximum':^17s}   {'End':^17s}\n"
-    table_header +=  "  Date     {0}   {0}   {0}\n".format(point_header)
-    table_header += "--------   "
-    table_header += point_header_underline + " "*3
-    table_header += point_header_underline + " "*3
-    table_header += point_header_underline + " "*3
-    table_header += "\n"
-
-    def point_string(point):
-        time = point.datetime.astimezone(tz)
-        if not twentyfourhour:
-            point_line = time.strftime("%I:%M:%S") + time.strftime("%p")[0].lower()
-        else:
-            point_line = time.strftime("%H:%M:%S")
-        point_line += " " + "{:>3}".format(int(point.elevation))
-        point_line += " " + "{:3}".format(point.direction_from_azimuth())
-        return point_line
-
-    table_data = ""
-    for overpass in overpasses:
-        table_data += "{}".format(overpass.start_pt.datetime.astimezone(tz).strftime("%m/%d/%y"))
-        table_data += " "*3 + point_string(overpass.start_pt) + ' |'
-        table_data += " " + point_string(overpass.max_pt) + ' |'
-        table_data += " " + point_string(overpass.end_pt)
-        table_data += "\n"
-    return table_title + table_header + table_data
-# --------- --- ---
-
-def plot_elevation(date, elevation):
-    import matplotlib.pyplot as plt
-    plt.plot(date, elevation)
-    plt.grid()
-    plt.show()
-
-
-if __name__ == "__main__":
-    from passpredict.models import Location, Satellite, Tle
-    from passpredict.timefn import truncate_datetime
-    from passpredict.geocoding import geocoder
-    from pprint import pprint
-    import pytz
-
-    # Prompt for location
-    query = input('Enter location: ')
-    data = geocoder(query)
-
-    tz_str = input('Enter timezone: ')
-    tz = pytz.timezone(tz_str)
-
-    location = Location(
-        lat=float(data['lat']),
-        lon=float(data['lon']),
-        h=0.0,
-        name=query
-    )
-    satellite = Satellite(
-        id=25544,
-        name="Int. Space Station"
-    )
-    tle = get_TLE(satellite)
-    dt_start = truncate_datetime(datetime.datetime.now())# - datetime.timedelta(days=1)
-    dt_end = dt_start + datetime.timedelta(days=10)
-    min_elevation = 10.01 # degrees
-    overpasses = predict(location, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=5, min_elevation=min_elevation, reload=True)
-    print('begin printing table...')
-    table_str = overpass_table(overpasses, location, tle, tz, twentyfourhour=True)
-    print(table_str)
 

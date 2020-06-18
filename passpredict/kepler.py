@@ -1,7 +1,9 @@
-import numpy as np
-from numpy import dot, cross
 from math import sqrt, sin, cos, cosh, acosh, tan, atan, acos, radians, degrees, pi
 import datetime
+
+import numpy as np
+from numpy import dot, cross
+
 
 # Constants
 R_EARTH = np.float64(6378.137)  # [km] Mean equatorial radius

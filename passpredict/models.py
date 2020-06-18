@@ -1,11 +1,12 @@
 # models
 import datetime
-import numpy as np
 from dataclasses import dataclass
-import pytz
-from pydantic import BaseModel
 from typing import Any
 from enum import Enum
+
+import numpy as np
+import pytz
+from pydantic import BaseModel
 
 # From Pydantic, to use Numpy arrays
 # ref: https://github.com/samuelcolvin/pydantic/issues/380#issuecomment-620378743
