@@ -6,9 +6,9 @@ from passpredict.timefn import julian_date, jdt_tsince, invjday, jday2datetime, 
 from passpredict.solar import is_sat_illuminated, sun_pos
 from passpredict.models import SatelliteRV, Tle
 from passpredict.rotations import teme2ecef
+from passpredict.utils import parse_tles_from_celestrak, epoch_from_tle
 import datetime
 from sgp4.api import Satrec, WGS84
-from itertools import zip_longest
 import json
 import requests
 import os
@@ -22,39 +22,16 @@ import os
 # from passpredict.sgp4 import sgp4
 
 
-def grouper(iterable, n, fillvalue=None):
-    """
-    from itertools recipes https://docs.python.org/3.7/library/itertools.html#itertools-recipes
-    Collect data into fixed-length chunks or blocks
-    """
-    args = [iter(iterable)] * n
-    return zip_longest(*args, fillvalue=fillvalue)
 
-
-def epoch_from_tle(tle1):
-    """
-    Extract epoch as datetime from tle line 1
-    """
-    epoch_year = int(tle1[18:20])
-    if epoch_year < 57:
-        epoch_year += 2000
-    else:
-        epoch_year += 1900
-    epoch_day = float(tle1[20:32])
-    epoch_day, epoch_day_fraction = np.divmod(epoch_day, 1)
-    epoch_microseconds = epoch_day_fraction * 24 * 60 * 60 * 1e6
-    epoch = datetime.datetime(epoch_year, month=1, day=1) + \
-            datetime.timedelta(days=int(epoch_day-1)) + \
-            datetime.timedelta(microseconds=int(epoch_microseconds))
-    return epoch
-
-
-def get_TLE(satellite):
-    if not os.path.exists('tle_data.json'):
-        tle_data = save_TLE_data()
-    else:
-        with open('tle_data.json', 'r') as file:
-            tle_data = json.load(file)
+def get_TLE(satellite, tle_data=None):
+    if tle_data is None:
+        if not os.path.exists('tle_data.json'):
+            tle_data = parse_tles_from_celestrak()
+            with open('tle_data.json', 'w') as file:
+                json.dump(tle_data, file)
+        else:
+            with open('tle_data.json', 'r') as file:
+                tle_data = json.load(file)
     tle1 = tle_data[str(satellite.id)]['tle1']
     tle2 = tle_data[str(satellite.id)]['tle2']
     epoch = epoch_from_tle(tle1)
@@ -62,25 +39,10 @@ def get_TLE(satellite):
     return tle
 
 
-def save_TLE_data():
-    """
-    Download current TLEs from Celestrak and save them to a JSON file
-    """
-    stations_url = 'https://celestrak.com/NORAD/elements/stations.txt'
-    tle_data = {}
-    r = requests.get(stations_url, stream=True)
-    for lines in grouper(r.iter_lines(), 3):
-        tle0, tle1, tle2 = [line.decode('ascii') for line in lines]
-        name = tle0.strip()  # satellite name
-        satellite_id = tle1[2:7]
-        tle_data.update(
-            {
-                satellite_id : {'name': name, 'tle1': tle1, 'tle2': tle2}
-            }
-        )
+def save_TLE_data(url=None):
+    tle_data = parse_tles_from_celestrak(url)
     with open('tle_data.json', 'w') as file:
         json.dump(tle_data, file)
-    return tle_data
 
 
 @functools.lru_cache(maxsize=64)
@@ -161,7 +123,6 @@ def propagate(tle1, tle2, dt0, dtf, dtsec=1.0):
 if __name__ == "__main__":
     # Test propagation routines
     from passpredict.models import Satellite
-    save_TLE_data()
 
     # ISS satellite id
     satellite = Satellite(25544, "Int. Space Station")
