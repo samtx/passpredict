@@ -1,12 +1,45 @@
-import os, sys
-
-import numpy as np
 import datetime
+from pprint import pprint
+
 import click
+import pytz
 
-from .models import Satellite, Tle
+from .models import Satellite, Tle, Location
+from .timefn import truncate_datetime
+from .geocoding import geocoder
+from .utils import get_TLE
+from .predictions import predict
 
 
+def main():
+    """
+    Command line interface for pass predictions
+    """
+    # Prompt for location
+    query = input('Enter location: ')
+    data = geocoder(query)
+
+    tz_str = input('Enter timezone: ')
+    tz = pytz.timezone(tz_str)
+
+    location = Location(
+        lat=float(data['lat']),
+        lon=float(data['lon']),
+        h=0.0,
+        name=query
+    )
+    satellite = Satellite(
+        id=25544,
+        name="Int. Space Station"
+    )
+    tle = get_TLE(satellite)
+    dt_start = truncate_datetime(datetime.datetime.now())# - datetime.timedelta(days=1)
+    dt_end = dt_start + datetime.timedelta(days=10)
+    min_elevation = 10.01 # degrees
+    overpasses = predict(location, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=5, min_elevation=min_elevation, reload=True)
+    print('begin printing table...')
+    table_str = overpass_table(overpasses, location, tle, tz, twentyfourhour=True)
+    print(table_str)
 
 def overpass_table(overpasses, location, tle, timezone=None, twentyfourhour=True):
     """
@@ -75,37 +108,3 @@ def plot_elevation(date, elevation):
     plt.plot(date, elevation)
     plt.grid()
     plt.show()
-
-
-if __name__ == "__main__":
-    from passpredict.models import Location, Satellite, Tle
-    from passpredict.timefn import truncate_datetime
-    from passpredict.geocoding import geocoder
-    from pprint import pprint
-    import pytz
-
-    # Prompt for location
-    query = input('Enter location: ')
-    data = geocoder(query)
-
-    tz_str = input('Enter timezone: ')
-    tz = pytz.timezone(tz_str)
-
-    location = Location(
-        lat=float(data['lat']),
-        lon=float(data['lon']),
-        h=0.0,
-        name=query
-    )
-    satellite = Satellite(
-        id=25544,
-        name="Int. Space Station"
-    )
-    tle = get_TLE(satellite)
-    dt_start = truncate_datetime(datetime.datetime.now())# - datetime.timedelta(days=1)
-    dt_end = dt_start + datetime.timedelta(days=10)
-    min_elevation = 10.01 # degrees
-    overpasses = predict(location, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=5, min_elevation=min_elevation, reload=True)
-    print('begin printing table...')
-    table_str = overpass_table(overpasses, location, tle, tz, twentyfourhour=True)
-    print(table_str)

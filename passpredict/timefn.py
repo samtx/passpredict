@@ -245,18 +245,3 @@ def datetime_linspace(datetime_start, datetime_end, dt_seconds):
         np.timedelta64(dt_seconds,'s'),
         dtype="datetime64[s]"
     )
-
-if __name__ == "__main__":
-    julian_date = 2450383.09722222  # 1996-10-26 14:20:0
-    jd_array = np.arange(julian_date, julian_date + 3, 1/24.)
-    dt_array = jday2datetime(jd_array)
-    print(dt_array)
-
-    dt_array = jday2datetime(julian_date)
-    print(dt_array)
-
-    # now = datetime.datetime.now()
-    # then = now + datetime.timedelta(days=7)
-    # dt_seconds = datetime.timedelta(seconds=5)
-    # for d in range(now, then, dt_seconds):
-    #     print(d)

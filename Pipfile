@@ -18,3 +18,4 @@ passpredict = {editable = true, path = "."}
 pydantic = "*"
 sqlalchemy = "*"
 pandas = "*"
+click = "*"
