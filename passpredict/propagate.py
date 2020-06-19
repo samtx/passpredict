@@ -23,28 +23,6 @@ import os
 
 
 
-def get_TLE(satellite, tle_data=None):
-    if tle_data is None:
-        if not os.path.exists('tle_data.json'):
-            tle_data = parse_tles_from_celestrak()
-            with open('tle_data.json', 'w') as file:
-                json.dump(tle_data, file)
-        else:
-            with open('tle_data.json', 'r') as file:
-                tle_data = json.load(file)
-    tle1 = tle_data[str(satellite.id)]['tle1']
-    tle2 = tle_data[str(satellite.id)]['tle2']
-    epoch = epoch_from_tle(tle1)
-    tle = Tle(tle1=tle1, tle2=tle2, epoch=epoch, satellite=satellite)
-    return tle
-
-
-def save_TLE_data(url=None):
-    tle_data = parse_tles_from_celestrak(url)
-    with open('tle_data.json', 'w') as file:
-        json.dump(tle_data, file)
-
-
 @functools.lru_cache(maxsize=64)
 def propagate(tle1, tle2, dt0, dtf, dtsec=1.0):
     """Propagate satellite position forward in time.
@@ -118,31 +96,3 @@ def propagate(tle1, tle2, dt0, dtf, dtsec=1.0):
     satellite_rv.datetime = dt_ary
     satellite_rv.julian_date = jdt
     return satellite_rv
-
-
-if __name__ == "__main__":
-    # Test propagation routines
-    from passpredict.models import Satellite
-
-    # ISS satellite id
-    satellite = Satellite(25544, "Int. Space Station")
-
-    # ISS
-    # tle1 = "1 25544U 98067A   19293.90487327  .00016717  00000-0  10270-3 0  9034"
-    # tle2 = "2 25544  51.6426  97.8977 0006846 170.6875 189.4404 15.50212100 34757"
-
-    tle = get_TLE(satellite)
-    dt0 = datetime.datetime.now()#(2020, 5, 23, 0, 0, 0)
-    dtf = dt0 + datetime.timedelta(days=14)
-
-    print('start 1')
-    satellite = propagate(tle.tle1, tle.tle2, dt0, dtf, dtsec=1)
-    print('end 1')
-    print('start 2')
-    satellite = propagate(tle.tle1, tle.tle2, dt0, dtf, dtsec=10)
-    print('end 2')
-
-    # save position data
-    r = satellite.rECI
-    # np.save('r.npy', )
-

@@ -105,7 +105,5 @@ def test_jday2datetime():
     assert abs(dt_difference.total_seconds()) < 500e-6  # 500 microseconds
 
 if __name__ == "__main__":
-    # test_jd_from_skyfield()
-    # test_jd_from_skyfield2()
-    # test_jd_from_skyfield3()
-    test_jday2datetime()
+    import pytest
+    pytest.main(['-v', __file__])

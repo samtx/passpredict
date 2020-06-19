@@ -8,10 +8,10 @@ from numpy.linalg import norm
 from .rotations import site_sat_rotations
 from .solar import sun_pos, is_sat_illuminated
 from .topocentric import razel
-from .propagate import propagate, get_TLE
+from .propagate import propagate
 from .timefn import jday2datetime
 from .models import Point, Overpass, SatelliteRV, Satellite
-
+from .utils import get_TLE
 
 def vector_angle(r1, r2):
     """Compute the angle between two vectors

@@ -1,9 +1,13 @@
 import json
 import datetime
+import os
 from itertools import zip_longest
 from collections import OrderedDict
 
 import numpy as np
+import requests
+
+from .models import Tle
 
 CACHE_DIRECTORY = ".passpredict_cache"
 
@@ -67,25 +71,54 @@ def get_orbit_data_from_celestrak(satellite_id):
     return r.json()
 
 
-def parse_tles_from_celestrak(url=None):
+def parse_tles_from_celestrak(satellite_id=None):
     """
     Download current TLEs from Celestrak and save them to a JSON file
     
     """
-    if url is None:
+    if satellite_id is None:
         url = 'https://celestrak.com/NORAD/elements/stations.txt'
+        params = {}
+    else:
+        url = 'https://celestrak.com/satcat/tle.php'
+        params = {'CATNR': satellite_id}
+    r = requests.get(url, params=params, stream=True)
     tle_data = {}
-    r = requests.get(stations_url, stream=True)
-    for lines in grouper(r.iter_lines(), 3):
-        tle0, tle1, tle2 = [line.decode('ascii') for line in lines]
-        name = tle0.strip()  # satellite name
-        satellite_id = tle1[2:7]
-        tle_data.update(
-            {
-                satellite_id : {'name': name, 'tle1': tle1, 'tle2': tle2}
-            }
-        )
+    for tle_strings in grouper(r.text.splitlines(), 3):
+        tle_data.update(parse_tle(tle_strings))
     return tle_data
+
+
+def parse_tle(tle_string_list):
+    """
+    Parse a single 3-line TLE from celestrak
+    """
+    tle0, tle1, tle2 = tle_string_list
+    name = tle0.strip()  # satellite name
+    satellite_id = tle1[2:7]
+    return {satellite_id : {'name': name, 'tle1': tle1, 'tle2': tle2}}
+
+
+def get_TLE(satellite, tle_data=None):
+    if tle_data is None:
+        if not os.path.exists('tle_data.json'):
+            tle_data = parse_tles_from_celestrak()
+            with open('tle_data.json', 'w') as file:
+                json.dump(tle_data, file)
+        else:
+            with open('tle_data.json', 'r') as file:
+                tle_data = json.load(file)
+    tle1 = tle_data[str(satellite.id)]['tle1']
+    tle2 = tle_data[str(satellite.id)]['tle2']
+    epoch = epoch_from_tle(tle1)
+    tle = Tle(tle1=tle1, tle2=tle2, epoch=epoch, satellite=satellite)
+    return tle
+
+
+def save_TLE_data(url=None):
+    tle_data = parse_tles_from_celestrak(url)
+    with open('tle_data.json', 'w') as file:
+        json.dump(tle_data, file)
 
 
 class Cache():
