@@ -12,7 +12,6 @@ passpredict = {editable = true, path = "."}
 [packages]
 sgp4 = "==2.8"
 numpy = "*"
-pytz = "*"
 requests = "*"
 passpredict = {editable = true, path = "."}
 pydantic = "*"
