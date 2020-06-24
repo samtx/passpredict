@@ -14,7 +14,7 @@ from .topocentric import site_ECEF, site_declination_and_K
 # nutation_coefficients_longitude = _arrays['nutation_coefficients_longitude']
 # nutation_coefficients_obliquity = _arrays['nutation_coefficients_obliquity']
 
-
+# @profile
 def ecef2sez(r, phi, lmda):
     """
     Rotate r vector from ECEF frame to SEZ frame
@@ -624,10 +624,10 @@ def rot3(a):
     )
     return mtx
 
-
+# @profile
 def site_sat_rotations(lat, lon, h, rsatECEF):
     rsiteECEF = site_ECEF(lat, lon, h)
-    rho = rsatECEF - np.atleast_2d(rsiteECEF).T
+    rho = rsatECEF - np.array([[rsiteECEF[0]],[rsiteECEF[1]],[rsiteECEF[2]]], dtype=np.float64)
     rSEZ = ecef2sez(rho, lat, lon)
     return rSEZ
 

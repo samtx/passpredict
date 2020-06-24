@@ -101,8 +101,8 @@ def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min
         )
         # sat_vis = satellite_visible(rsatECI, rsiteECI, rSEZ, jdt)
         overpass = Overpass(
-            location=loc,
-            satellite=sat,
+            # location=loc,
+            # satellite=sat,
             start_pt=start_pt,
             max_pt=max_pt,
             end_pt=end_pt,

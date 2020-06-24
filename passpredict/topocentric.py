@@ -64,12 +64,13 @@ def rng_el(r):
     el *= RAD2DEG
     return el, rng
 
-
+# @profile
 def razel(r):
     """Get range, azimuth, and elevation from SEZ vector"""
     rng = np.linalg.norm(r, axis=0)
     el = np.arcsin(r[2] / rng) * RAD2DEG
-    az = (np.arctan2(r[0], r[1]) + math.pi * 0.5) * RAD2DEG
+    tmp = np.arctan2(r[0], r[1])
+    az = (tmp + np.pi * 0.5) * RAD2DEG
     idx = np.all([r[0] < 0,r[1] < 0], axis=0)
     az[idx] %= 360
     return rng, az, el

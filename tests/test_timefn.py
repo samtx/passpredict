@@ -3,7 +3,6 @@ from passpredict import timefn
 import numpy as np
 from numpy.testing import assert_allclose, assert_almost_equal, assert_equal
 from datetime import datetime, timedelta
-import pytz
 
 
 def test_utc2tt():

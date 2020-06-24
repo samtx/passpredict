@@ -2,11 +2,10 @@ import datetime
 import itertools
 
 import numpy as np
-import pytz
 
 from .constants import DAY_S, J2000
 
-tz_utc = pytz.utc
+tz_utc = datetime.timezone.utc
 
 def jd2utc1(jd, deltaUT1=0.0):
     pass

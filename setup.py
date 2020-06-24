@@ -4,20 +4,32 @@ ext = []
 # from Cython.Build import cythonize
 # ext.append(cythonize(['passpredict/timefn_ext.pyx']))
 
+with open("README.md") as f:
+    long_description = f.read()
+
 setup(
     name="passpredict",
     version="0.0.4",
-    packages=find_packages(),
+    packages=find_packages(
+        exclude=[
+            'docs', 'tests'
+        ]
+    ),
 
-    python_requires='>=3.7',  # uses dataclass so we need at least 3.7
+    python_requires=">=3.7", 
 
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     install_requires=[
-        'docutils>=0.3',
-        'numpy',        
+        "numpy",        
+        "sgp4 >= 2.8",
+        "requests",
+        "pydantic",
+        "click",
     ],
-
+    # setup_requires=[
+    #     "cython",
+    # ]
     package_data={
         # If any package contains *.txt or *.rst files, include them:
         '': ['*.txt', '*.rst'],
@@ -27,8 +39,10 @@ setup(
     author="Sam Friedman",
     author_email="samtx@outlook.com",
     description="Predict upcoming satellite overpasses",
-    keywords="iss predict orbit sgp4",
-    url="https://www.github.com/samtx/pass-predictor",   # project home page, if any
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    keywords="iss predict orbit sgp4 satellite",
+    url="https://www.github.com/samtx/passpredict",   # project home page, if any
     classifiers=[
         'License :: OSI Approved :: Python Software Foundation License'
     ],

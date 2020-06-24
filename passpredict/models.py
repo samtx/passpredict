@@ -5,7 +5,6 @@ from typing import Any
 from enum import Enum
 
 import numpy as np
-import pytz
 from pydantic import BaseModel
 
 # From Pydantic, to use Numpy arrays
@@ -146,8 +145,8 @@ class Tle(BaseModel):
 
 class Overpass(BaseModel):
     # __slots__ = ['location', 'satellite', 'start_pt', 'max_pt', 'end_pt', 't', 'r']
-    location: Location
-    satellite: Satellite
+    # location: Location
+    # satellite: Satellite
     start_pt: Point
     max_pt: Point
     end_pt: Point

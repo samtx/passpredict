@@ -2,7 +2,6 @@ import datetime
 from pprint import pprint
 
 import click
-import pytz
 
 from .models import Satellite, Tle, Location
 from .timefn import truncate_datetime
@@ -10,7 +9,10 @@ from .geocoding import geocoder
 from .utils import get_TLE
 from .predictions import predict
 
-
+@click.command()
+@click.option('-12/-24', default=False)  # 12 hour / 24 hour format
+@click.option('-u', '--utc-offset', type=float)  # utc offset
+@click.option('-d', '--days', type.click.IntRange(1, 14, clamp=True)) # day range
 def main():
     """
     Command line interface for pass predictions
@@ -19,8 +21,9 @@ def main():
     query = input('Enter location: ')
     data = geocoder(query)
 
-    tz_str = input('Enter timezone: ')
-    tz = pytz.timezone(tz_str)
+    tz_offset_str = input('Enter timezone offset: ')
+    tz_offset = float(tz_offset_str)
+    tz = datetime.timezone(tz_offset)
 
     location = Location(
         lat=float(data['lat']),
@@ -41,7 +44,7 @@ def main():
     table_str = overpass_table(overpasses, location, tle, tz, twentyfourhour=True)
     print(table_str)
 
-def overpass_table(overpasses, location, tle, timezone=None, twentyfourhour=True):
+def overpass_table(overpasses, location, tle, tz=None, twentyfourhour=True):
     """
     Return a formatted string for tabular output
 
@@ -56,14 +59,10 @@ def overpass_table(overpasses, location, tle, timezone=None, twentyfourhour=True
             tabular formatted string
     """
     satellite_name = tle.satellite.name
-    if timezone is None:
-        import pytz
-        timezone = pytz.utc
-    tz = timezone
     # Print datetimes with the correct timezone
     table_title = ""
     table_title += f"{satellite_name:s} overpasses for {location.name:s}\n"
-    table_title += f"Lat={location.lat:.4f}\u00B0, Lon={location.lon:.4f}\u00B0, Timezone {tz.zone}\n"
+    table_title += f"Lat={location.lat:.4f}\u00B0, Lon={location.lon:.4f}\u00B0, Timezone {tz}\n"
     table_title += f"Using TLE\n"
     table_title += f"{tle.tle1:s}\n"
     table_title += f"{tle.tle2:s}\n\n"
