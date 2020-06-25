@@ -3,7 +3,7 @@ from pprint import pprint
 
 import click
 
-from .models import Satellite, Tle, Location
+from .schemas import Satellite, Tle, Location
 from .timefn import truncate_datetime
 from .geocoding import geocoder
 from .utils import get_TLE
