@@ -78,25 +78,11 @@ def test_Overpass():
         elevation = 10.0000001,
         range = 3987.1483321548
     )
-    location = models.Location(
-        lat = 30.2672,
-        lon = -97.7431,
-        h = 88,
-        name = 'Austin, Texas'
-    )
-    satellite = models.Satellite(
-        id = 25544,
-        name = "International Space Station"
-    )
     overpass = models.Overpass(
-        satellite=satellite,
-        location=location,
         start_pt=start_pt,
         max_pt=max_pt,
         end_pt=end_pt
     )
-    assert overpass.satellite == satellite
-    assert overpass.satellite.id == 25544
     assert overpass.start_pt == start_pt
     assert overpass.start_pt.datetime == datetime.datetime(2020, 6, 1, 12, 34, 56, tzinfo=datetime.timezone.utc)
     assert overpass.max_pt == max_pt
