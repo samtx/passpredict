@@ -7,7 +7,7 @@ from collections import OrderedDict
 import numpy as np
 import requests
 
-from .models import Tle
+from .schemas import Tle
 
 CACHE_DIRECTORY = ".passpredict_cache"
 

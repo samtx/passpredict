@@ -4,7 +4,7 @@ import functools
 from passpredict.timefn import julian_date, jdt_tsince, invjday, jday2datetime, \
                                  jday2npdatetime64, truncate_datetime
 from passpredict.solar import is_sat_illuminated, sun_pos
-from passpredict.models import SatelliteRV, Tle
+from passpredict.schemas import SatelliteRV, Tle
 from passpredict.rotations import teme2ecef
 from passpredict.utils import parse_tles_from_celestrak, epoch_from_tle
 import datetime

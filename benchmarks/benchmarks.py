@@ -5,7 +5,7 @@ import datetime
 import numpy as np
 
 import passpredict
-from passpredict.models import Location, Satellite
+from passpredict.schemas import Location, Satellite
 from passpredict.predictions import predict_passes
 from passpredict.propagate import propagate
 from passpredict.timefn import truncate_datetime

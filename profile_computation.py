@@ -8,7 +8,7 @@ import numpy as np
 
 from passpredict.predictions import predict_passes
 from passpredict.propagate import propagate
-from passpredict.models import Location, Satellite
+from passpredict.schemas import Location, Satellite
 from passpredict.timefn import truncate_datetime
 from passpredict.utils import get_TLE
 
