@@ -1,11 +1,17 @@
 # Test using pytest
 
-from passpredict import predictions
-from passpredict import timefn
+import datetime
+
 from numpy.testing import assert_allclose, assert_almost_equal
 import numpy as np
-import datetime
+
+from passpredict import predictions
+from passpredict import timefn
 from passpredict.constants import ASEC2RAD
+from passpredict.utils import get_TLE
+from passpredict.models import Location, Satellite
+from passpredict.propagate import propagate
+
 
 def test_satellite_visible():
     """
@@ -18,6 +24,34 @@ def test_satellite_visible():
     jdt = np.array([timefn.julian_date2(dt)])
     vis = predictions.satellite_visible(rsat, rsite, rho, jdt)
     assert vis[0] > 2
+
+
+def test_predict_passes():
+    """
+    Right now, just test that it doesn't error
+    """
+    # Set up satellite position
+    dt_seconds = 10
+    num_days = 5
+    min_elevation = 10.0
+
+    austin = Location(lat=30.2672, lon=-97.7431, h=0, name='Austin')
+    iss = Satellite(id=25544, name='ISS')
+    iss_tle = get_TLE(iss)
+    datetime_start = timefn.truncate_datetime(
+        datetime.datetime.now(tz=datetime.timezone.utc)
+    )
+    datetime_end = datetime_start + datetime.timedelta(days=num_days)
+    iss_rv = propagate.__wrapped__(
+        iss_tle.tle1, iss_tle.tle2, datetime_start, datetime_end, dt_seconds
+    )
+    overpasses = predictions.predict_passes(
+        austin.lat, austin.lon, austin.h,
+        iss_rv.rECEF, iss_rv.rECI, iss_rv.julian_date,
+        min_elevation=min_elevation
+    )
+    assert True
+
 
 
 # def test_riseset():

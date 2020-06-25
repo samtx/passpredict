@@ -56,7 +56,7 @@ def satellite_visible(rsatECI, rsiteECI, rho, jdt):
     return visible
 
 
-def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min_elevation=10, loc=None, sat=None):
+def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min_elevation=10, sat=None):
     # # change julian dates to datetimes
     # num_jdt = jdt_ary.size
     # dt_array = np.empty(num_jdt, dtype=object)
@@ -102,7 +102,7 @@ def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min
         # sat_vis = satellite_visible(rsatECI, rsiteECI, rSEZ, jdt)
         overpass = Overpass(
             # location=loc,
-            # satellite=sat,
+            satellite=sat,
             start_pt=start_pt,
             max_pt=max_pt,
             end_pt=end_pt,
@@ -113,12 +113,12 @@ def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min
     return overpasses
 
 
-def predict_passes(lat, lon, h, rsatECEF, rsatECI, jdt, rsun=None, min_elevation=None, loc=None, sat=None):
+def predict_passes(lat, lon, h, rsatECEF, rsatECI, jdt, rsun=None, min_elevation=None):
     rSEZ = site_sat_rotations(lat, lon, h, rsatECEF)
     # rsiteECI = site2eci(lat, lon, h, jdt)
     rng, az, el = razel(rSEZ)
     # plot_elevation(np.arange(el.size), el)
-    overpasses = get_overpasses(el, az, rng, jdt, rSEZ, rsiteECI=None, rsatECI=None, min_elevation=min_elevation, loc=loc, sat=sat)
+    overpasses = get_overpasses(el, az, rng, jdt, rSEZ, rsiteECI=None, rsatECI=None, min_elevation=min_elevation)
     return overpasses
 
 
@@ -163,7 +163,7 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
     overpasses = predict_passes(
         location.lat, location.lon, location.h,
         satellite_rv.rECEF, satellite_rv.rECI, satellite_rv.julian_date,
-        min_elevation=min_elevation, loc=location, sat=satellite)
+        min_elevation=min_elevation)
     return overpasses
 
 

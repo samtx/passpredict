@@ -1,7 +1,7 @@
 # models
 import datetime
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, List
 from enum import Enum
 
 import numpy as np
@@ -144,14 +144,23 @@ class Tle(BaseModel):
 
 
 class Overpass(BaseModel):
-    # __slots__ = ['location', 'satellite', 'start_pt', 'max_pt', 'end_pt', 't', 'r']
-    # location: Location
-    # satellite: Satellite
     start_pt: Point
     max_pt: Point
     end_pt: Point
-    # t: Array[float]
-    # r: Array[float]
+    satellite: Satellite = None
+    
+
+class OverpassResultBase(BaseModel):
+    location: Location
+
+
+class SingleSatOverpassResult(OverpassResultBase):
+    satellite: Satellite
+    overpasses: List[Overpass]
+
+
+class MultiSatOverpassResult(OverpassResultBase):
+    overpasses: List[Overpass]
 
 
 def process_overpasses(overpasses, t, az, el, rng, dt_start):
