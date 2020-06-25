@@ -1,1 +1,5 @@
 sgp4==2.8
+numpy
+requests
+pydantic
+click
