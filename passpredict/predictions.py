@@ -56,31 +56,23 @@ def satellite_visible(rsatECI, rsiteECI, rho, jdt):
     return visible
 
 
-def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min_elevation=10, sat=None):
-    # # change julian dates to datetimes
-    # num_jdt = jdt_ary.size
-    # dt_array = np.empty(num_jdt, dtype=object)
-    # for i in range(num_jdt):
-    #     dt_array[i] = jday2datetime(jdt_ary[i])
+def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min_elevation=10, sat_id=None):
     el0 = el[:-1] - min_elevation
     el1 = el[1:] - min_elevation
-    el_change_sign = (el0*el1 < 0)
-    # Find the start of an overpass
-    start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]
-    # Find the end of an overpass
-    end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]
-    # Iterate over start/end indecies and gather inbetween indecies
-    num_overpasses = min(start_idx.size, end_idx.size)
+    el_change_sign = (el0*el1 < 0)   
+    start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]  # Find the start of an overpass
+    end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]    # Find the end of an overpass
+    num_overpasses = min(start_idx.size, end_idx.size)       # Iterate over start/end indecies and gather inbetween indecies
     if start_idx.size < end_idx.size:
         end_idx = end_idx[1:]
-    overpasses = np.empty(num_overpasses, dtype=object)
+    # overpasses = np.empty(num_overpasses, dtype=object)
+    overpasses = [None] * num_overpasses
     for j in range(num_overpasses):
         # Store indecies of overpasses in a list
         idx0 = start_idx[j]
         idxf = end_idx[j]
         overpass_idx = np.arange(idx0, idxf+1, dtype=int)
         idxmax = np.argmax(el[overpass_idx])
-
         start_pt = Point(
             datetime=jday2datetime(jdt_ary[idx0]),
             azimuth=azm[idx0],
@@ -100,15 +92,19 @@ def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min
             range=rng[idxf]
         )
         # sat_vis = satellite_visible(rsatECI, rsiteECI, rSEZ, jdt)
-        overpass = Overpass(
-            # location=loc,
-            satellite=sat,
-            start_pt=start_pt,
-            max_pt=max_pt,
-            end_pt=end_pt,
-            # jdt_ary,
-            # rSEZ[:,overpass_idx]
-        )
+        if sat_id is not None:
+            overpass = Overpass(
+                satellite_id=sat_id,
+                start_pt=start_pt,
+                max_pt=max_pt,
+                end_pt=end_pt
+            )
+        else:
+            overpass = Overpass(
+                start_pt=start_pt,
+                max_pt=max_pt,
+                end_pt=end_pt
+            )
         overpasses[j] = overpass
     return overpasses
 

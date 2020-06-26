@@ -147,7 +147,7 @@ class Overpass(BaseModel):
     start_pt: Point
     max_pt: Point
     end_pt: Point
-    satellite: Satellite = None
+    satellite_id: int = None
     
 
 class OverpassResultBase(BaseModel):
