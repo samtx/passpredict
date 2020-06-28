@@ -158,67 +158,7 @@ def theta_GAST1982(Eq, gmst):
     return Eq + gmst
 
 
-def nutation_coeff():
-    i = np.array(
-        [1, 9, 31, 2, 10, 32, 11, 33, 34, 12, 35, 13, 36, 38, 37], dtype=np.int
-    )
-    A = np.array(
-        [
-            -171996,
-            -13187,
-            -2274,
-            2062,
-            1426,
-            712,
-            -517,
-            -386,
-            -301,
-            217,
-            -158,
-            129,
-            123,
-            63,
-            63,
-        ],
-        dtype=np.float64,
-    )
-    B = np.array(
-        [
-            -174.2,
-            -1.6,
-            -0.2,
-            0.2,
-            -3.4,
-            0.1,
-            1.2,
-            -0.4,
-            0.0,
-            -0.5,
-            0.0,
-            0.1,
-            0.0,
-            0.1,
-            0.0,
-        ]
-    )
-    C = np.array(
-        [92025, 5736, 977, -895, 54, -7, 224, 200, 129, -95, -1, -70, -53, -33, -2]
-    )
-    D = np.array(
-        [8.9, -3.1, -0.5, 0.5, -0.1, 0.0, -0.6, 0.0, -0.1, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0]
-    )
-    an = np.array(
-        [
-            [0, 0, 0, 0, 1],
-            [0, 0, 2, -2, 2],
-            [0, 0, 2, 0, 2],
-            [0, 0, 0, 0, 2],
-            [0, 1, 0, 0, 0],
-            [1, 0, 0, 0, 0],
-            [0, 1, 2, -2, 2],
-            [0, 0, 2, 0, 1],
-        ]
-    )
+
 
 
 def fk5_nutation(tt):
@@ -575,6 +515,18 @@ def ecef2eci(r, jdt):
     rECEF = rPEF
 
     return rECEF
+
+
+def teme2eci(rTEME, jdt):
+    """Convert TEME vectors to GCRS Earth centered interial coordinates
+
+
+    Reference:
+        teme2eci.m Vallado software
+
+    """
+    pass
+
 
 
 def rot1(a):
