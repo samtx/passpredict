@@ -8,6 +8,7 @@ e2_EARTH = np.longdouble(0.006694385000)  # Earth eccentricity squared
 MU = np.longdouble(398600.4418)  # [km3/(solar s)2] gravitational parameter
 J2 = np.longdouble(0.0010826267)
 J2000 = 2451545.0
+DJC = 36525.0  # days per Julian century
 
 # Various constants required by Skyfield
 AU_M = 149597870700  # per IAU 2012 Resolution B2

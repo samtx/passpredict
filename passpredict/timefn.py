@@ -7,6 +7,14 @@ from .constants import DAY_S, J2000
 
 tz_utc = datetime.timezone.utc
 
+
+def jd2jc(jd1: float, jd2: float = 0.0) -> float:
+    """
+    Convert julian date to julian century
+    """
+    return ((jd1 - J2000) + jd2) / 36525.0
+
+
 def jd2utc1(jd, deltaUT1=0.0):
     pass
 
@@ -29,7 +37,7 @@ def utc2tt(UTC, deltaAT=37.0, deltaUT1=0.0):
     # terrestial time in Julian Days
     JDtt = TAI + 32.184 / DAY_S
     # Convert JD to Julian Centuries
-    TT = (JDtt - J2000) / 36525
+    TT = jd2jc(JDtt)
     return TT
 
 

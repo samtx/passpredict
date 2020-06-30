@@ -5,6 +5,8 @@ import numpy as np
 
 from .constants import tau, ASEC2RAD, DEG2RAD
 from .topocentric import site_ECEF, site_declination_and_K
+from .precession import fk5_precession
+from .nutation import fk5_nutation
 
 # _arrays = np.load('nutation.npz')
 # lunisolar_longitude_coefficients = _arrays['lunisolar_longitude_coefficients']
@@ -172,60 +174,6 @@ def fk5_nutation(tt):
     return dPsi1980, dEps1980
 
 
-def fk5_precession(Td):
-    """Calculate precession angle Theta
-
-    Assume JD2000 epoch, T0 = 0
-
-    Args
-        Td: terrestial time
-
-    References:
-        Vallado, p. 227, Eq. 3-87
-    """
-    # Td = (jdt - J2000)/36525
-    zeta = (2306.2181 + (0.30188 + 0.017998 * Td) * Td) * Td
-    theta = (2004.3109 + (-0.42665 - 0.041833 * Td) * Td) * Td
-    z = (2306.2181 + (1.09468 + 0.018203 * Td) * Td) * Td
-    # Convert to radians
-    zeta *= ASEC2RAD
-    theta *= ASEC2RAD
-    z *= ASEC2RAD
-
-    return zeta, theta, z
-
-
-def precess_rotation(r, zeta, theta, z):
-    """Perform precession rotations on position vector r
-    From IAU 80 Precession Theory. Rotation from MOD to GCRF.
-
-    Args:
-        r : (3, n), n is the number of observations
-        zeta, theta, z (n): precession angles in radians
-
-    References:
-        Vallado, p. 228, Eq. 3-89
-    """
-    coszeta = np.cos(zeta)
-    sinzeta = np.sin(zeta)
-    costheta = np.cos(theta)
-    sintheta = np.sin(theta)
-    cosz = np.cos(z)
-    sinz = np.sin(z)
-
-    rGCRF = np.empty(r.shape, dtype=np.float)
-    rGCRF[0] = (
-        (costheta * cosz * coszeta - sinz * sinzeta) * r[0]
-        + (sinz * costheta * coszeta + sinzeta * cosz) * r[1]
-        + sintheta * coszeta * r[2]
-    )
-    rGCRF[1] = (
-        (-sinzeta * costheta * cosz - sinz * coszeta) * r[0]
-        + (-sinz * sinzeta * costheta + cosz * coszeta) * r[1]
-        - sintheta * sinzeta * r[2]
-    )
-    rGCRF[2] = -sintheta * cosz * r[0] - sintheta * sinz * r[1] + costheta * r[2]
-    return rGCRF
 
 
 def teme2ecef(r, jdt, xp=0.0, yp=0.0):
@@ -520,12 +468,14 @@ def ecef2eci(r, jdt):
 def teme2eci(rTEME, jdt):
     """Convert TEME vectors to GCRS Earth centered interial coordinates
 
+    TEME -> TOD -> MOD -> J2000 (ECI)
 
     Reference:
         teme2eci.m Vallado software
 
     """
-    pass
+    # tt = 
+    prec = fk5_precession
 
 
 
