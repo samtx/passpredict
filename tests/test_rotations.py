@@ -1,11 +1,15 @@
 # test rotations.py
+import datetime
+
+import numpy as np
+from numpy.testing import assert_allclose, assert_almost_equal
+import pytest
+
 from passpredict import rotations
 from passpredict import constants
 from passpredict import timefn
 from passpredict import topocentric
-from numpy.testing import assert_allclose, assert_almost_equal
-import numpy as np
-import datetime
+from passpredict.utils import epoch_from_tle_datetime
 
 
 def test_ecef2sez():
@@ -25,31 +29,6 @@ def test_ecef2sez():
     np.set_printoptions(precision=8)
     for i in [0, 1, 2]:
         assert_almost_equal(rSEZ[i], rSEZ_true[i], decimal=0, verbose=True)
-
-
-def test_fk5_precession():
-    """
-    Vallado, Eg. 3-15, p.231
-    """
-    # April 6, 2004, 07:51:28.386009 UTC
-    tt = 0.0426236319  # Julian centuries since J2000
-    zeta, theta, z = rotations.fk5_precession(tt)
-    assert_almost_equal(zeta, 0.0273055 * constants.DEG2RAD, decimal=9)
-    assert_almost_equal(theta, 0.0237306 * constants.DEG2RAD, decimal=9)
-    assert_almost_equal(z, 0.0273059 * constants.DEG2RAD, decimal=9)
-
-
-def test_precess_rotation():
-    """
-    Vallado, Eg. 3-15, p.231
-    """
-    rMOD = np.array([5094.0283745, 6127.8708164, 6380.2485164])
-    zeta = 0.0273055 * constants.DEG2RAD
-    theta = 0.0237306 * constants.DEG2RAD
-    z = 0.0273059 * constants.DEG2RAD
-    rGCRF = rotations.precess_rotation(rMOD, zeta, theta, z)
-    rGCRF_true = np.array([5102.508958, 6123.011401, 6378.136928])
-    assert_allclose(rGCRF, rGCRF_true)
 
 
 def test_theta_GMST1982():
@@ -135,6 +114,43 @@ def test_thetaGMST_from_skyfield():
     jd = timefn.julian_date(dt)
     theta, thetadt = rotations.theta_GMST1982(jd)
     assert_almost_equal(theta, 5.459562584754709, decimal=15)
+
+@pytest.mark.skip("not implemented yet")
+def test_teme2eci():
+    """
+    Test TEME -> J2000 (ECI) conversion
+
+    Using 'of date'
+
+    Reference:
+        Vallado, p.234, Eq. 3-91
+    """
+    epoch = epoch_from_tle_datetime('00182.78495062')
+    jd = timefn.julian_date(epoch)
+    rTEME = np.array((-9060.47373569, 4658.70952502, 813.68673153))
+    rJ2000 = rotations.teme2eci(rTEME, jd)
+    assert_almost_equal(rJ2000[0], -9059.9413786)
+    assert_almost_equal(rJ2000[1],  4659.6972000)
+    assert_almost_equal(rJ2000[2],   813.9588875)
+
+
+@pytest.mark.skip("not implemented yet")
+def test_teme2eci_2():
+    """
+    Test TEME -> J2000 (ECI) conversion
+
+    Using 'of epoch'
+
+    Reference:
+        Vallado, p.234, Eq. 3-91
+    """
+    epoch = epoch_from_tle_datetime('00179.78495062')
+    jd = timefn.julian_date(epoch)
+    rTEME = np.array((-9060.47373569, 4658.70952502, 813.68673153))
+    rJ2000 = rotations.teme2eci(rTEME, jd)
+    assert_almost_equal(rJ2000[0], -9059.9510799)
+    assert_almost_equal(rJ2000[1],  4659.6807556)
+    assert_almost_equal(rJ2000[2],   813.9450451)
 
 
 def test_appendix_c_conversion_from_TEME_to_ITRF_UTC1():
