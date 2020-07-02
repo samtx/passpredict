@@ -66,7 +66,7 @@ def nut80_fundamental_arguments(tt):
     """
     r = 1296000.0  # arcseconds in 360 degrees
     # r = 360
-    print(ASEC2RAD)
+    # print(ASEC2RAD)
     ASEC2DEG = 1/3600.0
 
     

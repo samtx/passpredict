@@ -38,12 +38,12 @@ def epoch_from_tle_datetime(epoch_string: str) -> datetime.datetime:
     """
     Return datetime object from tle epoch string
     """
-    epoch_year = int(epoch_string[0:3])
+    epoch_year = int(epoch_string[0:2])
     if epoch_year < 57:
         epoch_year += 2000
     else:
         epoch_year += 1900
-    epoch_day = float(epoch_string[3:])
+    epoch_day = float(epoch_string[2:])
     epoch_day, epoch_day_fraction = np.divmod(epoch_day, 1)
     epoch_microseconds = epoch_day_fraction * 24 * 60 * 60 * 1e6
     epoch = datetime.datetime(epoch_year, month=1, day=1) + \
