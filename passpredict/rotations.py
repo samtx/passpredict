@@ -7,6 +7,7 @@ from .constants import tau, ASEC2RAD, DEG2RAD
 from .topocentric import site_ECEF, site_declination_and_K
 from .precession import fk5_precession
 from .nutation import fk5_nutation
+from .timefn import jd2jc
 
 # _arrays = np.load('nutation.npz')
 # lunisolar_longitude_coefficients = _arrays['lunisolar_longitude_coefficients']
@@ -139,10 +140,24 @@ def equinox1982(dPsi1980, eps1980, omega_moon):
     References:
         Vallado, p.224
     """
-    eq = dPsi1980 * np.cos(eps1980)
+    eq = equinox1982_geometric_terms(dPsi1980, eps1980)
     eq += 0.00264 * ASEC2RAD * np.sin(omega_moon)
     eq += 0.000063 * np.sin(2 * omega_moon)
     return eq
+
+
+def equinox1982_geometric_terms(dPsi1980, eps1980):
+    """Return the geometric terms of equation of equinoxes for sidereal time
+    for IAU-76/FK5 reductions
+
+    Args:
+        dPsi1980 : float  (radians)
+        eps1920 : float   (radians)
+
+    References:
+        Vallado, p.224
+    """
+    return dPsi1980 * np.cos(eps1980)
 
 
 def theta_GAST1982(Eq, gmst):
@@ -163,15 +178,15 @@ def theta_GAST1982(Eq, gmst):
 
 
 
-def fk5_nutation(tt):
-    """
-    Ref: Table D-6, p. 1043
-    """
-    api = an1 * M_moon + an2 * M_sun + an3 * Um_moon + an4 * D_sun + an5 * Omega_moon
-    psi_tmp = np.sum(A + B * tt) * np.sin(api)
-    eps_tmp = np.sum(C + D * tt) * np.cos(api)
+# def fk5_nutation(tt):
+#     """
+#     Ref: Table D-6, p. 1043
+#     """
+#     api = an1 * M_moon + an2 * M_sun + an3 * Um_moon + an4 * D_sun + an5 * Omega_moon
+#     psi_tmp = np.sum(A + B * tt) * np.sin(api)
+#     eps_tmp = np.sum(C + D * tt) * np.cos(api)
 
-    return dPsi1980, dEps1980
+#     return dPsi1980, dEps1980
 
 
 
@@ -474,9 +489,35 @@ def teme2eci(rTEME, jdt):
         teme2eci.m Vallado software
 
     """
-    # tt = 
-    prec = fk5_precession
+    tt = jd2jc(jdt)  # convert julian date to julian century
+    prec = fk5_precession(tt)
+    nut = fk5_nutation(tt)
+    eq_equinox_star = equinox1982_geometric_terms(nut.dpsi, nut.meaneps)
+    E = rot3(-eq_equinox_star)
+    print(f'prec = {prec}')
+    print(f'nut  = {nut}')
+    print(f'E    = {E}')
+    # Create rotation matrix  [M] = [P][N][E]
+    M = np.dot(np.dot(prec.mtx, nut.mtx), E)
+    rJ2000 = mxv(M, rTEME)
+    return rJ2000
 
+
+def mxv(mtx, vec):
+    """
+    Multiply a matrix by (m) vectors
+
+    Args:
+        mtx: float (n, n)
+        vec: float (n, m)
+
+    Returns:
+        float (n, m)
+
+    Reference:
+        skyfield/functions.py, line 23
+    """
+    return np.einsum('ij...,j...->i...', mtx, vec)
 
 
 def rot1(a):
