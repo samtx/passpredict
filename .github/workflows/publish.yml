@@ -36,7 +36,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: dist_${{ matrix.os }}_${{ matrix.python_version }}
-        path: dist
+        path: dist/
 
   upload:
     runs-on: ubuntu-latest
