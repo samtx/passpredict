@@ -33,7 +33,7 @@ setup(
             'pytest-cov',
             'flake8',
         ]
-    }
+    },
     package_data={
         # If any package contains *.txt, *.rst, *.dat, *.csv files, include them:
         '': ['*.txt', '*.rst', '*.dat', '*.csv'],
