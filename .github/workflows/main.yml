@@ -28,6 +28,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements-dev.txt
+        pip install -r requirements.txt
     - name: Build extensions
       run: python setup.py build_ext
     - name: Test with pytest
