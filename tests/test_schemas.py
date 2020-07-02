@@ -14,17 +14,17 @@ def test_Satellite():
     assert satellite.name == name
 
 
-@pytest.mark.xfail(strict=True)
+# @pytest.mark.xfail(strict=True)
 def test_Satellite_fail():
     """
-    This test is expected to fail
+    This test shows that you must use keyword arguments for pydantic schema objects
     """
     satid = 25544
     name = "International Space Station"
-    satellite = schemas.Satellite(satid, name)
-    assert satellite.id == satid
-    assert satellite.name == name
-
+    with pytest.raises(TypeError) as err:
+        satellite = schemas.Satellite(satid, name)
+    assert '__init__() takes exactly 1 positional argument (3 given)' in str(err.value)
+    
 
 def test_Tle():
     """

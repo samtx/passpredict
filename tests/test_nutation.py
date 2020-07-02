@@ -3,6 +3,9 @@ from numpy.testing import assert_almost_equal
 
 import passpredict.nutation as nutation
 from passpredict.constants import DEG2RAD, J2000, DJC, RAD2DEG
+from passpredict.utils import epoch_from_tle_datetime
+from passpredict.timefn import julian_date, jd2jc
+
 
 def test_nut80_fundamental_arguments():
     """
@@ -36,6 +39,42 @@ def test_nut80_angles():
     assert_almost_equal(deps*RAD2DEG, 0.0020316)
 
 
+@pytest.mark.skip("Not accurate enough")
+def test_nut80_angles_2():
+    """
+    Vallado, p. 234
+    """
+    epoch = epoch_from_tle_datetime('00179.78495062')
+    jd = julian_date(epoch)
+    tt = jd2jc(jd)
+    nut80 = nutation.nut80_fundamental_arguments(tt)
+    dpsi, deps = nutation.nut80_angles(tt, nut80)
+    meaneps = nutation.nut80_mean_eps(tt)
+    print(f'dpsi={dpsi:13.8f} rad,  deps={deps:13.8f} rad,  meaneps={meaneps:13.8f} rad')
+    print(f'dpsi={dpsi*RAD2DEG:13.8f}\u00B0,     deps={deps*RAD2DEG:13.8f}\u00B0,     meaneps={meaneps*RAD2DEG:13.8f}\u00B0')
+    assert_almost_equal(dpsi*RAD2DEG, -0.004337544)
+    assert_almost_equal(deps*RAD2DEG, -0.001247061)
+    assert_almost_equal(meaneps*RAD2DEG, 23.43922657)
+
+
+@pytest.mark.skip("Not accurate enough")
+def test_nut80_angles_3():
+    """
+    Vallado, p. 234
+    """
+    epoch = epoch_from_tle_datetime('00182.78495062')
+    jd = julian_date(epoch)
+    tt = jd2jc(jd)
+    nut80 = nutation.nut80_fundamental_arguments(tt)
+    dpsi, deps = nutation.nut80_angles(tt, nut80)
+    meaneps = nutation.nut80_mean_eps(tt)
+    print(f'dpsi={dpsi:13.8f} rad,  deps={deps:13.8f} rad,  meaneps={meaneps:13.8f} rad')
+    print(f'dpsi={dpsi*RAD2DEG:13.8f}\u00B0,     deps={deps*RAD2DEG:13.8f}\u00B0,     meaneps={meaneps*RAD2DEG:13.8f}\u00B0')
+    assert_almost_equal(dpsi*RAD2DEG, -0.004250260)
+    assert_almost_equal(deps*RAD2DEG, -0.001260854)
+    assert_almost_equal(meaneps*RAD2DEG, 23.43922657)
+
+
 def test_nut80_angles_SOFA():
     """
     from SOFA validation routines
@@ -64,6 +103,32 @@ def test_nut80_mean_eps():
     print(f'meaneps = {meaneps:0.8f}')
     assert_almost_equal(meaneps, 23.4387368)
 
+
+@pytest.mark.skip("Not accurate enough")
+def test_nut80_mean_eps_2():
+    """
+    Vallado, p.234
+    """
+    epoch = epoch_from_tle_datetime('00179.78495062')
+    jd = julian_date(epoch)
+    tt = jd2jc(jd)
+    meaneps = nutation.nut80_mean_eps(tt)
+    meaneps *= RAD2DEG
+    print(f'meaneps = {meaneps:0.8f}\u00B0')
+    assert_almost_equal(meaneps, 23.43922657)
+
+
+def test_nut80_mean_eps_3():
+    """
+    Vallado, p.234
+    """
+    epoch = epoch_from_tle_datetime('00182.78495062')
+    jd = julian_date(epoch)
+    tt = jd2jc(jd)
+    meaneps = nutation.nut80_mean_eps(tt)
+    meaneps *= RAD2DEG
+    print(f'meaneps = {meaneps:0.8f}')
+    assert_almost_equal(meaneps, 23.43922657)
 
 
 if __name__ == "__main__":
