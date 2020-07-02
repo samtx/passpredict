@@ -1,0 +1,6 @@
+# Development Requirements
+Cython
+pytest
+pytest-cov
+pytest-html
+flake8
