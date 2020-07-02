@@ -14,7 +14,7 @@ class PrecessionParams:
     mtx: np.ndarray
 
 
-@lru_cache
+@lru_cache(maxsize=128)
 def fk5_precession_angles(Td):
     """Calculate precession angle Theta
 
@@ -37,7 +37,7 @@ def fk5_precession_angles(Td):
     return zeta, theta, z
 
 
-@lru_cache
+@lru_cache(maxsize=128)
 def fk5_precession(tt: float):
     """
     Precession parameters and matrix for FK5 reduction with IAU 1976 precession theory

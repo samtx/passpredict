@@ -55,7 +55,7 @@ class NutationParams:
 
 
 
-@lru_cache
+@lru_cache(maxsize=128)
 def nut80_fundamental_arguments(tt):
     """IAU 1980 fundamental arguments, Delaunay parameters
 
@@ -135,7 +135,7 @@ def nut80_mean_eps(tt):
     return meaneps * DEG2RAD
 
 
-@lru_cache
+@lru_cache(maxsize=128)
 def fk5_nutation(tt):
     """IAU 1980 Nutation Theory
 
