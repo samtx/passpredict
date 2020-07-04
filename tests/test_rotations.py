@@ -52,12 +52,28 @@ def test_theta_GMST1982_2():
         Vallado, Eg. 3-15, p.230
     """
     # April 6, 2004, 07:51:28.386 009UTC, not UTC1
-    ms = int(1e6) + 386000 - 439961
-    dt = datetime.datetime(2004, 4, 6, 7, 51, 27, ms)
-    jd = timefn.julian_date(dt)
-    theta, thetadt = rotations.theta_GMST1982(jd)
+    jd_ut1 = timefn.julian_date(2004, 4, 6, 7, 51, 28.386009 - 0.4399619)
+    theta, thetadt = rotations.theta_GMST1982(jd_ut1)
     theta *= constants.RAD2DEG
-    assert_almost_equal(theta, 312.8098943, decimal=6)
+    assert_almost_equal(theta, 312.8098943, decimal=7)
+
+
+def test_ecef2eci():
+    """
+    Vallado, Eg. 3-15, p. 230
+    """
+    rECEF = np.array([
+        [-1033.4793830],
+         [7901.2952754],
+         [6380.3565958]
+    ])
+    jdt = timefn.julian_date(2004, 4, 6, 7, 51, 28.386009)
+    rECI = rotations.ecef2eci(rECEF, jdt)
+    assert_allclose(
+        rECI,
+        np.array([[5102.5096], [6123.01152], [6378.1363]]),
+        atol=0.1  # need to make more accurate
+    )
 
 
 def test_IJK2SEZ():
@@ -170,6 +186,29 @@ def test_teme2eci():
     assert_almost_equal(rJ2000[0], -9059.9413786, decimal=3)
     assert_almost_equal(rJ2000[1],  4659.6972000, decimal=3)
     assert_almost_equal(rJ2000[2],   813.9588875, decimal=3)
+
+
+@pytest.mark.skip('failing')
+def test_theta_GAST1982():
+    """
+    Vallado, Eg. 3-15, p. 230
+    """
+    dut1 = -0.4399619
+    jdut1 = timefn.julian_date(2004, 4, 6, 7, 51, 28.386009 + dut1)
+    ttut1 = timefn.jd2jc(jdut1)
+    gmst = 312.8098943 * constants.DEG2RAD
+    tt = 0.0426236319
+    nut = nutation.fk5_nutation.__wrapped__(tt)
+    print('dpsi ',nut.dpsi*constants.RAD2DEG)
+    print('eps ',nut.eps*constants.RAD2DEG)
+    print('om ',nut.omega_moon % 360.0)
+    # eps = 23.4387368 * constants.DEG2RAD
+    eps = 23.4407685 * constants.DEG2RAD
+    dpsi = -0.0034108 * constants.DEG2RAD
+    omega_moon = 42.6046140 * constants.DEG2RAD
+    Eq = rotations.equinox1982(dpsi, eps, omega_moon)
+    gast = rotations.theta_GAST1982(gmst, Eq)
+    assert_almost_equal(gast * constants.RAD2DEG, 312.8067654)
 
 
 def test_teme2eci_2():
