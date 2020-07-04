@@ -452,32 +452,27 @@ def fundamental_arguments(t):
     return a[:,0]
 
 
-def ecef2eci(r, jdt):
+def ecef2eci(rECEF, jdt):
     """Convert ECEF vectors to ECI vectors
 
     Args:
         r : float (3, n) : ECEF vectors
-        jdt : float (n) : julian dates
+        jdt : float, julian date of epoch
     Returns:
         rECI : float (3, n): ECI vectors
 
     References:
-        teme2ecef.m Vallado software
+        ecef2eci.m Vallado software
     """
-    # find GMST
-    gmst = theta_GMST1982(jdt)
-
-    gmst = np.mod(gmst, tau)
-
-    costheta = np.cos(gmstg)
-    sintheta = np.sin(gmstg)
-    rPEF = np.empty(r.shape)
-    rPEF[0] = costheta*r[0] - sintheta*r[1]
-    rPEF[1] = sintheta*r[0] + costheta*r[1]
-    rPEF[2] = r[2]
-    rECEF = rPEF
-
-    return rECEF
+    tt = jd2jc(jdt)
+    prec = fk5_precession(tt)       # Precession
+    nut = fk5_nutation(tt)          # Nutation
+    gmst, _ = theta_GMST1982(jdt)
+    Eq = equinox1982(nut.dpsi, nut.eps, nut.omega_moon)
+    gast = theta_GAST1982(Eq, gmst) # Sidereal Time
+    M = np.dot(np.dot(prec.mtx, nut.mtx), rot3(-gast))
+    rECI = mxv(M, rECEF)
+    return rECI
 
 
 def teme2eci(rTEME, jdt):
