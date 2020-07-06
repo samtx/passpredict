@@ -1,8 +1,17 @@
 # test timefn.py
-from passpredict import timefn
 import numpy as np
+import pytest
+
+from passpredict import timefn
 from numpy.testing import assert_allclose, assert_almost_equal, assert_equal
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+
+jd_params = [
+    pytest.param(1996, 10, 26, 14, 20,         0, 2450383.09722222,   8, id='Vallado, eg.3-4'),
+    pytest.param(2004,  4,  6,  7, 52, 32.570009, 2453101.828154745,  9, id='Vallado, eg.3-15'),
+    pytest.param(2004,  4,  6,  7, 51, 27.946039, 2453101.8274067827, 10, id='skyfield.tests.test_earth_satellites'),    
+]
 
 
 def test_utc2tt():
@@ -18,37 +27,22 @@ def test_utc2tt():
     assert_almost_equal(tt, 0.043674121031, decimal=12)
 
 
-def test_julian_date():
-    """
-    Vallado, eg.3-4
-    """
-    yr, mo, dy = 1996, 10.0, 26.0
-    hr, mn, sec = 14.0, 20.0, 0.0
+@pytest.mark.parametrize(
+    'yr, mo, dy, hr, mn, sec, jd_expected, decimal', jd_params
+)
+def test_julian_date_from_components(yr, mo, dy, hr, mn, sec, jd_expected, decimal):
     jd = timefn.julian_date(yr, mo, dy, hr, mn, sec)
-    jdT = 2450383.09722222
-    assert_almost_equal(jd, jdT, decimal=8)
+    assert_almost_equal(jd, jd_expected, decimal=decimal)
 
 
-def test_julian_date_datetime():
-    """
-    Vallado, eg.3-4
-    """
-    yr, mo, dy = 1996, 10, 26
-    hr, mn, sec = 14, 20, 0
-    dt = datetime(yr, mo, dy, hr, mn, sec)
+@pytest.mark.parametrize(
+    'yr, mo, dy, hr, mn, sec, jd_expected, decimal', jd_params
+)
+def test_julian_date_datetime(yr, mo, dy, hr, mn, sec, jd_expected, decimal):
+    sec, us = np.divmod(sec, 1.)
+    dt = datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6))
     jd = timefn.julian_date(dt)
-    jdT = 2450383.09722222
-    assert_almost_equal(jd, jdT, decimal=8)
-
-
-# def test_julian_date_datetime2():
-#     """
-#     Vallado, eg. 3-15, p. 230
-#     """
-#     dt = datetime(2004, 4, 6, 7, 51, )
-#     jd = timefn.julian_date(dt)
-#     jdT = 2450383.09722222
-#     assert_almost_equal(jd, jdT, decimal=8)
+    assert_almost_equal(jd, jd_expected, decimal=decimal)
 
 
 def test_julian_date_vectorized():
@@ -58,50 +52,20 @@ def test_julian_date_vectorized():
     )
     jd_vectorized = np.vectorize(timefn.julian_date)
     jd_ary = jd_vectorized(dt_ary)
-    # print(jd_ary)
 
 
-def test_jd_from_skyfield():
-    """From skyfield.tests.test_earth_satellites.py"""
-    ms = int(1e6) + 386000 - 439961
-    dt = datetime(2004, 4, 6, 7, 51, 27, ms)
-    jd = timefn.julian_date(dt)
-    assert_almost_equal(jd, 2453101.8274067827, decimal=12)
-
-
-def test_jd_from_skyfield2():
-    """From skyfield.tests.test_earth_satellites.py"""
-    ms = int(1e6) + 386000 - 439961
-    dt = datetime(2004, 4, 6, 7, 51, 27, ms)
-    jd = timefn.julian_date2(dt)
-    jd_desired = 2453101.8274067827
-    print(f"jd   ={jd:20.15f}")
-    print(f"jddes={jd_desired:20.15f}")
-    print(f"diff ={jd-jd_desired:0.15f}")
-    assert_almost_equal(jd, 2453101.8274067827, decimal=12)
-
-
-def test_jd_from_skyfield3():
-    """From skyfield.tests.test_earth_satellites.py"""
-    sec = 28.386 - 0.439961
-    yr, mo, dy = 2004, 4, 6
-    hr, mn = 7, 51
-    jd = timefn.julian_date2(yr, mo, dy, hr, mn, sec)
-    jd_desired = 2453101.8274067827
-    print(f"jd   ={jd:20.15f}")
-    print(f"jddes={jd_desired:20.15f}")
-    print(f"diff ={jd-jd_desired:0.15f}")
-    assert_almost_equal(jd, jd_desired, decimal=12)
-
-def test_jday2datetime():
+@pytest.mark.parametrize(
+    'yr, mo, dy, hr, mn, sec, jd, decimal', jd_params
+)
+def test_jday2datetime(yr, mo, dy, hr, mn, sec, jd, decimal):
     """Convert a Julian date to a datetime and back"""
     from datetime import timezone
-    # jd = timefn.julian_date(dt)
-    julian_date = 2450383.09722222  # 1996-10-26 14:20:0
-    dt_computed = timefn.jday2datetime(julian_date)
-    dt_desired = datetime(1996, 10, 26, 14, 20, 0, tzinfo=timezone.utc)
+    dt_computed = timefn.jday2datetime(jd)
+    sec, us = np.divmod(sec, 1)
+    dt_desired = datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
     dt_difference = dt_computed - dt_desired
     assert abs(dt_difference.total_seconds()) < 500e-6  # 500 microseconds
+
 
 if __name__ == "__main__":
     import pytest
