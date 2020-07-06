@@ -5,7 +5,7 @@ import numpy as np
 from numpy import dot, cross
 from numpy.linalg import norm
 
-from .rotations import site_sat_rotations
+from .rotations import site_sat_rotations, site_ECEF, ecef2eci, ecef2sez
 from .solar import sun_pos, is_sat_illuminated
 from .topocentric import razel
 from .propagate import propagate
@@ -110,7 +110,10 @@ def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min
 
 
 def predict_passes(lat, lon, h, rsatECEF, rsatECI, jdt, rsun=None, min_elevation=None):
-    rSEZ = site_sat_rotations(lat, lon, h, rsatECEF)
+    rsiteECEF = site_ECEF(lat, lon, h)
+    rsiteECI = ecef2eci(rsiteECEF, jdt)
+    rho = site_sat_rotations(rsiteECEF, rsatECEF)
+    rSEZ = ecef2sez(rho, lat, lon)
     # rsiteECI = site2eci(lat, lon, h, jdt)
     rng, az, el = razel(rSEZ)
     # plot_elevation(np.arange(el.size), el)

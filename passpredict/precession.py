@@ -14,7 +14,7 @@ class PrecessionParams:
     mtx: np.ndarray
 
 
-@lru_cache(maxsize=128)
+# @lru_cache(maxsize=128)
 def fk5_precession_angles(Td):
     """Calculate precession angle Theta
 
@@ -37,7 +37,7 @@ def fk5_precession_angles(Td):
     return zeta, theta, z
 
 
-@lru_cache(maxsize=128)
+# @lru_cache(maxsize=128)
 def fk5_precession(tt: float):
     """
     Precession parameters and matrix for FK5 reduction with IAU 1976 precession theory
@@ -51,13 +51,16 @@ def fk5_precession(tt: float):
     sintheta = np.sin(theta)
     cosz = np.cos(z)
     sinz = np.sin(z)
-    P = np.array(
-        (
-            ( costheta*cosz*coszeta - sinz*sinzeta,  sinz*costheta*coszeta + sinzeta*cosz,  sintheta*coszeta),
-            (-sinzeta*costheta*cosz - sinz*coszeta, -sinz*sinzeta*costheta + cosz*coszeta, -sintheta*sinzeta),
-            (                       -sintheta*cosz,                        -sintheta*sinz,          costheta)
-        ), dtype=np.float64
-    )
+    P = [[0., 0., 0.] for i in range(3)]  # Create precession matrix
+    P[0][0] = costheta*cosz*coszeta - sinz*sinzeta
+    P[0][1] = sinz*costheta*coszeta + sinzeta*cosz
+    P[0][2] = sintheta*coszeta
+    P[1][0] = -sinzeta*costheta*cosz - sinz*coszeta
+    P[1][1] = -sinz*sinzeta*costheta + cosz*coszeta
+    P[1][2] = -sintheta*sinzeta
+    P[2][0] = -sintheta*cosz
+    P[2][1] = -sintheta*sinz
+    P[2][2] = costheta
     prec_params = PrecessionParams(
         zeta=zeta,
         z=z,
