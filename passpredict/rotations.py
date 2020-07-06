@@ -470,8 +470,39 @@ def ecef2eci(rECEF, jdt):
     gmst, _ = theta_GMST1982(jdt)
     Eq = equinox1982(nut.dpsi, nut.eps, nut.omega_moon)
     gast = theta_GAST1982(Eq, gmst) # Sidereal Time
-    M = np.dot(np.dot(prec.mtx, nut.mtx), rot3(-gast))
-    rECI = mxv(M, rECEF)
+    P = prec.mtx
+    N = nut.mtx
+
+    #   [ math.cos(a), math.sin(a), 0.0],
+    #   [-math.sin(a), math.cos(a), 0.0],
+    #   [         0.0,         0.0, 1.0],
+
+    # G = rot3(-gast)
+    G = [[0., 0., 0.] for i in range(3)]
+    cosgast = np.cos(-gast)
+    singast = np.sin(-gast)
+    G[0][0] = cosgast
+    G[0][1] = singast
+    G[1][0] = -singast
+    G[1][1] = cosgast
+    G[2][2] = 1.
+    
+    M = [[0., 0., 0.] for i in range(3)]    # Get resultant rotation matrix [P][N][G]
+    PN = [[0., 0., 0.] for i in range(3)]
+    for i in range(3):            # there is a better way to do this
+        for j in range(3):
+            PN[i][j] = P[i][0]*N[0][j] + P[i][1]*N[1][j] + P[i][2]*N[2][j]
+    for i in range(3):
+        for j in range(3):
+            M[i][j] = PN[i][0]*G[0][j] + PN[i][1]*G[1][j] + PN[i][2]*G[2][j]
+    if hasattr(jdt, '__len__'):
+        num_jdt = len(jdt) 
+    else:
+        num_jdt = 1
+    rECI = np.empty((3, num_jdt))
+    rECI[0] = M[0][0]*rECEF[0] + M[0][0]*rECEF[1] + M[0][0]*rECEF[2]
+    rECI[1] = M[1][0]*rECEF[0] + M[1][0]*rECEF[1] + M[1][0]*rECEF[2]
+    rECI[2] = M[2][0]*rECEF[0] + M[2][0]*rECEF[1] + M[2][0]*rECEF[2]
     return rECI
 
 
@@ -563,11 +594,9 @@ def rot3(a):
     return mtx
 
 # @profile
-def site_sat_rotations(lat, lon, h, rsatECEF):
-    rsiteECEF = site_ECEF(lat, lon, h)
+def site_sat_rotations(rsiteECEF, rsatECEF):
     rho = rsatECEF - np.array([[rsiteECEF[0]],[rsiteECEF[1]],[rsiteECEF[2]]], dtype=np.float64)
-    rSEZ = ecef2sez(rho, lat, lon)
-    return rSEZ
+    return rho
 
 
 ##################

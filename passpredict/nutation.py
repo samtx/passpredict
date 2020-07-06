@@ -55,7 +55,7 @@ class NutationParams:
 
 
 
-@lru_cache(maxsize=128)
+# @lru_cache(maxsize=128)
 def nut80_fundamental_arguments(tt):
     """IAU 1980 fundamental arguments, Delaunay parameters
 
@@ -110,11 +110,24 @@ def nut80_angles(tt, nutation_params):
     F = nutation_params.u_M_moon
     D = nutation_params.D_sun
     om = nutation_params.omega_moon
-    fund_args = np.array([l, lp, F, D, om])
     nut80_AAA = nut80_ABCD * ASEC2RAD * 0.0001
-    arg = np.dot(nut80_an[:,], fund_args*DEG2RAD)
-    dpsi = np.sum((nut80_AAA[:, 0] + nut80_AAA[:, 1]*tt)*np.sin(arg)) 
-    deps = np.sum((nut80_AAA[:, 2] + nut80_AAA[:, 3]*tt)*np.cos(arg))  
+    if hasattr(tt, '__len__'):
+        n = len(tt)
+        fund_args = np.stack((l, lp, F, D, om), axis=1) * DEG2RAD
+        # arg = np.empty((n, 5))
+        dpsi = np.empty((n,))
+        deps = np.empty((n,))
+        for i in range(n):   # there is a better way to do this
+            arg = np.dot(nut80_an[:,], fund_args[i])
+            dpsi[i] = np.sum((nut80_AAA[:, 0] + nut80_AAA[:, 1]*tt[i])*np.sin(arg)) 
+            deps[i] = np.sum((nut80_AAA[:, 2] + nut80_AAA[:, 3]*tt[i])*np.cos(arg)) 
+    else:
+        n = 1
+        fund_args = np.array([l, lp, F, D, om]) * DEG2RAD
+        arg = np.dot(nut80_an[:,], fund_args)
+        dpsi = np.sum((nut80_AAA[:, 0] + nut80_AAA[:, 1]*tt)*np.sin(arg)) 
+        deps = np.sum((nut80_AAA[:, 2] + nut80_AAA[:, 3]*tt)*np.cos(arg))  
+    # arg = np.dot(nut80_an[:,], fund_args)
     dpsi = shift_angle(dpsi)
     deps = shift_angle(deps)
     return dpsi, deps
@@ -135,7 +148,7 @@ def nut80_mean_eps(tt):
     return meaneps * DEG2RAD
 
 
-@lru_cache(maxsize=128)
+# @lru_cache(maxsize=128)
 def fk5_nutation(tt):
     """IAU 1980 Nutation Theory
 
@@ -148,19 +161,22 @@ def fk5_nutation(tt):
     nut80_params = nut80_fundamental_arguments(tt)
     dpsi, deps = nut80_angles(tt, nut80_params)
     eps = deps + meaneps
-    cpsi = math.cos(dpsi)
-    spsi = math.sin(dpsi)
-    cmeaneps = math.cos(meaneps)
-    smeaneps = math.sin(meaneps)
-    ceps = math.cos(eps)
-    seps = math.sin(eps)
-    N = np.array(           # Create nutation matrix
-        (
-            (          cpsi,                          ceps*spsi,                          seps*spsi),
-            (-cmeaneps*spsi, ceps*cmeaneps*cpsi + seps*smeaneps, seps*cmeaneps*cpsi - smeaneps*ceps),
-            (-smeaneps*spsi, ceps*smeaneps*cpsi - seps*cmeaneps, seps*smeaneps*cpsi + ceps*cmeaneps),
-        ), dtype=np.float64
-    )
+    cpsi = np.cos(dpsi)
+    spsi = np.sin(dpsi)
+    cmeaneps = np.cos(meaneps)
+    smeaneps = np.sin(meaneps)
+    ceps = np.cos(eps)
+    seps = np.sin(eps)
+    N = [[0.0, 0.0, 0.0] for i in range(3)]  # Create nutation matrix
+    N[0][0] = cpsi
+    N[0][1] = ceps*spsi
+    N[0][2] = seps*spsi
+    N[1][0] = -cmeaneps*spsi
+    N[1][1] = ceps*cmeaneps*cpsi + seps*smeaneps
+    N[1][2] = seps*cmeaneps*cpsi - smeaneps*ceps
+    N[2][0] = -smeaneps*spsi
+    N[2][1] = ceps*smeaneps*cpsi - seps*cmeaneps
+    N[2][2] = seps*smeaneps*cpsi + ceps*cmeaneps 
     nut80_params.eps = eps
     nut80_params.dpsi = dpsi
     nut80_params.deps = deps 
