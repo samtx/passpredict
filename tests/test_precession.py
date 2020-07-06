@@ -8,6 +8,7 @@ import passpredict.precession as precession
 import passpredict.constants as constants
 from passpredict.utils import epoch_from_tle_datetime
 from passpredict.timefn import julian_date, jd2jc
+from passpredict.constants import DEG2RAD, RAD2DEG
 
 
 
@@ -18,35 +19,33 @@ def test_fk5_precession_angles():
     # April 6, 2004, 07:51:28.386009 UTC
     tt = 0.0426236319  # Julian centuries since J2000
     zeta, theta, z = precession.fk5_precession_angles(tt)
-    assert_almost_equal(zeta, 0.0273055 * constants.DEG2RAD, decimal=9)
-    assert_almost_equal(theta, 0.0237306 * constants.DEG2RAD, decimal=9)
-    assert_almost_equal(z, 0.0273059 * constants.DEG2RAD, decimal=9)
+    assert_almost_equal(zeta, 0.0273055*DEG2RAD, decimal=9)
+    assert_almost_equal(theta, 0.0237306*DEG2RAD, decimal=9)
+    assert_almost_equal(z, 0.0273059*DEG2RAD, decimal=9)
 
 
-def test_fk5_precession_angles_2():
+@pytest.mark.parametrize(
+    "epoch_string, zeta_expected, theta_expected, z_expected",
+    [
+        ('00182.78495062', 0.0031796*DEG2RAD, 0.0027633*DEG2RAD, 0.0031796*DEG2RAD),  # Vallado, p. 234
+        ('00179.78495062', 0.0031270*DEG2RAD, 0.0027176*DEG2RAD, 0.0031270*DEG2RAD),  # Vallado, p. 234
+    ],
+    ids=[
+        'epoch=00182.78495062',
+        'epoch=00179.78495062',
+    ]
+)
+def test_fk5_precession_angles_from_epoch(epoch_string, zeta_expected, theta_expected, z_expected):
     """
     Vallado, p.234
     """
-    epoch = epoch_from_tle_datetime('00182.78495062')
+    epoch = epoch_from_tle_datetime(epoch_string)
     jd = julian_date(epoch)
     tt = jd2jc(jd)
     zeta, theta, z = precession.fk5_precession_angles(tt)
-    assert_almost_equal(zeta, 0.0031796 * constants.DEG2RAD, decimal=9)
-    assert_almost_equal(theta, 0.0027633 * constants.DEG2RAD, decimal=9)
-    assert_almost_equal(z, 0.0031796 * constants.DEG2RAD, decimal=9)
-
-
-def test_fk5_precession_angles_3():
-    """
-    Vallado, p.234
-    """
-    epoch = epoch_from_tle_datetime('00179.78495062')
-    jd = julian_date(epoch)
-    tt = jd2jc(jd)
-    zeta, theta, z = precession.fk5_precession_angles(tt)
-    assert_almost_equal(zeta, 0.0031270 * constants.DEG2RAD, decimal=9)
-    assert_almost_equal(theta, 0.0027176 * constants.DEG2RAD, decimal=9)
-    assert_almost_equal(z, 0.0031270 * constants.DEG2RAD, decimal=9)
+    assert_almost_equal(zeta, zeta_expected, decimal=9)
+    assert_almost_equal(theta, theta_expected, decimal=9)
+    assert_almost_equal(z, z_expected, decimal=9)
 
 
 # def test_fk5_precession():

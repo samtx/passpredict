@@ -11,6 +11,7 @@ from passpredict import timefn
 from passpredict import topocentric
 from passpredict.utils import epoch_from_tle_datetime
 from passpredict import nutation
+from passpredict.constants import DEG2RAD, RAD2DEG
 
 
 def test_ecef2sez():
@@ -32,30 +33,29 @@ def test_ecef2sez():
         assert_almost_equal(rSEZ[i], rSEZ_true[i], decimal=0, verbose=True)
 
 
-def test_theta_GMST1982():
+@pytest.mark.parametrize(
+    'jd, theta_expected, decimal',
+    [
+        (2448855.009722222, 152.578787810, 9),  # Vallado, Eg. 3-5
+        (2453101.827406783, 312.8098943, 7)     # Vallado, Eg. 3-15, p.230
+
+    ],
+    ids=[
+        'Vallado Eg. 3-5',
+        'Vallado Eg. 3-15',
+    ]
+)
+def test_theta_GMST1982(jd, theta_expected, decimal):
     """Compute the Greenwich Mean Sidereal Time
 
     References:
         Vallado, Eg 3-5, p.188
     """
-    dt = datetime.datetime(1992, 8, 20, 12, 14, 0)  # Aug 20, 1992, 12:14 PM UT1
-    jd = timefn.julian_date(dt)
+    # dt = datetime.datetime(1992, 8, 20, 12, 14, 0)  # Aug 20, 1992, 12:14 PM UT1
+    # jd = timefn.julian_date(dt)  # jd = 2448855.009722222
     theta, thetadt = rotations.theta_GMST1982(jd)
     theta *= constants.RAD2DEG  # convert from radians to degrees
-    assert_almost_equal(theta, 152.578787810, decimal=9)  # degrees
-
-
-def test_theta_GMST1982_2():
-    """Compute the Greenwich Mean Sidereal Time
-
-    References
-        Vallado, Eg. 3-15, p.230
-    """
-    # April 6, 2004, 07:51:28.386 009UTC, not UTC1
-    jd_ut1 = timefn.julian_date(2004, 4, 6, 7, 51, 28.386009 - 0.4399619)
-    theta, thetadt = rotations.theta_GMST1982(jd_ut1)
-    theta *= constants.RAD2DEG
-    assert_almost_equal(theta, 312.8098943, decimal=7)
+    assert_almost_equal(theta, theta_expected, decimal=decimal)  # degrees
 
 
 def test_ecef2eci():
@@ -133,24 +133,23 @@ def test_thetaGMST_from_skyfield():
     assert_almost_equal(theta, 5.459562584754709, decimal=15)
 
 
-def test_equinox1982_geometric_terms():
+@pytest.mark.parametrize(
+    "dpsi, meaneps, eq_expected",
+    [
+        (-0.004250260*DEG2RAD, 23.43922657*DEG2RAD, -0.0038995*DEG2RAD),
+        (-0.004337544*DEG2RAD, 23.43922657*DEG2RAD, -0.0039796*DEG2RAD),
+    ],
+    ids=[
+        'epoch=00182.78495062',
+        'epoch=00179.78495062',
+    ]
+)
+def test_equinox1982_geometric_terms(dpsi, meaneps, eq_expected):
     """
     Vallado, p.234, epoch datetime = 00179.78495062
     """
-    dPsi = -0.004337544 * constants.DEG2RAD
-    meaneps = 23.43922657 * constants.DEG2RAD
-    eq = rotations.equinox1982_geometric_terms(dPsi, meaneps)
-    assert_almost_equal(eq, -0.0039796 * constants.DEG2RAD)
-
-
-def test_equinox1982_geometric_terms_2():
-    """
-    Vallado, p.234, epoch datetime = 00182.78495062
-    """
-    dPsi = -0.004250260 * constants.DEG2RAD
-    meaneps = 23.43922657 * constants.DEG2RAD
-    eq = rotations.equinox1982_geometric_terms(dPsi, meaneps)
-    assert_almost_equal(eq, -0.0038995 * constants.DEG2RAD)
+    eq = rotations.equinox1982_geometric_terms(dpsi, meaneps)
+    assert_almost_equal(eq, eq_expected)
 
 
 @pytest.mark.xfail(reason='Need to fix this later')
@@ -167,7 +166,18 @@ def test_equinox1982_geometric_terms_3():
     assert_almost_equal(eq, eq_true * constants.DEG2RAD)
 
 
-def test_teme2eci():
+@pytest.mark.parametrize(
+    'epoch_string, r0_expected, r1_expected, r2_expected',
+    [
+        ('00182.78495062', -9059.9413786, 4659.6972000, 813.9588875),  # Vallado, p. 234
+        ('00179.78495062', -9059.9510799, 4659.6807556, 813.9450451),  # Vallado, p. 234
+    ],
+    ids=[
+        'epoch=00182.78495062',
+        'epoch=00179.78495062',
+    ]
+)
+def test_teme2eci(epoch_string, r0_expected, r1_expected, r2_expected):
     """
     Test TEME -> J2000 (ECI) conversion
 
@@ -176,16 +186,16 @@ def test_teme2eci():
     Reference:
         Vallado, p.234, Eq. 3-91
     """
-    epoch = epoch_from_tle_datetime('00182.78495062')
+    epoch = epoch_from_tle_datetime(epoch_string)
     print(f'epoch = {epoch}')
     jd = timefn.julian_date(epoch)
     print(f'jd = {jd}')
     rTEME = np.array((-9060.47373569, 4658.70952502, 813.68673153))
     rJ2000 = rotations.teme2eci(rTEME, jd)
     print(f'rJ2000 = {rJ2000}')
-    assert_almost_equal(rJ2000[0], -9059.9413786, decimal=3)
-    assert_almost_equal(rJ2000[1],  4659.6972000, decimal=3)
-    assert_almost_equal(rJ2000[2],   813.9588875, decimal=3)
+    assert_almost_equal(rJ2000[0], r0_expected, decimal=3)
+    assert_almost_equal(rJ2000[1], r1_expected, decimal=3)
+    assert_almost_equal(rJ2000[2], r2_expected, decimal=3)
 
 
 @pytest.mark.skip('failing')
@@ -209,27 +219,6 @@ def test_theta_GAST1982():
     Eq = rotations.equinox1982(dpsi, eps, omega_moon)
     gast = rotations.theta_GAST1982(gmst, Eq)
     assert_almost_equal(gast * constants.RAD2DEG, 312.8067654)
-
-
-def test_teme2eci_2():
-    """
-    Test TEME -> J2000 (ECI) conversion
-
-    Using 'of epoch'
-
-    Reference:
-        Vallado, p.234, Eq. 3-91
-    """
-    epoch = epoch_from_tle_datetime('00179.78495062')
-    print(f'epoch = {epoch}')
-    jd = timefn.julian_date(epoch)
-    print(f'jd = {jd}')
-    rTEME = np.array((-9060.47373569, 4658.70952502, 813.68673153))
-    rJ2000 = rotations.teme2eci(rTEME, jd)
-    print(f'rJ2000 = {rJ2000}')
-    assert_almost_equal(rJ2000[0], -9059.9510799, decimal=3)
-    assert_almost_equal(rJ2000[1],  4659.6807556, decimal=3)
-    assert_almost_equal(rJ2000[2],   813.9450451, decimal=3)
 
 
 def test_appendix_c_conversion_from_TEME_to_ITRF_UTC1():
