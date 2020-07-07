@@ -68,7 +68,7 @@ def nut80_fundamental_arguments(tt):
     # r = 360
     # print(ASEC2RAD)
     ASEC2DEG = 1/3600.0
-
+ 
     
     ERFA_DAS2R = 4.848136811095359935899141e-6  # Arcseconds to radians   
     ERFA_TURNAS = 1296000.0  # Arcseconds in a full circle 
@@ -91,11 +91,11 @@ def nut80_fundamental_arguments(tt):
     # D_sun = (297.85019547 + ((1.831e-6*tt - 0.0017696)*tt + 307.1114469 + 1236*r*ASEC2RAD)*tt) % 360.0
     # omega_moon = (125.04455501 + ((2.139e-6*tt + 0.0020756)*tt - 134.1361851 - 5*r*ASEC2RAD)*tt) % 360.0
     return NutationParams(
-        M_moon=M_moon,
-        M_sun=M_sun,
-        u_M_moon=u_M_moon,
-        D_sun=D_sun,
-        omega_moon=omega_moon
+        M_moon=M_moon*DEG2RAD,
+        M_sun=M_sun*DEG2RAD,
+        u_M_moon=u_M_moon*DEG2RAD,
+        D_sun=D_sun*DEG2RAD,
+        omega_moon=omega_moon*DEG2RAD
     )
 
 
@@ -113,7 +113,7 @@ def nut80_angles(tt, nutation_params):
     nut80_AAA = nut80_ABCD * ASEC2RAD * 0.0001
     if hasattr(tt, '__len__'):
         n = len(tt)
-        fund_args = np.stack((l, lp, F, D, om), axis=1) * DEG2RAD
+        fund_args = np.stack((l, lp, F, D, om), axis=1)
         # arg = np.empty((n, 5))
         dpsi = np.empty((n,))
         deps = np.empty((n,))
@@ -123,7 +123,7 @@ def nut80_angles(tt, nutation_params):
             deps[i] = np.sum((nut80_AAA[:, 2] + nut80_AAA[:, 3]*tt[i])*np.cos(arg)) 
     else:
         n = 1
-        fund_args = np.array([l, lp, F, D, om]) * DEG2RAD
+        fund_args = np.array([l, lp, F, D, om])
         arg = np.dot(nut80_an[:,], fund_args)
         dpsi = np.sum((nut80_AAA[:, 0] + nut80_AAA[:, 1]*tt)*np.sin(arg)) 
         deps = np.sum((nut80_AAA[:, 2] + nut80_AAA[:, 3]*tt)*np.cos(arg))  
@@ -141,11 +141,12 @@ def nut80_mean_eps(tt):
 
     Reference:
         Vallado software, nutation.m
+        SOFA/obl80.c
     """
-    meaneps = ((0.001813*tt - 0.00059)*tt - 46.8150)*tt + 84381.448
-    meaneps /= 3600.0
-    meaneps %= 360.
-    return meaneps * DEG2RAD
+    meaneps = 84381.448 + (-46.8150 + (-0.00059 + 0.001813 * tt) * tt) * tt
+    meaneps *= ASEC2RAD
+    meaneps %= tau
+    return meaneps
 
 
 # @lru_cache(maxsize=128)
@@ -167,16 +168,11 @@ def fk5_nutation(tt):
     smeaneps = np.sin(meaneps)
     ceps = np.cos(eps)
     seps = np.sin(eps)
-    N = [[0.0, 0.0, 0.0] for i in range(3)]  # Create nutation matrix
-    N[0][0] = cpsi
-    N[0][1] = ceps*spsi
-    N[0][2] = seps*spsi
-    N[1][0] = -cmeaneps*spsi
-    N[1][1] = ceps*cmeaneps*cpsi + seps*smeaneps
-    N[1][2] = seps*cmeaneps*cpsi - smeaneps*ceps
-    N[2][0] = -smeaneps*spsi
-    N[2][1] = ceps*smeaneps*cpsi - seps*cmeaneps
-    N[2][2] = seps*smeaneps*cpsi + ceps*cmeaneps 
+    N = np.array((
+        (          cpsi,                          ceps*spsi,                          seps*spsi),
+        (-cmeaneps*spsi, ceps*cmeaneps*cpsi + seps*smeaneps, seps*cmeaneps*cpsi - smeaneps*ceps),
+        (-smeaneps*spsi, ceps*smeaneps*cpsi - seps*cmeaneps, seps*smeaneps*cpsi + ceps*cmeaneps)
+    ))
     nut80_params.eps = eps
     nut80_params.dpsi = dpsi
     nut80_params.deps = deps 

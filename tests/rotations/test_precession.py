@@ -5,23 +5,11 @@ from numpy.testing import assert_almost_equal, assert_allclose
 import pytest
 
 import passpredict.rotations.precession as precession 
+from passpredict.rotations.core import mxv, mxmxm
 import passpredict.constants as constants
 from passpredict.utils import epoch_from_tle_datetime
 from passpredict.timefn import julian_date, jd2jc
 from passpredict.constants import DEG2RAD, RAD2DEG
-
-
-
-def test_fk5_precession_angles():
-    """
-    Vallado, Eg. 3-15, p.231
-    """
-    # April 6, 2004, 07:51:28.386009 UTC
-    tt = 0.0426236319  # Julian centuries since J2000
-    zeta, theta, z = precession.fk5_precession_angles(tt)
-    assert_almost_equal(zeta, 0.0273055*DEG2RAD, decimal=9)
-    assert_almost_equal(theta, 0.0237306*DEG2RAD, decimal=9)
-    assert_almost_equal(z, 0.0273059*DEG2RAD, decimal=9)
 
 
 @pytest.mark.parametrize(
@@ -46,6 +34,34 @@ def test_fk5_precession_angles_from_epoch(epoch_string, zeta_expected, theta_exp
     assert_almost_equal(zeta, zeta_expected, decimal=9)
     assert_almost_equal(theta, theta_expected, decimal=9)
     assert_almost_equal(z, z_expected, decimal=9)
+
+
+def test_fk5_precession_angles():
+    """
+    Vallado, Eg. 3-15, p.231
+    """
+    # April 6, 2004, 07:51:28.386009 UTC
+    tt = 0.0426236319  # Julian centuries since J2000
+    zeta, theta, z = precession.fk5_precession_angles(tt)
+    assert_almost_equal(zeta, 0.0273055*DEG2RAD, decimal=9)
+    assert_almost_equal(theta, 0.0237306*DEG2RAD, decimal=9)
+    assert_almost_equal(z, 0.0273059*DEG2RAD, decimal=9)
+
+
+def test_precession_rotation():
+    """
+    Vallado, p.231
+    
+    Rotate from MOD --> GCRF
+    """
+    rTOD = np.array((5094.0283745, 6127.8708164, 6380.2485164))
+    rGCRF_expected = np.array((5102.508958, 6123.011401, 6378.136928))
+    tt = 0.0426236319
+    prec = precession.fk5_precession(tt)
+    rGCRF = mxv(prec.mtx, rTOD)
+    assert_almost_equal(rGCRF[0], rGCRF_expected[0], decimal=6)
+    assert_almost_equal(rGCRF[1], rGCRF_expected[1], decimal=6)
+    assert_almost_equal(rGCRF[2], rGCRF_expected[2], decimal=6)
 
 
 # def test_fk5_precession():
