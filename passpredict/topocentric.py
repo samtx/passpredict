@@ -64,7 +64,7 @@ def rng_el(r):
     el *= RAD2DEG
     return el, rng
 
-# @profile
+
 def razel(r):
     """Get range, azimuth, and elevation from SEZ vector"""
     rng = np.linalg.norm(r, axis=0)
@@ -99,3 +99,8 @@ def elevation(z, rhomag):
         elevation angle in radians with 0 at horizon, pi/2 straight up
     """
     return np.arcsin(z / rhomag)
+
+
+def site_sat_rotations(rsiteECEF, rsatECEF):
+    rho = rsatECEF - np.array([[rsiteECEF[0]],[rsiteECEF[1]],[rsiteECEF[2]]], dtype=np.float64)
+    return rho

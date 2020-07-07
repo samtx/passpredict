@@ -11,6 +11,7 @@ jd_params = [
     pytest.param(1996, 10, 26, 14, 20,         0, 2450383.09722222,   8, id='Vallado, eg.3-4'),
     pytest.param(2004,  4,  6,  7, 52, 32.570009, 2453101.828154745,  9, id='Vallado, eg.3-15'),
     pytest.param(2004,  4,  6,  7, 51, 27.946039, 2453101.8274067827, 10, id='skyfield.tests.test_earth_satellites'),    
+    # pytest.param(2453101.8274067827, id='teme2eci example')
 ]
 
 
