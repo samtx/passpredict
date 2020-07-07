@@ -60,14 +60,44 @@ def test_julian_date_vectorized():
 )
 def test_jday2datetime(yr, mo, dy, hr, mn, sec, jd, decimal):
     """Convert a Julian date to a datetime and back"""
-    from datetime import timezone
     dt_computed = timefn.jday2datetime(jd)
     sec, us = np.divmod(sec, 1)
     dt_desired = datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
     dt_difference = dt_computed - dt_desired
-    assert abs(dt_difference.total_seconds()) < 500e-6  # 500 microseconds
+    assert abs(dt_difference.total_seconds()) < 200e-6  # 200 microseconds
 
+
+@pytest.mark.parametrize(
+    'jd1, jd2, tt_expected',
+    [
+        pytest.param(2400000.5, 53736.0, 0.06, id='SOFA validation t_sofa_c.c')
+    ]
+)
+def test_jd2jc(jd1, jd2, tt_expected):
+    tt = timefn.jd2jc(jd1, jd2)
+    assert_almost_equal(tt, tt_expected, decimal=12)
+
+
+@pytest.mark.parametrize(
+    'yr, mo, dy, hr, mn, sec, jd, decimal', jd_params
+)
+def test_jday_to_datetime_and_back(yr, mo, dy, hr, mn, sec, jd, decimal):
+    jd_computed = timefn.julian_date(yr, mo, dy, hr, mn, sec)
+    dt = timefn.jday2datetime(jd_computed)
+    sec, us = np.divmod(sec, 1)
+    delta = dt - datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
+    assert abs(delta.total_seconds()) < 25e-6  # 25 microseconds
+
+
+@pytest.mark.parametrize(
+    'yr, mo, dy, hr, mn, sec, jd, decimal', jd_params
+)
+def test_datetime_to_jday_and_back(yr, mo, dy, hr, mn, sec, jd, decimal):
+    jd_1 = timefn.julian_date(yr, mo, dy, hr, mn, sec)
+    dt = timefn.jday2datetime(jd_1)
+    jd_2 = timefn.julian_date(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second + dt.microsecond*1e-6)
+    assert_almost_equal(jd_1, jd_2, decimal=16)
+    
 
 if __name__ == "__main__":
-    import pytest
     pytest.main(['-v', __file__])

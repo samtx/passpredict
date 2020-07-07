@@ -5,7 +5,24 @@ import pytest
 from passpredict.constants import DEG2RAD, RAD2DEG, ASEC2RAD
 from passpredict.utils import epoch_from_tle_datetime
 from passpredict.rotations import transform
-from passpredict.timefn import julian_date
+from passpredict.timefn import julian_date, jday2datetime
+
+
+def test_eci2tod():
+    """
+    Appendix C, AIAA 2006-6753
+    """
+    rECI = np.array((3961.7442603, 6010.2156109, 4619.3625758))  # J2000, IAU 76-FK5
+    xp = 0.098700 * ASEC2RAD
+    yp = 0.286000 * ASEC2RAD
+    dUT1 = 0.162360 # seconds
+    dAT = 21  # seconds
+    jd = julian_date(2000, 6, 28, 15, 8, 51.655000)
+    jd_ut1 = 2451724.13115529340
+    tt = 0.004904360547
+    rTOD = np.array((3961.4214985, 6010.4782688, 4619.3015310))
+    rPEF = np.array((298.8036328, -7192.3146229, 4619.3015310))
+    rTEME = np.array((3961.0035498, 6010.7511740, 4619.3009301))
 
 
 def test_ecef2eci():
@@ -17,9 +34,13 @@ def test_ecef2eci():
         [ 7901.2952754],
         [ 6380.3565958]
     ])
-    jdt = 2453101.828154745
+    jdt_tt = 2453101.828154745
     jdt_ut1 = 2453101.827406783
     rECI = transform.ecef2eci(rECEF, jdt_ut1)
+    print(f'dt_ut1     = {jday2datetime(jdt_ut1)}')
+    print(f'jdt_ut1    = {jdt_ut1}')
+    print(f'dt_tt      = {jday2datetime(jdt_tt)}')
+    print(f'jdt_tt     = {jdt_tt}')
     assert_allclose(
         rECI,
         np.array([[5102.5096], [6123.01152], [6378.1363]]),
