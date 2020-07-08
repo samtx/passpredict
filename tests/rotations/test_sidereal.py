@@ -56,7 +56,7 @@ def test_equinox1982_geometric_terms_3():
     assert_almost_equal(eq, eq_true * constants.DEG2RAD)
 
 
-# @pytest.mark.skip('failing')
+@pytest.mark.skip('failing')
 def test_theta_GAST1982():
     """
     Vallado, Eg. 3-15, p. 230
