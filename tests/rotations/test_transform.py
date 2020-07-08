@@ -25,6 +25,7 @@ def test_eci2tod():
     rTEME = np.array((3961.0035498, 6010.7511740, 4619.3009301))
 
 
+@pytest.mark.skip()
 def test_ecef2eci():
     """
     Vallado, Eg. 3-15, p. 230
@@ -48,6 +49,7 @@ def test_ecef2eci():
     )
 
 
+@pytest.mark.skip()
 @pytest.mark.parametrize(
     'jd, rTEME, rECI_expected, xp, yp, decimal',
     [
@@ -72,7 +74,7 @@ def test_teme2ecef_from_jd(jd, rTEME, rECI_expected, xp, yp, decimal):
     assert_almost_equal(rECEF[2], rECI_expected[2], decimal=decimal)
 
 
-
+@pytest.mark.skip()
 @pytest.mark.parametrize(
     'jd, rTEME, rECI_expected, decimal',
     [
@@ -95,7 +97,7 @@ def test_teme2eci_from_jd(jd, rTEME, rECI_expected, decimal):
     assert_almost_equal(rECI[2], rECI_expected[2], decimal=decimal)
 
 
-
+@pytest.mark.skip()
 @pytest.mark.parametrize(
     'epoch_string, rTEME, rECI_expected, decimal',
     [

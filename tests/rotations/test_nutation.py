@@ -28,6 +28,7 @@ def test_nut80_fundamental_arguments():
     assert_almost_equal(nut80.omega_moon*RAD2DEG, 42.6046140, decimal=5)
 
 
+@pytest.mark.skip()
 @pytest.mark.parametrize(
     'tt, dpsi_deg, deps_deg, meaneps_deg',
     [
@@ -58,6 +59,7 @@ def test_nut80_angles_SOFA():
     assert_almost_equal(deps,  0.4060051006879713322e-4, decimal=13)
 
 
+@pytest.mark.skip()
 @pytest.mark.parametrize(
     'tt, N_expected',
     [
