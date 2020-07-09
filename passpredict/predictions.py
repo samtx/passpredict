@@ -6,11 +6,12 @@ from numpy import dot, cross
 from numpy.linalg import norm
 
 from .rotations.rotations import site_ECEF
-from .rotations.transform import ecef2eci, ecef2sez
+from .rotations.transform import ecef2eci, ecef2sez, teme2ecef
+from .rotations.polar import eop
 from .solar import sun_pos, is_sat_illuminated
 from .topocentric import razel, site_sat_rotations
-from .propagate import propagate
-from .timefn import jday2datetime
+from .propagate import propagate_satellite
+from .timefn import jday2datetime, julian_date
 from .schemas import Point, Overpass, SatelliteRV, Satellite
 from .utils import get_TLE
 
@@ -57,7 +58,7 @@ def satellite_visible(rsatECI, rsiteECI, rho, jdt):
     return visible
 
 
-def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min_elevation=10, sat_id=None):
+def get_overpasses(el, azm, rng, jdt_ary, rSEZ, min_elevation=10, sat_id=None):
     el0 = el[:-1] - min_elevation
     el1 = el[1:] - min_elevation
     el_change_sign = (el0*el1 < 0)   
@@ -66,7 +67,6 @@ def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min
     num_overpasses = min(start_idx.size, end_idx.size)       # Iterate over start/end indecies and gather inbetween indecies
     if start_idx.size < end_idx.size:
         end_idx = end_idx[1:]
-    # overpasses = np.empty(num_overpasses, dtype=object)
     overpasses = [None] * num_overpasses
     for j in range(num_overpasses):
         # Store indecies of overpasses in a list
@@ -92,7 +92,6 @@ def get_overpasses(el, azm, rng, jdt_ary, rSEZ, rsiteECI=None, rsatECI=None, min
             elevation=el[idxf],
             range=rng[idxf]
         )
-        # sat_vis = satellite_visible(rsatECI, rsiteECI, rSEZ, jdt)
         if sat_id is not None:
             overpass = Overpass(
                 satellite_id=sat_id,
@@ -115,14 +114,12 @@ def predict_passes(lat, lon, h, rsatECEF, rsatECI, jdt, rsun=None, min_elevation
     rsiteECI = ecef2eci(rsiteECEF, jdt)
     rho = site_sat_rotations(rsiteECEF, rsatECEF)
     rSEZ = ecef2sez(rho, lat, lon)
-    # rsiteECI = site2eci(lat, lon, h, jdt)
     rng, az, el = razel(rSEZ)
-    # plot_elevation(np.arange(el.size), el)
     overpasses = get_overpasses(el, az, rng, jdt, rSEZ, rsiteECI=None, rsatECI=None, min_elevation=min_elevation)
     return overpasses
 
 
-def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_elevation=None, tle=None, reload=True):
+def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_elevation=None, tle=None, cache=None):
     """
     Full prediction algorithm:
       1. Download TLE data
@@ -142,28 +139,40 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
         dt_end = dt_start + datetime.timedelta(days=14)
     if tle is None:
         tle = get_TLE(satellite)
-    print(f"begin propagation from {dt_start.isoformat()} to {dt_end.isoformat()}")
-    _reload = reload
-    if _reload:
-        satellite_rv = propagate(tle.tle1, tle.tle2, dt_start, dt_end, dt_seconds)
-        satellite_rv.satellite = satellite
-        satellite_rv.tle = tle
-        # Compute sun-satellite quantities
-        jdt = satellite_rv.julian_date
-        rsunECI = sun_pos(jdt)
-        satellite_rv.visible = is_sat_illuminated(satellite_rv.rECI, rsunECI)
+
+    jdt0 = julian_date(dt_start)
+    jdtf = julian_date(dt_end)
+    total_days = (dt_start-dt_end).total_seconds()/60
+    dt_days = dt_seconds/(24*60*60.0)
+    jdt = np.arange(jdt0, jdtf, dt_days, dtype=float)
+
+    print(f"begin propagation from {dt_start.isoformat()} to {dt_end.isoformat()}...")
+    rTEME, _ = propagate_satellite.__wrapped__(tle.tle1, tle.tle2, dt_start, dt_end, dt_seconds)
+
+    dUTC1, xp, yp = eop(jdt)
+    jdt_utc1 = jdt + dUTC1
+
+    print(f"rotate satellite position from TEME to ECEF...")
+    rsatECEF = teme2ecef(rTEME, jdt_utc1, xp, yp)
+
+    # Compute sun-satellite quantities
+    print(f"Compute sun-satellite quantities...")
+    rECI = rTEME.copy()
+    rsunECI = sun_pos(jdt)  # to do: use cached value
+    sat_illum = is_sat_illuminated(rECI, rsunECI)
         
-        with open(f'satellite_{satellite.id:d}.pkl', 'wb') as f:
-            pickle.dump(satellite_rv, f)
-    else:
-        with open(f'satellite_{satellite.id:d}.pkl', 'rb') as f:
-            satellite_rv = pickle.load(f)
     print('begin prediction...')
-    # set minimum elevation parameter: min_elevation = 10 degrees
-    overpasses = predict_passes(
-        location.lat, location.lon, location.h,
-        satellite_rv.rECEF, satellite_rv.rECI, satellite_rv.julian_date,
-        min_elevation=min_elevation)
+    rsiteECEF = site_ECEF(location.lat, location.lon, location.h)
+    rho = site_sat_rotations(rsiteECEF, rsatECEF)
+    rSEZ = ecef2sez(rho, location.lat, location.lon)
+    rng, az, el = razel(rSEZ)
+    # rsiteECI = ecef2eci(rsiteECEF, jdt_utc1)
+    overpasses = get_overpasses(el, az, rng, jdt, rSEZ, min_elevation=min_elevation)
+
+    print('Determine visibility')
+    for overpass in overpasses:
+        pass
+
     return overpasses
 
 

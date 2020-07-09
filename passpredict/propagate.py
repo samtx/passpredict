@@ -24,7 +24,7 @@ import os
 
 
 @functools.lru_cache(maxsize=64)
-def propagate(tle1, tle2, dt0, dtf, dtsec=1.0):
+def propagate_satellite(tle1, tle2, dt0, dtf, dtsec=1.0):
     """Propagate satellite position forward in time.
 
     Parameters:
@@ -70,29 +70,4 @@ def propagate(tle1, tle2, dt0, dtf, dtsec=1.0):
     r = np.reshape(r.ravel(order='F'), (3, r.shape[0]))
     v = np.reshape(v.ravel(order='F'), (3, v.shape[0]))
 
-    # perform rotations to fixed earth coordinates
-    rECI = r.copy()
-
-    # Get earth orientation parameters deltaUTC1, xp, yp
-    def eop(jdt):
-        # Code this!!
-        return 0, 0, 0
-
-    deltaUTC1, xp, yp = eop(jdt)
-    jdt_utc1 = jdt + deltaUTC1
-    
-    rECEF = teme2ecef(r, jdt_utc1, xp, yp)
-
-    # Compute sun-satellite quantities
-    # rsunECI = sun_pos(jdt)
-    # sat_illum = is_sat_illuminated(rECI, rsunECI)
-    dt_ary = jday2datetime(jdt)
-
-    # Return output
-    satellite_rv = SatelliteRV()
-    satellite_rv.rECEF = rECEF
-    satellite_rv.rECI = rECI
-    # satellite_rv.visible = sat_illum
-    satellite_rv.datetime = dt_ary
-    satellite_rv.julian_date = jdt
-    return satellite_rv
+    return r, v
