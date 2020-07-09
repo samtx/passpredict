@@ -69,12 +69,6 @@ class Timezone(BaseModel):
         return name
 
 
-class Sun(BaseModel):
-    rECI: Array[float]
-    jdt: Array[float]
-    dt_ary: Array[float]
-
-
 COORDINATES = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N']
 
 
@@ -102,7 +96,6 @@ class Point(BaseModel):
     #         dtstr, self.elevation, self.azimuth, self.range)
     #     return s
 
-# utc = Timezone(offset=0.0, name='UTC')
 
 class Location(BaseModel):
     # __slots__ = ['lat', 'lon', 'h', 'name', 'tz']
@@ -111,23 +104,6 @@ class Location(BaseModel):
     h: float = 0.0   # elevation [m]
     name: str = None
     # tz: Timezone = None  # timezone object
-
-
-class SatelliteRV(object):
-    __slots__ = ['satellite','tle','rsun','datetime','julian_date','rECEF',
-                 'rECI','latitude','longitude','altitude','visible']
-    def __init__(self):
-        self.satellite = None
-        self.tle = None
-        self.rsun = None
-        self.datetime = None
-        self.julian_date = None
-        self.rECEF = None
-        self.rECI = None
-        self.latitude = None
-        self.longitude = None
-        self.altitude = None
-        self.visible = None
 
 
 class Satellite(BaseModel):

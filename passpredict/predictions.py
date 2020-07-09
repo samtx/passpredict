@@ -11,9 +11,11 @@ from .rotations.polar import eop
 from .solar import sun_pos, is_sat_illuminated
 from .topocentric import razel, site_sat_rotations
 from .propagate import propagate_satellite
-from .timefn import jday2datetime, julian_date
-from .schemas import Point, Overpass, SatelliteRV, Satellite
+from .timefn import jday2datetime, julian_date, jd2jc
+from .schemas import Point, Overpass, Satellite
+from .models import SatelliteRV, Time, SpaceObject
 from .utils import get_TLE
+
 
 def vector_angle(r1, r2):
     """Compute the angle between two vectors
@@ -58,68 +60,68 @@ def satellite_visible(rsatECI, rsiteECI, rho, jdt):
     return visible
 
 
-def get_overpasses(el, azm, rng, jdt_ary, rSEZ, min_elevation=10, sat_id=None):
-    el0 = el[:-1] - min_elevation
-    el1 = el[1:] - min_elevation
-    el_change_sign = (el0*el1 < 0)   
-    start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]  # Find the start of an overpass
-    end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]    # Find the end of an overpass
-    num_overpasses = min(start_idx.size, end_idx.size)       # Iterate over start/end indecies and gather inbetween indecies
-    if start_idx.size < end_idx.size:
-        end_idx = end_idx[1:]
-    overpasses = [None] * num_overpasses
-    for j in range(num_overpasses):
-        # Store indecies of overpasses in a list
-        idx0 = start_idx[j]
-        idxf = end_idx[j]
-        overpass_idx = np.arange(idx0, idxf+1, dtype=int)
-        idxmax = np.argmax(el[overpass_idx])
-        start_pt = Point(
-            datetime=jday2datetime(jdt_ary[idx0]),
-            azimuth=azm[idx0],
-            elevation=el[idx0],
-            range=rng[idx0]
-        )
-        max_pt = Point(
-            datetime=jday2datetime(jdt_ary[idx0 + idxmax]),
-            azimuth=azm[idx0 + idxmax],
-            elevation=el[idx0 + idxmax],
-            range=rng[idx0 + idxmax]
-        )
-        end_pt = Point(
-            datetime=jday2datetime(jdt_ary[idxf]),
-            azimuth=azm[idxf],
-            elevation=el[idxf],
-            range=rng[idxf]
-        )
-        if sat_id is not None:
-            overpass = Overpass(
-                satellite_id=sat_id,
-                start_pt=start_pt,
-                max_pt=max_pt,
-                end_pt=end_pt
-            )
-        else:
-            overpass = Overpass(
-                start_pt=start_pt,
-                max_pt=max_pt,
-                end_pt=end_pt
-            )
-        overpasses[j] = overpass
-    return overpasses
+# def get_overpasses(el, azm, rng, jdt_ary, rSEZ, min_elevation=10, sat_id=None):
+#     el0 = el[:-1] - min_elevation
+#     el1 = el[1:] - min_elevation
+#     el_change_sign = (el0*el1 < 0)   
+#     start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]  # Find the start of an overpass
+#     end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]    # Find the end of an overpass
+#     num_overpasses = min(start_idx.size, end_idx.size)       # Iterate over start/end indecies and gather inbetween indecies
+#     if start_idx.size < end_idx.size:
+#         end_idx = end_idx[1:]
+#     overpasses = [None] * num_overpasses
+#     for j in range(num_overpasses):
+#         # Store indecies of overpasses in a list
+#         idx0 = start_idx[j]
+#         idxf = end_idx[j]
+#         overpass_idx = np.arange(idx0, idxf+1, dtype=int)
+#         idxmax = np.argmax(el[overpass_idx])
+#         start_pt = Point(
+#             datetime=jday2datetime(jdt_ary[idx0]),
+#             azimuth=azm[idx0],
+#             elevation=el[idx0],
+#             range=rng[idx0]
+#         )
+#         max_pt = Point(
+#             datetime=jday2datetime(jdt_ary[idx0 + idxmax]),
+#             azimuth=azm[idx0 + idxmax],
+#             elevation=el[idx0 + idxmax],
+#             range=rng[idx0 + idxmax]
+#         )
+#         end_pt = Point(
+#             datetime=jday2datetime(jdt_ary[idxf]),
+#             azimuth=azm[idxf],
+#             elevation=el[idxf],
+#             range=rng[idxf]
+#         )
+#         if sat_id is not None:
+#             overpass = Overpass(
+#                 satellite_id=sat_id,
+#                 start_pt=start_pt,
+#                 max_pt=max_pt,
+#                 end_pt=end_pt
+#             )
+#         else:
+#             overpass = Overpass(
+#                 start_pt=start_pt,
+#                 max_pt=max_pt,
+#                 end_pt=end_pt
+#             )
+#         overpasses[j] = overpass
+#     return overpasses
 
 
-def predict_passes(lat, lon, h, rsatECEF, rsatECI, jdt, rsun=None, min_elevation=None):
-    rsiteECEF = site_ECEF(lat, lon, h)
-    rsiteECI = ecef2eci(rsiteECEF, jdt)
-    rho = site_sat_rotations(rsiteECEF, rsatECEF)
-    rSEZ = ecef2sez(rho, lat, lon)
-    rng, az, el = razel(rSEZ)
-    overpasses = get_overpasses(el, az, rng, jdt, rSEZ, rsiteECI=None, rsatECI=None, min_elevation=min_elevation)
-    return overpasses
+# def predict_passes(lat, lon, h, rsatECEF, rsatECI, jdt, rsun=None, min_elevation=None):
+#     rsiteECEF = site_ECEF(lat, lon, h)
+#     rsiteECI = ecef2eci(rsiteECEF, jdt)
+#     rho = site_sat_rotations(rsiteECEF, rsatECEF)
+#     rSEZ = ecef2sez(rho, lat, lon)
+#     rng, az, el = razel(rSEZ)
+#     overpasses = get_overpasses(el, az, rng, jdt, rSEZ, rsiteECI=None, rsatECI=None, min_elevation=min_elevation)
+#     return overpasses
 
 
-def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_elevation=None, tle=None, cache=None):
+def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_elevation=None, tle=None, cache=None, verbose=False, store_sat_id=False):
     """
     Full prediction algorithm:
       1. Download TLE data
@@ -145,31 +147,87 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
     total_days = (dt_start-dt_end).total_seconds()/60
     dt_days = dt_seconds/(24*60*60.0)
     jdt = np.arange(jdt0, jdtf, dt_days, dtype=float)
+    t = Time()
+    t.jd = jdt
+    t.tt_utc = jd2jc(t.jd)
 
-    print(f"begin propagation from {dt_start.isoformat()} to {dt_end.isoformat()}...")
-    rTEME, _ = propagate_satellite.__wrapped__(tle.tle1, tle.tle2, dt_start, dt_end, dt_seconds)
+    if verbose:
+        print(f"begin propagation from {dt_start.isoformat()} to {dt_end.isoformat()}...")
+    rTEME, _ = propagate_satellite(tle.tle1, tle.tle2, t.jd)
 
-    dUTC1, xp, yp = eop(jdt)
-    jdt_utc1 = jdt + dUTC1
+    dUTC1, xp, yp = eop(t.jd)
+    t.jd_utc1 = t.jd + dUTC1
 
-    print(f"rotate satellite position from TEME to ECEF...")
-    rsatECEF = teme2ecef(rTEME, jdt_utc1, xp, yp)
+    if verbose:
+        print(f"rotate satellite position from TEME to ECEF...")
+    rsatECEF = teme2ecef(rTEME, t.jd_utc1, xp, yp)
 
     # Compute sun-satellite quantities
-    print(f"Compute sun-satellite quantities...")
+    if verbose:
+        print(f"Compute sun-satellite quantities...")
     rECI = rTEME.copy()
     rsunECI = sun_pos(jdt)  # to do: use cached value
     sat_illum = is_sat_illuminated(rECI, rsunECI)
         
-    print('begin prediction...')
+    if verbose:
+        print('begin prediction...')
     rsiteECEF = site_ECEF(location.lat, location.lon, location.h)
     rho = site_sat_rotations(rsiteECEF, rsatECEF)
     rSEZ = ecef2sez(rho, location.lat, location.lon)
     rng, az, el = razel(rSEZ)
     # rsiteECI = ecef2eci(rsiteECEF, jdt_utc1)
-    overpasses = get_overpasses(el, az, rng, jdt, rSEZ, min_elevation=min_elevation)
+    
+    # Find Overpasses
+    el0 = el[:-1] - min_elevation
+    el1 = el[1:] - min_elevation
+    el_change_sign = (el0*el1 < 0)   
+    start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]  # Find the start of an overpass
+    end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]    # Find the end of an overpass
+    num_overpasses = min(start_idx.size, end_idx.size)       # Iterate over start/end indecies and gather inbetween indecies
+    if start_idx.size < end_idx.size:
+        end_idx = end_idx[1:]
+    overpasses = [None] * num_overpasses
+    for j in range(num_overpasses):
+        # Store indecies of overpasses in a list
+        idx0 = start_idx[j]
+        idxf = end_idx[j]
+        overpass_idx = np.arange(idx0, idxf+1, dtype=int)
+        idxmax = np.argmax(el[overpass_idx])
+        start_pt = Point(
+            datetime=jday2datetime(t.jd[idx0]),
+            azimuth=az[idx0],
+            elevation=el[idx0],
+            range=rng[idx0]
+        )
+        max_pt = Point(
+            datetime=jday2datetime(t.jd[idx0 + idxmax]),
+            azimuth=az[idx0 + idxmax],
+            elevation=el[idx0 + idxmax],
+            range=rng[idx0 + idxmax]
+        )
+        end_pt = Point(
+            datetime=jday2datetime(t.jd[idxf]),
+            azimuth=az[idxf],
+            elevation=el[idxf],
+            range=rng[idxf]
+        )
+        if store_sat_id:
+            overpass = Overpass(
+                satellite_id=satellite.id,
+                start_pt=start_pt,
+                max_pt=max_pt,
+                end_pt=end_pt
+            )
+        else:
+            overpass = Overpass(
+                start_pt=start_pt,
+                max_pt=max_pt,
+                end_pt=end_pt
+            )
+        overpasses[j] = overpass
 
-    print('Determine visibility')
+    if verbose:
+        print('Determine visibility')
     for overpass in overpasses:
         pass
 
