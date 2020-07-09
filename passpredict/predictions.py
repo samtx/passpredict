@@ -13,7 +13,7 @@ from .topocentric import razel, site_sat_rotations
 from .propagate import propagate_satellite
 from .timefn import jday2datetime, julian_date, jd2jc
 from .schemas import Point, Overpass, Satellite
-from .models import SatelliteRV, Time, SpaceObject
+from .models import SatelliteRV, Time, SpaceObject, Sun, RhoVector
 from .utils import get_TLE
 
 
@@ -26,6 +26,30 @@ def vector_angle(r1, r2):
     denominator = norm(r1, axis=0) * norm(r2, axis=0)
     out = np.arccos(numerator / denominator) * RAD2DEG
     return out
+
+
+def determine_visibilty(idx0: int, idxf: int, sat: SpaceObject, loc, rho: RhoVector, sun: Sun):
+    """
+    Determine satellite visibility
+    """
+    assert sat.time == sun.time == rho.time
+    t = sat.time
+    assert idx0 >= 0
+    assert idxf <= len(t.jd)
+    
+    # Check if site is in daylight, compute dot product of sun position.
+    # TODO: compute ECI vector for site position
+    if np.dot(sun.rECI, rsiteECI) > 0:
+        # site is in daylight
+        return 1
+    else:
+        # If nighttime, check if satellite is illuminated or in shadow
+        if is_sat_illuminated(rsatECI_i, rsun):
+            # satellite is illuminated
+            return 3
+        else:
+            # satellite is in shadow
+            return 2
 
 
 def satellite_visible(rsatECI, rsiteECI, rho, jdt):
@@ -146,40 +170,48 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
     jdtf = julian_date(dt_end)
     total_days = (dt_start-dt_end).total_seconds()/60
     dt_days = dt_seconds/(24*60*60.0)
-    jdt = np.arange(jdt0, jdtf, dt_days, dtype=float)
-    t = Time()
-    t.jd = jdt
-    t.tt_utc = jd2jc(t.jd)
+    t = Time(jd=np.arange(jdt0, jdtf, dt_days, dtype=float))
+    t.tt = jd2jc(t.jd)
+    dUTC1, xp, yp = eop(t.jd)
+    t.jd_utc1 = t.jd + dUTC1
+    t.tt_utc1 = jd2jc(t.jd_utc1)
+
+    sat = SpaceObject()
+    sat.time = t
 
     if verbose:
         print(f"begin propagation from {dt_start.isoformat()} to {dt_end.isoformat()}...")
     rTEME, _ = propagate_satellite(tle.tle1, tle.tle2, t.jd)
-
-    dUTC1, xp, yp = eop(t.jd)
-    t.jd_utc1 = t.jd + dUTC1
-
+    
     if verbose:
         print(f"rotate satellite position from TEME to ECEF...")
-    rsatECEF = teme2ecef(rTEME, t.jd_utc1, xp, yp)
+    sat.rECEF = teme2ecef(rTEME, t.jd_utc1, xp, yp)
+    sat.rECI = rTEME.view()
 
     # Compute sun-satellite quantities
     if verbose:
         print(f"Compute sun-satellite quantities...")
-    rECI = rTEME.copy()
-    rsunECI = sun_pos(jdt)  # to do: use cached value
-    sat_illum = is_sat_illuminated(rECI, rsunECI)
+    sun = Sun()
+    sun.time = t
+    sun.rECI = sun_pos(sun.time.jd)  # to do: use cached value
+    sat.illuminated = is_sat_illuminated(rTEME.copy(), sun.rECI)
         
     if verbose:
         print('begin prediction...')
+    rho = RhoVector()
+    rho.time = t
     rsiteECEF = site_ECEF(location.lat, location.lon, location.h)
-    rho = site_sat_rotations(rsiteECEF, rsatECEF)
-    rSEZ = ecef2sez(rho, location.lat, location.lon)
-    rng, az, el = razel(rSEZ)
+    rho.rECEF = site_sat_rotations(rsiteECEF, sat.rECEF)
+    rho.rSEZ = ecef2sez(rho.rECEF, location.lat, location.lon)
+    rng, az, el = razel(rho.rSEZ)
+    rho.rng = rng
+    rho.az = az
+    rho.el = el
     # rsiteECI = ecef2eci(rsiteECEF, jdt_utc1)
     
     # Find Overpasses
-    el0 = el[:-1] - min_elevation
-    el1 = el[1:] - min_elevation
+    el0 = rho.el[:-1] - min_elevation
+    el1 = rho.el[1:] - min_elevation
     el_change_sign = (el0*el1 < 0)   
     start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]  # Find the start of an overpass
     end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]    # Find the end of an overpass
@@ -194,22 +226,22 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
         overpass_idx = np.arange(idx0, idxf+1, dtype=int)
         idxmax = np.argmax(el[overpass_idx])
         start_pt = Point(
-            datetime=jday2datetime(t.jd[idx0]),
-            azimuth=az[idx0],
-            elevation=el[idx0],
-            range=rng[idx0]
+            datetime=jday2datetime(rho.time.jd[idx0]),
+            azimuth=rho.az[idx0],
+            elevation=rho.el[idx0],
+            range=rho.rng[idx0]
         )
         max_pt = Point(
-            datetime=jday2datetime(t.jd[idx0 + idxmax]),
-            azimuth=az[idx0 + idxmax],
-            elevation=el[idx0 + idxmax],
-            range=rng[idx0 + idxmax]
+            datetime=jday2datetime(rho.time.jd[idx0 + idxmax]),
+            azimuth=rho.az[idx0 + idxmax],
+            elevation=rho.el[idx0 + idxmax],
+            range=rho.rng[idx0 + idxmax]
         )
         end_pt = Point(
-            datetime=jday2datetime(t.jd[idxf]),
-            azimuth=az[idxf],
-            elevation=el[idxf],
-            range=rng[idxf]
+            datetime=jday2datetime(rho.time.jd[idxf]),
+            azimuth=rho.az[idxf],
+            elevation=rho.el[idxf],
+            range=rho.rng[idxf]
         )
         if store_sat_id:
             overpass = Overpass(

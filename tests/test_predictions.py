@@ -4,6 +4,7 @@ import datetime
 
 from numpy.testing import assert_allclose, assert_almost_equal
 import numpy as np
+import pytest
 
 from passpredict import predictions
 from passpredict import timefn
@@ -11,6 +12,8 @@ from passpredict.constants import ASEC2RAD
 from passpredict.utils import get_TLE
 from passpredict.schemas import Location, Satellite
 from passpredict.propagate import propagate_satellite
+
+
 
 
 def test_satellite_visible():
@@ -24,6 +27,18 @@ def test_satellite_visible():
     jdt = np.array([timefn.julian_date2(dt)])
     vis = predictions.satellite_visible(rsat, rsite, rho, jdt)
     assert vis[0] > 2
+
+
+@pytest.mark.predict
+def test_predict():
+    satellite = Satellite(id=25544, name='ISS')
+    location = Location(lat=30.2711, lon=-97.7434, h=0, name='Austin, Texas')
+    tle = get_TLE(satellite)
+    dt_start = timefn.truncate_datetime(datetime.datetime.now())# - datetime.timedelta(days=1)
+    dt_end = dt_start + datetime.timedelta(days=10)
+    min_elevation = 10.01 # degrees
+    overpasses = predictions.predict(location, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=1, min_elevation=min_elevation, verbose=True)
+    assert True
 
 
 # def test_predict_passes():
