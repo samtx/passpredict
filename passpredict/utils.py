@@ -138,9 +138,12 @@ def save_TLE_data(url=None):
 
 
 class Cache:
-    def __init__(self, cache_directory=CACHE_DIRECTORY, ttl=30):
+    def __init__(self, cache_type, cache_directory=CACHE_DIRECTORY, ttl=30):
+        assert cache_type in {None, 'disk', 'mem'}
+        self.type = cache_type
         self.directory = cache_directory
         self.ttl = OrderedDict() # time to live index
+
         self.cache = OrderedDict()
 
     def set(self, key, value, ttl=0.):
@@ -150,13 +153,26 @@ class Cache:
             'ttl': ttl,
         }
         if ttl > 0:
-            self.ttl[ttl]
+            self.set_ttl(key, ttl) 
+
+    def set_ttl(self, key, ttl):
+        key_hash = self.hash(key)
+        if ttl in self.ttl:
+            self.ttl[ttl].add(key_hash)
+        else:
+            self.ttl[ttl] = {key_hash}
 
     def get(self, key, val):
-        return None
+        return self.cache.get(key)
 
     def hash(self, key):
         return hash(key)
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *args):
+        pass
 
 
 class CacheItem:
