@@ -4,7 +4,8 @@ import functools
 from passpredict.timefn import julian_date, jdt_tsince, invjday, jday2datetime, \
                                  jday2npdatetime64, truncate_datetime
 from passpredict.solar import is_sat_illuminated, sun_pos
-from passpredict.schemas import SatelliteRV, Tle
+from passpredict.schemas import Tle
+from passpredict.models import SatelliteRV
 from passpredict.rotations.transform import teme2ecef
 from passpredict.utils import parse_tles_from_celestrak, epoch_from_tle
 import datetime
@@ -22,9 +23,7 @@ import os
 # from passpredict.sgp4 import sgp4
 
 
-
-@functools.lru_cache(maxsize=64)
-def propagate_satellite(tle1, tle2, dt0, dtf, dtsec=1.0):
+def propagate_satellite(tle1, tle2, jd, *args, **kwargs):
     """Propagate satellite position forward in time.
 
     Parameters:
@@ -32,12 +31,8 @@ def propagate_satellite(tle1, tle2, dt0, dtf, dtsec=1.0):
             first line of two line element set
         tle2 : str
             second line of two line element set
-        dt0 : datetime
-            initial datetime to begin propagation, to nearest second
-        dtf : datetime
-            final datetime for propagation, to nearest second
-        dtsec : float
-            time interval in seconds for propagation
+        jd : float (n)
+            array of julian dates to propagate
 
     Returns:
         r : float (3, n)
@@ -46,23 +41,9 @@ def propagate_satellite(tle1, tle2, dt0, dtf, dtsec=1.0):
             satellite velocity vector in TEME coordinates
     """
 
-    # if not use_cython:
-    #     sgp4fn = sgp4
-    # else:
-    #     sgp4fn = sgp4_pyx
-
-    # Get TLE data for ISS
-    # tle1, tle2 = get_TLE()
-
     satrec = Satrec.twoline2rv(tle1, tle2, WGS84)
 
-    # # create array of julian dates to pass into sgp4
-    jdt0 = julian_date(dt0)
-    jdtf = julian_date(dtf)
-    total_days = (dtf-dt0).total_seconds()/60
-    dt_days = dtsec/(24*60*60.0)
-    jdt = np.arange(jdt0, jdtf, dt_days, dtype=float)
-    jd_array, fr_array = np.divmod(jdt, 1)
+    jd_array, fr_array = np.divmod(jd, 1)
 
     error, r, v = satrec.sgp4_array(jd_array, fr_array)
 
