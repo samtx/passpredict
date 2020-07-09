@@ -1,10 +1,14 @@
-
-# from passpredict.sgp4io import twoline2rv, Satellite, wgs72, wgs84
-import numpy as np
-from passpredict import propagate
 import datetime
 from pathlib import Path
 import os
+
+import numpy as np
+
+# from passpredict.sgp4io import twoline2rv, Satellite, wgs72, wgs84
+from passpredict import propagate
+from passpredict.rotations.transform import teme2ecef
+from passpredict.rotations.polar import eop
+from passpredict.timefn import julian_date
 
 tz_utc = datetime.timezone.utc
 
@@ -23,7 +27,15 @@ def test_propagate_iss():
     datetime_start = datetime.datetime(2020, 6, 1, 0, 0, 0, tzinfo=tz_utc)
     datetime_end = datetime.datetime(2020, 6, 11, 0, 0, 0, tzinfo=tz_utc)
     dt_seconds = 5
-    passpredict_rECEF = propagate.propagate(tle1, tle2, datetime_start, datetime_end, dt_seconds).rECEF
+    rTEME, _ = propagate.propagate_satellite(tle1, tle2, datetime_start, datetime_end, dt_seconds)
+    jdt0 = julian_date(datetime_start)
+    jdtf = julian_date(datetime_end)
+    total_days = (datetime_start-datetime_end).total_seconds()/60
+    dt_days = dt_seconds/(24*60*60.0)
+    jdt = np.arange(jdt0, jdtf, dt_days, dtype=float)
+    dUTC1, xp, yp = eop(jdt)
+    jdt_utc1 = jdt + dUTC1
+    passpredict_rECEF = teme2ecef(rTEME, jdt_utc1, xp, yp)    
     fname = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data/skyfield_iss_rECEF.npy'))
     skyfield_rECEF = np.load(fname, allow_pickle=True)
     diff = np.linalg.norm(passpredict_rECEF - skyfield_rECEF, axis=0)
