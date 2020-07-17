@@ -40,7 +40,7 @@ class Time():
 
 
 class SpaceObject():
-    __slots__ = ['time', 'rECEF', 'rECI','latitude','longitude','altitude','illuminated']
+    __slots__ = ['time', 'rECEF', 'rECI','latitude','longitude','altitude','illuminated', 'rECEF_astropy', 'subpoint']
     def __init__(self):
         self.time = None  # time object
         self.rECEF = None
@@ -49,6 +49,8 @@ class SpaceObject():
         self.longitude = None
         self.altitude = None
         self.illuminated = None
+        self.rECEF_astropy = None
+        self.subpoint = None
 
 
 class RhoVector():

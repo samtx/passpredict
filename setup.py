@@ -21,7 +21,7 @@ setup(
     install_requires=[
         "numpy",        
         "sgp4 >= 2.8",
-        "astropy",
+        "astropy >= 4.1rc1",  # for the TEME coordinate frame
         "requests",
         "pydantic",
         "click",
