@@ -24,6 +24,7 @@ setup(
         "requests",
         "pydantic",
         "click",
+        "diskcache",
     ],
     extras_require={
         'dev': [
