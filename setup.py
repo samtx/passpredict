@@ -21,6 +21,7 @@ setup(
     install_requires=[
         "numpy",        
         "sgp4 >= 2.8",
+        "astropy",
         "requests",
         "pydantic",
         "click",

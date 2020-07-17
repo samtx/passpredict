@@ -70,6 +70,7 @@
     "matrix": {
         "numpy": [""],
         "sgp4": [""],
+        "astropy": [""],
         "requests": [""],
         "pydantic": [""],
         "click": [""],
