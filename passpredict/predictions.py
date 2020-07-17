@@ -6,7 +6,7 @@ import numpy as np
 from numpy import dot, cross
 from numpy.linalg import norm
 from astropy import units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, TEME, CartesianRepresentation, ITRS, EarthLocation, AltAz
 from astropy.time import Time
 
 from .rotations.rotations import site_ECEF
@@ -20,6 +20,8 @@ from .schemas import Point, Overpass, Satellite, Location
 from .models import SatelliteRV, SpaceObject, Sun, RhoVector
 from .utils import get_TLE
 
+
+# Reference: https://docs.astropy.org/en/latest/coordinates/satellites.html
 
 def vector_angle(r1, r2):
     """Compute the angle between two vectors
@@ -265,6 +267,12 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
     if verbose:
         print(f"begin propagation from {dt_start.isoformat()} to {dt_end.isoformat()}...")
     rTEME, _ = propagate_satellite(tle.tle1, tle.tle2, t.jd)
+
+    # Use the TEME reference frame from astropy
+    rTEME_astropy = CartesianRepresentation(rTEME * u.km)
+    teme = TEME(rTEME_astropy, obstime=t)
+    sat.rECEF_astropy = teme.transform_to(ITRS(obstime=t))
+    sat.subpoint = sat.rECEF_astropy.earth_location
     
     if verbose:
         print(f"rotate satellite position from TEME to ECEF...")
