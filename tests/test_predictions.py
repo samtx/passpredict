@@ -31,6 +31,9 @@ def test_satellite_visible():
 
 @pytest.mark.predict
 def test_predict():
+    """
+    Just confirm that the predict() function doesn't error
+    """
     satellite = Satellite(id=25544, name='ISS')
     location = Location(lat=30.2711, lon=-97.7434, h=0, name='Austin, Texas')
     tle = get_TLE(satellite)
@@ -41,50 +44,42 @@ def test_predict():
     assert True
 
 
-# def test_predict_passes():
-#     """
-#     Right now, just test that it doesn't error
-#     """
-#     # Set up satellite position
-#     dt_seconds = 10
-#     num_days = 5
-#     min_elevation = 10.0
+# Create a prediction test suite comparing results to 
+#    1. heavens-above.com
+#    2. calsky.com
+#    3. n2Y0.com
+#    4. skyfield
+#    5. pyephem
+#
+# Use multiple satellites and multiple locations at different latitudes
+#   Satellites: 
+#     ISS (25544)
+#     Hubble
+#     Starlink-8
+#     Lightsail 2
+#     Envisat
+#     Terra 
+#     a geosynchronus sat
+#     a retrograde orbit sat
+#     a molniya orbit sat
+#     a sun-synchronus orbit sat
+#     a geostationary orbit sat
+#
+#   Locations (lat, lon):
+#     Longyearbyen, Norway (78.2)
+#     Inuvik, Canada (68.3607 , -133.7230)
+#     Helsinki, Finland (60.17)
+#     Kiev, Ukraine (50.45)
+#     New York, NY, USA (40.7128, -74.0060)
+#     Austin, Texas, USA (30.2672, -97.7431)
+#     Mexico City, Mexico (~20)
+#     Bissau, Guinea Bissau (~10)
+#     Quito, Ecuador (~0)
+#     Johannesburg, South Africa (-26)
+#     Sydney, Australia (-33)
+#     Christchurch, New Zealand (-43)
+#     Punta Arenas, Chile (-53)
+#     McMurdo Station, Antarctica (-77)
+predict_results = {
 
-#     austin = Location(lat=30.2672, lon=-97.7431, h=0, name='Austin')
-#     iss = Satellite(id=25544, name='ISS')
-#     iss_tle = get_TLE(iss)
-#     datetime_start = timefn.truncate_datetime(
-#         datetime.datetime.now(tz=datetime.timezone.utc)
-#     )
-#     datetime_end = datetime_start + datetime.timedelta(days=num_days)
-#     iss_rv = propagate_satellite.__wrapped__(
-#         iss_tle.tle1, iss_tle.tle2, datetime_start, datetime_end, dt_seconds
-#     )
-#     overpasses = predictions.predict_passes(
-#         austin.lat, austin.lon, austin.h,
-#         iss_rv.rECEF, iss_rv.rECI, iss_rv.julian_date,
-#         min_elevation=min_elevation
-#     )
-#     assert True
-
-
-
-# def test_riseset():
-#     """Eg. ,
-#     Test orbit propagation
-#     """
-#         # Obj, n [rev/solar day],         e,  i [deg],  w, Omega, M
-#     orbital_objects = [
-#         (   1,        1.00272141, 0.0000032,  00.0956, 0.,    0., 0.),
-#         (   2,        8.36589235, 0.0080158,  90.0175, 0.,    0., 0.),
-#         (   3,        0.24891961, 0.9363060,  64.9874, 0.,    0., 0.),
-#         (   4,        0.21467209, 0.0668128,  57.3500, 0.,    0., 0.),
-#         (   5,       13.37659679, 0.0145072,  90.2619, 0.,    0., 0.),
-#         (   6,       16.09769232, 0.0078742,  82.8709, 0.,    0., 0.),
-#         (   7,        1.00271920, 0.0003109,  00.0099, 0.,    0., 0.),
-#         (   8,       12.41552416, 0.0036498,  74.0186, 0.,    0., 0.),
-#         (   9,       13.84150848, 0.0048964, 144.6414, 0.,    0., 0.)
-#     ]
-
-
-
+}
