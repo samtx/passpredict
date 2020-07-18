@@ -6,7 +6,7 @@ import numpy as np
 from numpy import dot, cross
 from numpy.linalg import norm
 from astropy import units as u
-from astropy.coordinates import SkyCoord, TEME, CartesianRepresentation, ITRS, EarthLocation, AltAz
+from astropy.coordinates import SkyCoord, TEME, CartesianRepresentation, ITRS, EarthLocation, AltAz, get_sun
 from astropy.time import Time
 
 from .rotations.rotations import site_ECEF
@@ -90,69 +90,12 @@ def satellite_visible(rsatECI, rsiteECI, rho, jdt):
     return visible
 
 
-# def get_overpasses(el, azm, rng, jdt_ary, rSEZ, min_elevation=10, sat_id=None):
-#     el0 = el[:-1] - min_elevation
-#     el1 = el[1:] - min_elevation
-#     el_change_sign = (el0*el1 < 0)   
-#     start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]  # Find the start of an overpass
-#     end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]    # Find the end of an overpass
-#     num_overpasses = min(start_idx.size, end_idx.size)       # Iterate over start/end indecies and gather inbetween indecies
-#     if start_idx.size < end_idx.size:
-#         end_idx = end_idx[1:]
-#     overpasses = [None] * num_overpasses
-#     for j in range(num_overpasses):
-#         # Store indecies of overpasses in a list
-#         idx0 = start_idx[j]
-#         idxf = end_idx[j]
-#         overpass_idx = np.arange(idx0, idxf+1, dtype=int)
-#         idxmax = np.argmax(el[overpass_idx])
-#         start_pt = Point(
-#             datetime=jday2datetime(jdt_ary[idx0]),
-#             azimuth=azm[idx0],
-#             elevation=el[idx0],
-#             range=rng[idx0]
-#         )
-#         max_pt = Point(
-#             datetime=jday2datetime(jdt_ary[idx0 + idxmax]),
-#             azimuth=azm[idx0 + idxmax],
-#             elevation=el[idx0 + idxmax],
-#             range=rng[idx0 + idxmax]
-#         )
-#         end_pt = Point(
-#             datetime=jday2datetime(jdt_ary[idxf]),
-#             azimuth=azm[idxf],
-#             elevation=el[idxf],
-#             range=rng[idxf]
-#         )
-#         if sat_id is not None:
-#             overpass = Overpass(
-#                 satellite_id=sat_id,
-#                 start_pt=start_pt,
-#                 max_pt=max_pt,
-#                 end_pt=end_pt
-#             )
-#         else:
-#             overpass = Overpass(
-#                 start_pt=start_pt,
-#                 max_pt=max_pt,
-#                 end_pt=end_pt
-#             )
-#         overpasses[j] = overpass
-#     return overpasses
 
-
-# def predict_passes(lat, lon, h, rsatECEF, rsatECI, jdt, rsun=None, min_elevation=None):
-#     rsiteECEF = site_ECEF(lat, lon, h)
-#     rsiteECI = ecef2eci(rsiteECEF, jdt)
-#     rho = site_sat_rotations(rsiteECEF, rsatECEF)
-#     rSEZ = ecef2sez(rho, lat, lon)
-#     rng, az, el = razel(rSEZ)
-#     overpasses = get_overpasses(el, az, rng, jdt, rSEZ, rsiteECI=None, rsatECI=None, min_elevation=min_elevation)
-#     return overpasses
-
-
-def find_overpasses(location: Location, sats: List[SpaceObject], times: Time, sun: List[SpaceObject], min_elevation: float = 10):
-
+def find_overpasses(location: Location, sats: List[SpaceObject], times: Time, sun: List[SpaceObject], min_elevation: float = 10) -> List[Overpass]:
+    """
+    Real-time computation for finding satellite overpasses of a topographic location.
+    Can support multiple satellites over a single location
+    """
     if len(sats) > 1:
         store_sat_id = True
     else:
@@ -256,11 +199,7 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
     dt_days = dt_seconds/(24*60*60.0)
     jd_array = np.arange(jdt0, jdtf, dt_days, dtype=float)
     t = Time(jd_array, format='jd')
-    # t.tt = jd2jc(t.jd)
-    # dUTC1, xp, yp = eop(t.jd)
-    # t.jd_utc1 = t.jd + dUTC1
-    # t.tt_utc1 = jd2jc(t.jd_utc1)
-
+    
     sat = SpaceObject()
     sat.time = t
 
@@ -269,23 +208,26 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
     rTEME, _ = propagate_satellite(tle.tle1, tle.tle2, t.jd)
 
     # Use the TEME reference frame from astropy
-    rTEME_astropy = CartesianRepresentation(rTEME * u.km)
-    teme = TEME(rTEME_astropy, obstime=t)
-    sat.rECEF_astropy = teme.transform_to(ITRS(obstime=t))
-    sat.subpoint = sat.rECEF_astropy.earth_location
-    
     if verbose:
         print(f"rotate satellite position from TEME to ECEF...")
-    sat.rECEF = teme2ecef(rTEME, t.jd + t.delta_ut1_utc)
-    sat.rECI = rTEME.view()
+    teme = TEME(CartesianRepresentation(rTEME * u.km), obstime=t)
+    ecef = teme.transform_to(ITRS(obstime=t))
+    sat.rECEF = ecef.data.xyz.value  # extract numpy array from astropy object
+    sat.subpoint = ecef.earth_location
+    sat.latitude = sat.subpoint.lat.value
+    sat.longitude = sat.subpoint.lon.value
+    
 
     # Compute sun-satellite quantities
     if verbose:
         print(f"Compute sun-satellite quantities...")
+    # sun_obj = get_sun(t)  # get astropy coordinates for sun
+    # sun_obj = sun_obj.transform_to(ITRS(obstime=t))  # transform to ECEF frame
+    # sun.time = t
+    # # sun.rECI = sun_pos(sun.time.jd)  # to do: use cached value
+    # sat.illuminated = is_sat_illuminated(sat.rECEF, sun_obj.data.xyz.value)
     sun = Sun()
     sun.time = t
-    sun.rECI = sun_pos(sun.time.jd)  # to do: use cached value
-    sat.illuminated = is_sat_illuminated(rTEME.copy(), sun.rECI)
         
     if verbose:
         print('begin prediction...')
