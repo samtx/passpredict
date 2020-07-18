@@ -1,5 +1,5 @@
 import pickle
-import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 import numpy as np
@@ -16,7 +16,7 @@ from .solar import sun_pos, is_sat_illuminated
 from .topocentric import razel, site_sat_rotations
 from .propagate import propagate_satellite
 from .timefn import jday2datetime, julian_date, jd2jc
-from .schemas import Point, Overpass, Satellite, Location
+from .schemas import Point, Overpass, Satellite, Location, Tle
 from .models import SatelliteRV, SpaceObject, Sun, RhoVector
 from .utils import get_TLE
 
@@ -39,13 +39,12 @@ def determine_visibilty(idx0: int, idxf: int, sat: SpaceObject, loc, rho: RhoVec
     Determine satellite visibility
     """
     assert sat.time == sun.time == rho.time
-    t = sat.time
     assert idx0 >= 0
     assert idxf <= len(t.jd)
+    t = sat.time
     
     # Check if site is in daylight, compute dot product of sun position.
-    # TODO: compute ECI vector for site position
-    if np.dot(sun.rECI, rsiteECI) > 0:
+    if np.dot(sun.rECEF, rsiteECI) > 0:
         # site is in daylight
         return 1
     else:
@@ -131,33 +130,129 @@ def find_overpasses(location: Location, sats: List[SpaceObject], times: Time, su
             idxf = end_idx[j]
             overpass_idx = np.arange(idx0, idxf+1, dtype=int)
             idxmax = np.argmax(el[overpass_idx])
-            start_pt = Point(
-                datetime=jday2datetime(rho.time.jd[idx0]),
-                azimuth=rho.az[idx0],
-                elevation=rho.el[idx0],
-                range=rho.rng[idx0]
-            )
-            max_pt = Point(
-                datetime=jday2datetime(rho.time.jd[idx0 + idxmax]),
-                azimuth=rho.az[idx0 + idxmax],
-                elevation=rho.el[idx0 + idxmax],
-                range=rho.rng[idx0 + idxmax]
-            )
-            end_pt = Point(
-                datetime=jday2datetime(rho.time.jd[idxf]),
-                azimuth=rho.az[idxf],
-                elevation=rho.el[idxf],
-                range=rho.rng[idxf]
-            )
+            start_pt = Point.from_rho(rho, idx0)
+            max_pt = Point.from_rho(rho, idx0 + idxmax)
+            end_pt = Point.from_rho(rho, idxf)
+
+            # Determine visibility
+            
             if store_sat_id:
-                overpass = Overpass(
+                overpass = Overpass.construct(
                     satellite_id=satellite.id,
                     start_pt=start_pt,
                     max_pt=max_pt,
                     end_pt=end_pt
                 )
             else:
-                overpass = Overpass(
+                overpass = Overpass.construct(
+                    start_pt=start_pt,
+                    max_pt=max_pt,
+                    end_pt=end_pt
+                )
+            sat_overpasses[j] = overpass
+
+
+        overpasses += sat_overpasses
+
+    return overpasses
+
+def compute_time_array(dt_start: datetime, dt_end: datetime, dt_seconds: float) -> Time:
+    """
+    Create astropy Time object
+    """
+    jdt0 = julian_date(dt_start)
+    jdtf = julian_date(dt_end)
+    total_days = (dt_start-dt_end).total_seconds()/60
+    dt_days = dt_seconds/(24*60*60.0)
+    jd_array = np.arange(jdt0, jdtf, dt_days, dtype=float)
+    return Time(jd_array, format='jd')
+
+
+def compute_satellite_data(tle: Tle, t: Time) -> SpaceObject:
+    """
+    Compute satellite data for Time
+    """
+    sat = SpaceObject()
+    sat.time = t
+    r, _ = propagate_satellite(tle.tle1, tle.tle2, t.jd)
+    # Use the TEME reference frame from astropy
+    teme = TEME(CartesianRepresentation(r * u.km), obstime=t)
+    ecef = teme.transform_to(ITRS(obstime=t))
+    sat.rECEF = ecef.data.xyz.value  # extract numpy array from astropy object
+    sat.subpoint = ecef.earth_location
+    sat.latitude = sat.subpoint.lat.value
+    sat.longitude = sat.subpoint.lon.value
+    return sat
+    
+
+def compute_sun_data(t: Time) -> Sun:
+    """
+    Compute sun position data
+
+    Compute for each minute, then interpolate for each second
+    """
+    t_tmp = t[::60]
+    sun_tmp = get_sun(t_tmp)  # get astropy coordinates for sun in GCRS
+    sun_tmp = sun_tmp.transform_to(ITRS(obstime=t_tmp))  # transform to ECEF frame
+    sun_tmp = sun_tmp.data.xyz.to('km').value
+    sun_data = np.empty((3, t.size))
+    for i in range(3):
+        sun_data[i] = np.interp(t.jd, t_tmp.jd, sun_tmp[i])
+    sun = Sun()
+    sun.time = t
+    sun.rECEF = sun_data
+    return sun
+
+
+def find_overpasses(location: Location, sats: List[SpaceObject], times: Time, sun: List[SpaceObject], min_elevation: float = 10):
+
+    if len(sats) > 1:
+        store_sat_id = True
+    else:
+        store_sat_id = False
+
+    rsiteECEF = site_ECEF(location.lat, location.lon, location.h)
+    overpasses = []
+    
+    for sat in sats:
+        rho = RhoVector()
+        rho.time = times
+        rho.rECEF = site_sat_rotations(rsiteECEF, sat.rECEF)
+        rho.rSEZ = ecef2sez(rho.rECEF, location.lat, location.lon)
+        rng, az, el = razel(rho.rSEZ)
+        rho.rng = rng
+        rho.az = az
+        rho.el = el
+        # rsiteECI = ecef2eci(rsiteECEF, jdt_utc1)
+        
+        # Find Overpasses
+        el0 = rho.el[:-1] - min_elevation
+        el1 = rho.el[1:] - min_elevation
+        el_change_sign = (el0*el1 < 0)   
+        start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]  # Find the start of an overpass
+        end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]    # Find the end of an overpass
+        num_overpasses = min(start_idx.size, end_idx.size)       # Iterate over start/end indecies and gather inbetween indecies
+        if start_idx.size < end_idx.size:
+            end_idx = end_idx[1:]
+        sat_overpasses = [None] * num_overpasses
+        for j in range(num_overpasses):
+            # Store indecies of overpasses in a list
+            idx0 = start_idx[j]
+            idxf = end_idx[j]
+            overpass_idx = np.arange(idx0, idxf+1, dtype=int)
+            idxmax = np.argmax(el[overpass_idx])
+            start_pt = Point.from_rho(rho, idx0)
+            max_pt = Point.from_rho(rho, idx0 + idxmax)
+            end_pt = Point.from_rho(rho, idxf)
+            if store_sat_id:
+                overpass = Overpass.construct(
+                    satellite_id=satellite.id,
+                    start_pt=start_pt,
+                    max_pt=max_pt,
+                    end_pt=end_pt
+                )
+            else:
+                overpass = Overpass.construct(
                     start_pt=start_pt,
                     max_pt=max_pt,
                     end_pt=end_pt
@@ -187,47 +282,27 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
             satellite ID number in Celestrak, ISS is 25544
     """
     if dt_start is None:
-        dt_start = datetime.datetime.now()
+        dt_start = datetime.now()
     if dt_end is None:
-        dt_end = dt_start + datetime.timedelta(days=14)
+        dt_end = dt_start + timedelta(days=14)
     if tle is None:
         tle = get_TLE(satellite)
 
-    jdt0 = julian_date(dt_start)
-    jdtf = julian_date(dt_end)
-    total_days = (dt_start-dt_end).total_seconds()/60
-    dt_days = dt_seconds/(24*60*60.0)
-    jd_array = np.arange(jdt0, jdtf, dt_days, dtype=float)
-    t = Time(jd_array, format='jd')
+    t = compute_time_array(dt_start, dt_end, dt_seconds)
     
-    sat = SpaceObject()
-    sat.time = t
+    if verbose:
+        print(f"Begin propagation from {dt_start.isoformat()} to {dt_end.isoformat()}...")
+    sat = compute_satellite_data(tle, t)
 
     if verbose:
-        print(f"begin propagation from {dt_start.isoformat()} to {dt_end.isoformat()}...")
-    rTEME, _ = propagate_satellite(tle.tle1, tle.tle2, t.jd)
-
-    # Use the TEME reference frame from astropy
-    if verbose:
-        print(f"rotate satellite position from TEME to ECEF...")
-    teme = TEME(CartesianRepresentation(rTEME * u.km), obstime=t)
-    ecef = teme.transform_to(ITRS(obstime=t))
-    sat.rECEF = ecef.data.xyz.value  # extract numpy array from astropy object
-    sat.subpoint = ecef.earth_location
-    sat.latitude = sat.subpoint.lat.value
-    sat.longitude = sat.subpoint.lon.value
-    
+        print("Compute sun position...")
+    sun = compute_sun_data(t)
 
     # Compute sun-satellite quantities
     if verbose:
-        print(f"Compute sun-satellite quantities...")
-    # sun_obj = get_sun(t)  # get astropy coordinates for sun
-    # sun_obj = sun_obj.transform_to(ITRS(obstime=t))  # transform to ECEF frame
-    # sun.time = t
-    # # sun.rECI = sun_pos(sun.time.jd)  # to do: use cached value
-    # sat.illuminated = is_sat_illuminated(sat.rECEF, sun_obj.data.xyz.value)
-    sun = Sun()
-    sun.time = t
+        print("Compute sun-satellite illumination...")
+    sat.illuminated = is_sat_illuminated(sat.rECEF, sun.rECEF)
+
         
     if verbose:
         print('begin prediction...')
