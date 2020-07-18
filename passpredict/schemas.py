@@ -7,6 +7,8 @@ from enum import Enum
 import numpy as np
 from pydantic import BaseModel
 
+from .timefn import jday2datetime
+
 # From Pydantic, to use Numpy arrays
 # ref: https://github.com/samuelcolvin/pydantic/issues/380#issuecomment-620378743
 class _ArrayMeta(type):
@@ -88,6 +90,16 @@ class Point(BaseModel):
         start = 0 - mod/2
         n = np.floor((azm-start)/mod).astype(int)
         return COORDINATES[n]
+    
+    @classmethod
+    def from_rho(cls, rho, idx):
+        """Create a Point object directly from the rho vector and index without validation"""
+        return cls.construct(
+            datetime=jday2datetime(rho.time.jd[idx]),
+            azimuth=rho.az[idx],
+            elevation=rho.el[idx],
+            range=rho.rng[idx]
+        )
 
 
     # def __repr__(self):

@@ -42,7 +42,7 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
     )
     tle = get_TLE(satellite)
     dt_start = truncate_datetime(datetime.datetime.now())# - datetime.timedelta(days=1)
-    dt_end = dt_start + datetime.timedelta(days=10)
+    dt_end = dt_start + datetime.timedelta(days=days)
     min_elevation = 10.01 # degrees
     overpasses = predict(location, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=1, min_elevation=min_elevation, verbose=True)
     print('begin printing table...')
