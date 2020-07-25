@@ -172,6 +172,69 @@ def find_overpasses(location: Location, sats: List[SpaceObject], times: Time, su
     return overpasses
 
 
+def find_overpasses(location: Location, sats: List[SpaceObject], times: Time, sun: List[SpaceObject], min_elevation: float = 10):
+
+    if len(sats) > 1:
+        store_sat_id = True
+    else:
+        store_sat_id = False
+
+    rsiteECEF = site_ECEF(location.lat, location.lon, location.h)
+    overpasses = []
+    
+    for sat in sats:
+        rho = RhoVector()
+        rho.time = times
+        rho.rECEF = site_sat_rotations(rsiteECEF, sat.rECEF)
+        rho.rSEZ = ecef2sez(rho.rECEF, location.lat, location.lon)
+        rng, az, el = razel(rho.rSEZ)
+        rho.rng = rng
+        rho.az = az
+        rho.el = el
+        # rsiteECI = ecef2eci(rsiteECEF, jdt_utc1)
+        
+        # Find Overpasses
+        el0 = rho.el[:-1] - min_elevation
+        el1 = rho.el[1:] - min_elevation
+        el_change_sign = (el0*el1 < 0)   
+        start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]  # Find the start of an overpass
+        end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]    # Find the end of an overpass
+        num_overpasses = min(start_idx.size, end_idx.size)       # Iterate over start/end indecies and gather inbetween indecies
+        if start_idx.size < end_idx.size:
+            end_idx = end_idx[1:]
+        sat_overpasses = [None] * num_overpasses
+        for j in range(num_overpasses):
+            # Store indecies of overpasses in a list
+            idx0 = start_idx[j]
+            idxf = end_idx[j]
+            overpass_idx = np.arange(idx0, idxf+1, dtype=int)
+            idxmax = np.argmax(el[overpass_idx])
+            start_pt = Point.from_rho(rho, idx0)
+            max_pt = Point.from_rho(rho, idx0 + idxmax)
+            end_pt = Point.from_rho(rho, idxf)
+            if store_sat_id:
+                overpass = Overpass.construct(
+                    satellite_id=satellite.id,
+                    start_pt=start_pt,
+                    max_pt=max_pt,
+                    end_pt=end_pt
+                )
+            else:
+                overpass = Overpass.construct(
+                    start_pt=start_pt,
+                    max_pt=max_pt,
+                    end_pt=end_pt
+                )
+            sat_overpasses[j] = overpass
+
+            # if verbose:
+            #     print('Determine visibility')
+
+        overpasses += sat_overpasses
+
+    return overpasses
+
+
 def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_elevation=None, tle=None, cache=None, verbose=False, store_sat_id=False):
     """
     Full prediction algorithm:
