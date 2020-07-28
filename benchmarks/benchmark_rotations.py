@@ -34,32 +34,27 @@ class Rotations:
     # self.param_names = ['num_time_steps']
 
     def setup(self, *args):
-        try:
-            self.sat_teme = load_pickle('satellite_teme')
-            self.t = load_pickle('time')
-        except:
-            satellite = Satellite(id=25544, name='ISS')
-            location = Location(lat=30.2711, lon=-97.7434, h=0, name='Austin, Texas')
-            dt_seconds = 1.0
-            tle1 = '1 25544U 98067A   20196.51422950 -.00000046  00000-0  72206-5 0  9999'
-            tle2 = '2 25544  51.6443 213.2207 0001423 114.8006 342.8278 15.49514729236251'    
-            tle = Tle(
-                tle1=tle1,
-                tle2=tle2,
-                epoch=epoch_from_tle(tle1),
-                satellite=satellite
-            ) 
-            dt_start = datetime.datetime(2020, 7, 14, 11, 17, 00, tzinfo=datetime.timezone.utc)
-            dt_end = dt_start + datetime.timedelta(days=14)
-            t = compute_time_array(dt_start, dt_end, dt_seconds)
-            
-            # sun = compute_sun_data(t)
-            # sat.illuminated = is_sat_illuminated(sat.rECEF, sun.rECEF)
-            
-            self.t = t
-            r, _ = propagate_satellite(tle.tle1, tle.tle2, t.jd)
-            save_pickle(r, 'satellite_teme')
-            self.sat_teme = r
+        satellite = Satellite(id=25544, name='ISS')
+        location = Location(lat=30.2711, lon=-97.7434, h=0, name='Austin, Texas')
+        dt_seconds = 1.0
+        tle1 = '1 25544U 98067A   20196.51422950 -.00000046  00000-0  72206-5 0  9999'
+        tle2 = '2 25544  51.6443 213.2207 0001423 114.8006 342.8278 15.49514729236251'    
+        tle = Tle(
+            tle1=tle1,
+            tle2=tle2,
+            epoch=epoch_from_tle(tle1),
+            satellite=satellite
+        ) 
+        dt_start = datetime.datetime(2020, 7, 14, 11, 17, 00, tzinfo=datetime.timezone.utc)
+        dt_end = dt_start + datetime.timedelta(days=14)
+        t = compute_time_array(dt_start, dt_end, dt_seconds)
+        
+        # sun = compute_sun_data(t)
+        # sat.illuminated = is_sat_illuminated(sat.rECEF, sun.rECEF)
+        
+        self.t = t
+        r, _ = propagate_satellite(tle.tle1, tle.tle2, t.jd)
+        self.sat_teme = r
        
 
     def time_teme_to_itrs(self):

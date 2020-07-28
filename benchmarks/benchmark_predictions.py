@@ -34,38 +34,28 @@ class Predict:
     # self.param_names = ['num_time_steps']
 
     def setup(self, *args):
-        try:
-            self.location = load_pickle('location')
-            self.sat = load_pickle('satellite')
-            self.t = load_pickle('time')
-            self.sun = load_pickle('sun')
-        except:
-            satellite = Satellite(id=25544, name='ISS')
-            location = Location(lat=30.2711, lon=-97.7434, h=0, name='Austin, Texas')
-            dt_seconds = 1.0
-            tle1 = '1 25544U 98067A   20196.51422950 -.00000046  00000-0  72206-5 0  9999'
-            tle2 = '2 25544  51.6443 213.2207 0001423 114.8006 342.8278 15.49514729236251'    
-            tle = Tle(
-                tle1=tle1,
-                tle2=tle2,
-                epoch=epoch_from_tle(tle1),
-                satellite=satellite
-            ) 
-            dt_start = datetime.datetime(2020, 7, 14, 11, 17, 00, tzinfo=datetime.timezone.utc)
-            dt_end = dt_start + datetime.timedelta(days=14)
-            t = compute_time_array(dt_start, dt_end, dt_seconds)
-            sat = compute_satellite_data(tle, t)
-            # sun = compute_sun_data(t)
-            sun = Sun()
-            # sat.illuminated = is_sat_illuminated(sat.rECEF, sun.rECEF)
-            self.location = location
-            self.t = t
-            self.sat = sat
-            self.sun = sun
-            save_pickle(location, 'location')
-            save_pickle(sat, 'satellite')
-            save_pickle(t, 'time')
-            save_pickle(sun, 'sun')
+        satellite = Satellite(id=25544, name='ISS')
+        location = Location(lat=30.2711, lon=-97.7434, h=0, name='Austin, Texas')
+        dt_seconds = 1.0
+        tle1 = '1 25544U 98067A   20196.51422950 -.00000046  00000-0  72206-5 0  9999'
+        tle2 = '2 25544  51.6443 213.2207 0001423 114.8006 342.8278 15.49514729236251'    
+        tle = Tle(
+            tle1=tle1,
+            tle2=tle2,
+            epoch=epoch_from_tle(tle1),
+            satellite=satellite
+        ) 
+        dt_start = datetime.datetime(2020, 7, 14, 11, 17, 00, tzinfo=datetime.timezone.utc)
+        dt_end = dt_start + datetime.timedelta(days=14)
+        t = compute_time_array(dt_start, dt_end, dt_seconds)
+        sat = compute_satellite_data(tle, t)
+        # sun = compute_sun_data(t)
+        sun = Sun()
+        # sat.illuminated = is_sat_illuminated(sat.rECEF, sun.rECEF)
+        self.location = location
+        self.t = t
+        self.sat = sat
+        self.sun = sun
         
 
     def time_find_overpasses(self):
