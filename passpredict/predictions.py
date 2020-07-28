@@ -17,7 +17,7 @@ from .topocentric import razel, site_sat_rotations
 from .propagate import propagate_satellite
 from .timefn import jday2datetime, julian_date, jd2jc
 from .schemas import Point, Overpass, Satellite, Location, Tle
-from .models import SatelliteRV, SpaceObject, Sun, RhoVector
+from .models import SatelliteRV, Sun, RhoVector, Sat
 from .utils import get_TLE
 
 
@@ -34,7 +34,7 @@ def vector_angle(r1, r2):
     return out
 
 
-def determine_visibilty(idx0: int, idxf: int, sat: SpaceObject, loc, rho: RhoVector, sun: Sun):
+def determine_visibilty(idx0: int, idxf: int, sat: Sat, loc, rho: RhoVector, sun: Sun):
     """
     Determine satellite visibility
     """
@@ -90,7 +90,7 @@ def satellite_visible(rsatECI, rsiteECI, rho, jdt):
 
 
 
-def find_overpasses(location: Location, sats: List[SpaceObject], times: Time, sun: List[SpaceObject], min_elevation: float = 10) -> List[Overpass]:
+def find_overpasses(location: Location, sats: List[Sat], times: Time, sun: Sun, min_elevation: float = 10) -> List[Overpass]:
     """
     Real-time computation for finding satellite overpasses of a topographic location.
     Can support multiple satellites over a single location
@@ -98,7 +98,7 @@ def find_overpasses(location: Location, sats: List[SpaceObject], times: Time, su
     store_sat_id = True if len(sats) > 0 else False
     overpasses = []
     for sat in sats:
-        rho = RhoVector(sat, location)
+        rho = RhoVector(sat, location, sun)
         sat_overpasses = rho.find_overpasses(min_elevation, store_sat_id)
         overpasses += sat_overpasses
 
@@ -116,11 +116,11 @@ def compute_time_array(dt_start: datetime, dt_end: datetime, dt_seconds: float) 
     return Time(jd_array, format='jd')
 
 
-def compute_satellite_data(tle: Tle, t: Time) -> SpaceObject:
+def compute_satellite_data(tle: Tle, t: Time, sun: Sun = None) -> Sat:
     """
     Compute satellite data for Time
     """
-    sat = SpaceObject()
+    sat = Sat()
     sat.time = t
     r, _ = propagate_satellite(tle.tle1, tle.tle2, t.jd)
     # Use the TEME reference frame from astropy
@@ -130,6 +130,7 @@ def compute_satellite_data(tle: Tle, t: Time) -> SpaceObject:
     sat.subpoint = ecef.earth_location
     sat.latitude = sat.subpoint.lat.value
     sat.longitude = sat.subpoint.lon.value
+    sat.illuminated = is_sat_illuminated(sat.rECEF, sun.rECEF)
     # sat.meta.id = tle.satellite.id
     return sat
     
@@ -147,7 +148,7 @@ def compute_sun_data(t: Time) -> Sun:
     sun_data = np.empty((3, t.size))
     for i in range(3):
         sun_data[i] = np.interp(t.jd, t_tmp.jd, sun_tmp[i])
-    sun = Sun()
+    sun = SpaceObject()
     sun.time = t
     sun.rECEF = sun_data
     return sun
@@ -177,12 +178,13 @@ def predict(location, satellite, dt_start=None, dt_end=None, dt_seconds=1, min_e
     t = compute_time_array(dt_start, dt_end, dt_seconds)
     
     if verbose:
-        print(f"Begin propagation from {dt_start.isoformat()} to {dt_end.isoformat()}...")
-    sat = compute_satellite_data(tle, t)
-
-    if verbose:
         print("Compute sun position...")
     sun = compute_sun_data(t)
+
+    if verbose:
+        print(f"Begin propagation from {dt_start.isoformat()} to {dt_end.isoformat()}...")
+    sat = compute_satellite_data(tle, t, sun)
+
 
     # Compute sun-satellite quantities
     if verbose:

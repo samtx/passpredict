@@ -48,9 +48,8 @@ class Predict:
         dt_start = datetime.datetime(2020, 7, 14, 11, 17, 00, tzinfo=datetime.timezone.utc)
         dt_end = dt_start + datetime.timedelta(days=14)
         t = compute_time_array(dt_start, dt_end, dt_seconds)
-        sat = compute_satellite_data(tle, t)
-        # sun = compute_sun_data(t)
-        sun = Sun()
+        sun = compute_sun_data(t)
+        sat = compute_satellite_data(tle, t, sun)
         # sat.illuminated = is_sat_illuminated(sat.rECEF, sun.rECEF)
         self.location = location
         self.t = t

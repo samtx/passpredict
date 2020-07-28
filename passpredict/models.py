@@ -25,39 +25,31 @@ class reify(object):
         return value
 
 
-class Sun():
-    def __init__(self):
-        self.rECI = None
-        self.rECEF = None
-        self.time = None  # time object
-
-    
-# class Time():
-#     __slots__ = ['jd', 'jd_utc1', 'tt', 'tt_utc1', 'datetime']
-#     def __init__(self, jd=None, jd_utc1=None, tt=None, tt_utc1=None, datetime=None):
-#         self.jd = jd
-#         self.jd_utc1 = jd_utc1
-#         self.tt = tt
-#         self.tt_utc1 = tt_utc1
-#         self.datetime = datetime       # datetimes
-
-#     def __hash__(self):
-#         return hash(str(t.jd))
-
-
-class SpaceObject():
+class SpaceObject:
     # __slots__ = ['time', 'rECEF', 'rECI','latitude','longitude','altitude','illuminated', 'rECEF_astropy', 'subpoint']
     def __init__(self):
         self.time = None  # time object
         self.rECEF = None
         self.rECI = None
+        
+        
+class Sun(SpaceObject):
+    pass
+
+
+class Sat(SpaceObject):
+    def __init__(self):
         self.latitude = None
         self.longitude = None
         self.altitude = None
         self.illuminated = None
         self.rECEF_astropy = None
         self.subpoint = None
-        self.meta = None
+        self.id = None
+
+
+class RhoVectorBase:
+    pass
 
 
 class RhoVector():
@@ -65,15 +57,29 @@ class RhoVector():
     Vector from topographic location to space object
     """
     # __slots__ = ['time', 'rSEZ', 'rECEF', 'rng', 'az', 'el', 'ra', 'dec', 'sat', 'location']
-    def __init__(self, sat: SpaceObject, location: Location):
+    def __init__(self, sat: SpaceObject, location: Location, sun: Sun = None):
         self.sat = sat
         self.location = location
         self.time = sat.time
+        
+        if sun is not None:
+            # If the sun variable is set, it's time object must be identical to the sat
+            np.testing.assert_array_equal(sun.time, sat.time)
+            assert sat.illuminated is not None
+            self.sun = sun
+            self.site_sun_rho = RhoVector(sun, location)
+        else:
+            self.sun = sun
+            self.site_sun_rho = None
+
 
     @reify
+    def rsiteECEF(self):
+        return site_ECEF(self.location.lat, self.location.lon, self.location.h)
+    
+    @reify
     def rECEF(self):
-        rsiteECEF = site_ECEF(self.location.lat, self.location.lon, self.location.h)
-        return self.sat.rECEF - np.array([[rsiteECEF[0]],[rsiteECEF[1]],[rsiteECEF[2]]], dtype=np.float64)
+        return self.sat.rECEF - np.array([[self.rsiteECEF[0]],[self.rsiteECEF[1]],[self.rsiteECEF[2]]], dtype=np.float64)
 
     @reify
     def rSEZ(self):
@@ -83,9 +89,12 @@ class RhoVector():
     def rng(self):
         return np.linalg.norm(self.rSEZ, axis=0)
 
+    def _elevation(self, rZ, rng):
+        return np.arcsin(self.rSEZ[2] / self.rng) * RAD2DEG
+
     @reify
     def el(self):
-        return np.arcsin(self.rSEZ[2] / self.rng) * RAD2DEG
+        return self._elevation(self.rSEZ[2], self.rng)
 
     @reify
     def az(self):
@@ -103,13 +112,20 @@ class RhoVector():
             range=self.rng[idx]
         )
 
-    def find_overpasses(self, min_elevation=10, store_sat_id=False):
-        # Find Overpasses
-        el0 = self.el[:-1] - min_elevation
-        el1 = self.el[1:] - min_elevation
-        el_change_sign = (el0*el1 < 0)   
-        start_idx = np.nonzero(el_change_sign & (el0 < el1))[0]  # Find the start of an overpass
-        end_idx = np.nonzero(el_change_sign & (el0 > el1))[0]    # Find the end of an overpass
+    def _start_end_index(self, x):
+        """
+        Finds the start and end indecies when a 1D array crosses zero
+        """
+        x0 = x[:-1]
+        x1 = x[1:]
+        x_change_sign = (x0*x1 < 0)   
+        start_idx = np.nonzero(x_change_sign & (x0 < x1))[0]  # Find the start of an overpass
+        end_idx = np.nonzero(x_change_sign & (x0 > x1))[0]    # Find the end of an overpass
+        return start_idx, end_idx
+        
+
+    def find_overpasses(self, min_elevation=10, store_sat_id=False, sunset_el=-6):
+        start_idx, end_idx = self._start_end_index(self.el - min_elevation)
         num_overpasses = min(start_idx.size, end_idx.size)       # Iterate over start/end indecies and gather inbetween indecies
         if start_idx.size < end_idx.size:
             end_idx = end_idx[1:]
@@ -118,24 +134,44 @@ class RhoVector():
             # Store indecies of overpasses in a list
             idx0 = start_idx[j]
             idxf = end_idx[j]
-            overpass_idx = np.arange(idx0, idxf+1, dtype=int)
-            idxmax = np.argmax(self.el[overpass_idx])
+            idxmax = np.argmax(self.el[idx0:idxf+1])
             start_pt = self.point(idx0)
             max_pt = self.point(idx0 + idxmax)
             end_pt = self.point(idxf)
-            if store_sat_id:
-                overpass = Overpass.construct(
-                    # satellite_id=self.meta.id,
-                    start_pt=start_pt,
-                    max_pt=max_pt,
-                    end_pt=end_pt
-                )
+
+            # Find visible start and end times
+            if self.site_sun_rho is not None:
+                site_in_sunset = self.site_sun_rho.el[idx0:idxf+1] - sunset_el < 0
+                site_in_sunset_idx = np.nonzero(site_in_sunset)[0]
+                if site_in_sunset.size == 0:
+                    # site is always sunlit, so overpass is in daylight
+                    visibility = 1
+                else:
+                    # get satellite illumination values for this overpass
+                    sat_visible = (self.sat.illuminated[idx0:idxf+1] * site_in_sunset)
+                    if np.any(sat_visible):
+                        visibility = 3 # site in night, sat is illuminated
+                        sat_visible_idx = np.nonzero(sat_visible)[0]
+                        sat_visible_start_idx = sat_visible_idx.min()
+                        sat_visible_end_idx = sat_visible_idx.max()
+                        vis_start_pt = self.point(idx0 + sat_visible_start_idx)
+                        vis_end_pt = self.point(idx0 + sat_visible_end_idx)
+                    else:
+                        visibility = 2 # nighttime, not illuminated (radio night)
             else:
-                overpass = Overpass.construct(
-                    start_pt=start_pt,
-                    max_pt=max_pt,
-                    end_pt=end_pt
-                )
+                visibility = None
+            overpass_dict = {
+                'start_pt': start_pt,
+                'max_pt': max_pt,
+                'end_pt': end_pt,
+            }
+            if store_sat_id:
+                overpass_dict['satellite_id'] = self.sat.id
+            if (visibility is not None) and (visibility >= 3):
+                overpass_dict['vis_start_pt'] = vis_start_pt
+                overpass_dict['vis_end_pt'] = vis_end_pt
+            overpass_dict['visibility'] = visibility
+            overpass = Overpass.construct(**overpass_dict)
             sat_overpasses[j] = overpass
         return sat_overpasses
 
