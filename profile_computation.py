@@ -1,73 +1,111 @@
 # Profile Real-time computation of satellite overpasses
 
 import cProfile
+import pstats
 import datetime
 from pprint import pprint
+import timeit
 
 import numpy as np
 
-from passpredict.predictions import predict_passes
-from passpredict.propagate import propagate
-from passpredict.schemas import Location, Satellite
+from passpredict.predictions import predict, find_overpasses, compute_sun_data, compute_time_array, compute_satellite_data
+from passpredict.propagate import propagate_satellite
+from passpredict.schemas import Location, Satellite, Tle, Point, Overpass
+from passpredict.models import SpaceObject, RhoVector, Sun, Sat
 from passpredict.timefn import truncate_datetime
-from passpredict.utils import get_TLE
+from passpredict.utils import get_TLE, epoch_from_tle
 
-def main():
 
+
+
+"""    
+012345678
+1234567us
+123.456ms
+ 12.456us
+1234.   s 
+
+"""
+
+def setup():
     # Set up satellite position
     dt_seconds = 1
-    num_days = 21
     min_elevation = 10.0
 
-    austin = Location(lat=30.2672, lon=-97.7431, h=0, name='Austin')
-    iss = Satellite(id=25544, name='ISS')
-    iss_tle = get_TLE(iss)
-    datetime_start = truncate_datetime(
-        datetime.datetime.now(tz=datetime.timezone.utc)
-    )
-    datetime_end = datetime_start + datetime.timedelta(days=num_days)
-
-    iss_rv = propagate.__wrapped__(
-        iss_tle.tle1, iss_tle.tle2, datetime_start, datetime_end, dt_seconds
-    )
-
-    with cProfile.Profile() as pr:
-        overpasses = predict_passes(
-            austin.lat, austin.lon, austin.h,
-            iss_rv.rECEF, iss_rv.rECI, iss_rv.julian_date,
-            min_elevation=min_elevation#, loc=location, sat=satellite
-        )
-
-    pr.print_stats()
-    pr.dump_stats('profile_computation.prof')
-
-
-def main_lineprofile():
-    # Set up satellite position
-    dt_seconds = 1
-    num_days = 14
-    min_elevation = 10.0
-
-    austin = Location(lat=30.2672, lon=-97.7431, h=0, name='Austin')
-    iss = Satellite(id=25544, name='ISS')
-    iss_tle = get_TLE(iss)
-    datetime_start = truncate_datetime(
-        datetime.datetime.now(tz=datetime.timezone.utc)
-    )
-    datetime_end = datetime_start + datetime.timedelta(days=num_days)
-
-    iss_rv = propagate.__wrapped__(
-        iss_tle.tle1, iss_tle.tle2, datetime_start, datetime_end, dt_seconds
-    )
-
-    overpasses = predict_passes(
-        austin.lat, austin.lon, austin.h,
-        iss_rv.rECEF, iss_rv.rECI, iss_rv.julian_date,
-        min_elevation=min_elevation#, loc=location, sat=satellite
-    )
-    return 1
+    satellite = Satellite(id=25544, name='ISS')
+    location = Location(lat=30.2711, lon=-97.7434, h=0, name='Austin, Texas')
+    dt_seconds = 1.0
+    tle1 = '1 25544U 98067A   20196.51422950 -.00000046  00000-0  72206-5 0  9999'
+    tle2 = '2 25544  51.6443 213.2207 0001423 114.8006 342.8278 15.49514729236251'    
+    tle = Tle(
+        tle1=tle1,
+        tle2=tle2,
+        epoch=epoch_from_tle(tle1),
+        satellite=satellite
+    ) 
+    dt_start = datetime.datetime(2020, 7, 14, 11, 17, 00, tzinfo=datetime.timezone.utc)
+    dt_end = dt_start + datetime.timedelta(days=14)
+    t = compute_time_array(dt_start, dt_end, dt_seconds)
+    sun = compute_sun_data(t)
+    sat = compute_satellite_data(tle, t, sun)
+    return location, sat, t, sun
 
 
 if __name__=="__main__":
-    main_lineprofile()
-    # main()
+
+    def f8(x):
+        """ from https://gist.github.com/romuald/0346c76cfbbbceb3e4d1 """
+        us = x * 1e6
+        ret = "%8.3f" % x
+        if ret != '   0.000':
+            return ret
+        return "%6dµs" % (x * int(1e6))
+    
+    def f8_milli(x):
+        ms = x * 1e3
+        ret = f'{ms:6.2f}ms'
+        return ret
+    
+    def f8_micro(x):
+        us = x * 1e6
+        ret = f'{us:6.0f}µs'
+        return ret
+        
+    n = 20
+
+    location, sat, t, sun = setup()
+    
+    # benchmark
+    timer = timeit.Timer(
+        'find_overpasses(location, [sat], t, sun)',
+        'from passpredict.predictions import find_overpasses',
+        globals={
+            'location': location,
+            'sat': sat,
+            't': t,
+            'sun': sun
+        }
+    )
+    try:
+        res = timer.timeit(number=n)
+    except Exception:
+        timer.print_exc()
+        res = 0
+
+    avg_res = res/n
+    if res > 0:
+        print(f'Average time: {avg_res*1e3:.2f}ms from {n} runs\n')
+    
+    if avg_res < 0.5:
+        pstats.f8 = f8_milli # if benchmark is less than 1 second, return in microseconds
+    else:
+        pstats.f8 = f8
+    
+    # profile
+    with cProfile.Profile() as pr:
+        overpasses = find_overpasses(location, [sat], t, sun)
+
+    pr.dump_stats('profile_computation.prof')
+    
+    ps = pstats.Stats(pr).sort_stats('cumulative')
+    ps.print_stats()
