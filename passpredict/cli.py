@@ -83,11 +83,12 @@ def overpass_table(overpasses, location, tle, tz=None, twentyfourhour=False):
         point_header = "  Time   El\u00B0 Az\u00B0"
         point_header_underline = "-------- --- ---"
     table_header =  f"           {'Start':^17s}   {'Maximum':^17s}   {'End':^17s}\n"
-    table_header +=  "  Date     {0}   {0}   {0}\n".format(point_header)
+    table_header +=  "  Date     {0}   {0}   {0}     Type\n".format(point_header)
     table_header += "--------   "
     table_header += point_header_underline + " "*3
     table_header += point_header_underline + " "*3
     table_header += point_header_underline + " "*3
+    table_header += "--------"
     table_header += "\n"
 
     def point_string(point):
@@ -106,6 +107,7 @@ def overpass_table(overpasses, location, tle, tz=None, twentyfourhour=False):
         table_data += " "*3 + point_string(overpass.start_pt) + ' |'
         table_data += " " + point_string(overpass.max_pt) + ' |'
         table_data += " " + point_string(overpass.end_pt)
+        table_data += " "*5 + str(overpass.visibility)
         table_data += "\n"
     return table_title + table_header + table_data
 # --------- --- ---
