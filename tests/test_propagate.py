@@ -4,12 +4,11 @@ import os
 
 import numpy as np
 
-# from passpredict.sgp4io import twoline2rv, Satellite, wgs72, wgs84
 from passpredict import propagate
 from passpredict.rotations.transform import teme2ecef
 from passpredict.rotations.polar import eop
 from passpredict.timefn import julian_date
-from passpredict.models import Time
+from passpredict.predictions import compute_time_array
 
 tz_utc = datetime.timezone.utc
 
@@ -28,11 +27,8 @@ def test_propagate_iss():
     datetime_start = datetime.datetime(2020, 6, 1, 0, 0, 0, tzinfo=tz_utc)
     datetime_end = datetime.datetime(2020, 6, 11, 0, 0, 0, tzinfo=tz_utc)
     dt_sec = 5
-    jd0 = julian_date(datetime_start)
-    jdf = julian_date(datetime_end)
-    t = Time()
-    t.jd = np.arange(jd0, jdf, dt_sec/(24.*60.*60.), dtype=float)
-    rTEME, _ = propagate.propagate_satellite(tle1, tle2, jd=t.jd, dt0=datetime_start, dtf=datetime_end, dtsec=dt_sec)
+    t = compute_time_array(datetime_start, datetime_end, dt_sec)
+    rTEME, _ = propagate.propagate_satellite(tle1, tle2, jd=t.jd)#, dt0=datetime_start, dtf=datetime_end, dtsec=dt_sec)
     dUTC1, xp, yp = eop(t.jd)
     t.jd_utc1 = t.jd + dUTC1
     passpredict_rECEF = teme2ecef(rTEME, t.jd_utc1, xp, yp)    
