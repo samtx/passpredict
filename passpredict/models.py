@@ -154,7 +154,7 @@ class RhoVector():
                 sun_el = np.arcsin(sun_sez[2] / sun_rng) * RAD2DEG
                 site_in_sunset = sun_el - sunset_el < 0
                 site_in_sunset_idx = np.nonzero(site_in_sunset)[0]
-                if site_in_sunset.size == 0:
+                if site_in_sunset_idx.size == 0:
                     # site is always sunlit, so overpass is in daylight
                     visibility = 1
                 else:

@@ -1,5 +1,7 @@
-sgp4==2.8
-numpy
+numpy        
+sgp4 >= 2.8
+astropy >= 4.1rc1
 requests
 pydantic
 click
+diskcache
