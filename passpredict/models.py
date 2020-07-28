@@ -83,6 +83,9 @@ class RhoVector():
     def rECEF(self):
         return self.sat.rECEF - np.array([[self.rsiteECEF[0]],[self.rsiteECEF[1]],[self.rsiteECEF[2]]], dtype=np.float64)
 
+    def _ecef2sez(self, idx):
+        pass 
+
     @reify
     def rSEZ(self):
         return ecef2sez(self.rECEF, self.location.lat, self.location.lon)
@@ -98,18 +101,21 @@ class RhoVector():
     def el(self):
         return self._elevation(self.rSEZ[2], self.rng)
 
-    @reify
-    def az(self):
-        tmp = np.arctan2(self.rSEZ[0], self.rSEZ[1])
+    def az(self, idx):
+        rS = self.rSEZ[0, idx]
+        rE = self.rSEZ[1, idx]
+        tmp = np.arctan2(rS, rE)
         az = (tmp + np.pi * 0.5) * RAD2DEG
-        idx = np.all([self.rSEZ[0] < 0, self.rSEZ[1] < 0], axis=0)
-        az[idx] %= 360 
+        if rS < 0 and rE < 0:
+            az %= 360 
+        # idx = np.all([self.rSEZ[0] < 0, self.rSEZ[1] < 0], axis=0)
+        # az[idx] %= 360 
         return az
 
     def point(self, idx):
         return Point.construct(
             datetime=jday2datetime(self.time.jd[idx]),
-            azimuth=self.az[idx],
+            azimuth=self.az(idx),
             elevation=self.el[idx],
             range=self.rng[idx]
         )
@@ -142,8 +148,11 @@ class RhoVector():
             end_pt = self.point(idxf)
 
             # Find visible start and end times
-            if self.site_sun_rho is not None:
-                site_in_sunset = self.site_sun_rho.el[idx0:idxf+1] - sunset_el < 0
+            if self.sun is not None:
+                sun_sez = ecef2sez(self.sun.rECEF[:,idx0:idxf+1], self.location.lat, self.location.lon)
+                sun_rng = np.linalg.norm(sun_sez, axis=0)
+                sun_el = np.arcsin(sun_sez[2] / sun_rng) * RAD2DEG
+                site_in_sunset = sun_el - sunset_el < 0
                 site_in_sunset_idx = np.nonzero(site_in_sunset)[0]
                 if site_in_sunset.size == 0:
                     # site is always sunlit, so overpass is in daylight

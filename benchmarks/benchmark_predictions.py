@@ -50,13 +50,12 @@ class Predict:
         t = compute_time_array(dt_start, dt_end, dt_seconds)
         sun = compute_sun_data(t)
         sat = compute_satellite_data(tle, t, sun)
-        # sat.illuminated = is_sat_illuminated(sat.rECEF, sun.rECEF)
         self.location = location
-        self.t = t
         self.sat = sat
+        self.t = t
         self.sun = sun
         
-
+        
     def time_find_overpasses(self):
         out = find_overpasses(self.location, [self.sat], self.t, self.sun)
 
