@@ -148,7 +148,7 @@ def compute_sun_data(t: Time) -> Sun:
     sun_data = np.empty((3, t.size))
     for i in range(3):
         sun_data[i] = np.interp(t.jd, t_tmp.jd, sun_tmp[i])
-    sun = SpaceObject()
+    sun = Sun()
     sun.time = t
     sun.rECEF = sun_data
     return sun

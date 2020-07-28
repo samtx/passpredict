@@ -9,7 +9,7 @@ from astropy.time import Time
 
 from passpredict.predictions import predict, find_overpasses, compute_sun_data, compute_time_array, compute_satellite_data
 from passpredict.schemas import Location, Satellite, Tle, Point, Overpass
-from passpredict.models import SpaceObject, RhoVector, Sun
+from passpredict.models import SpaceObject, RhoVector, Sun, Sat
 from passpredict.propagate import propagate_satellite
 from passpredict.timefn import julian_date, jd2jc, jd2utc1, jday2datetime
 from passpredict.rotations.polar import eop
