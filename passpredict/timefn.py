@@ -95,7 +95,7 @@ def julian_date2(yr, mo=1, dy=1, hr=0, mn=0, sec=0.0):
     return julian_day(yr, mo, dy) - 0.5 + (sec + mn * 60.0 + hr * 3600.0) / DAY_S
 
 
-def days2mdhms(year, days):
+def days2mdhms(year: int, days: float):
     """This procedure converts the day of the year, days, to the equivalent
     month, day, hour, minute and second.
     Args:
@@ -134,7 +134,68 @@ def days2mdhms(year, days):
     return mon, day, hr, minute, sec
 
 
-def invjday(jd):
+def invjday(jd: float):
+    """This procedure finds the year, month, day, hour, minute and second given the
+    julian date. jd can be ut1, tdt, tdb, etc.
+    Args:
+        jd : float, julian date, days from 4713 BCE
+    Outputs:
+        year : int, year between 1900 - 2100
+        mon : int, month between 1 - 12
+        day : int, day between 1 - 31
+        hr : int, hour between 0 - 23
+        min : int, minute between 0 - 59
+        sec : float, second between 0.0 - 59.999
+    References:
+        Vallado, 2007, 208, alg 22, ex 3-13
+        Rhodes, python-sgp4/sgp4/ext.py
+    """
+    # find year and days of the year
+    temp = jd - 2415019.5
+    tu = temp / 365.25  # julian centuries from 0 h jan 0, 1900
+    year = 1900 + int(tu // 1.0)
+    leapyrs = int(((year - 1901) * 0.25) // 1.0)
+    
+    # optional nudge by 8.64x10-7 sec to get even outputs
+    days  = temp - ((year - 1900) * 365.0 + leapyrs) + 0.00000000001
+    # check for case of beginning of a year
+    if (days < 1.0):
+        year    = year - 1
+        leapyrs = int(((year - 1901) * 0.25) // 1.0)
+        days    = temp - ((year - 1900) * 365.0 + leapyrs)
+    # find remaing data
+    mon, day, hr, minute, sec = days2mdhms(year, days)
+    sec -= 0.00000086400
+    return year, mon, day, hr, minute, sec
+
+
+def datetimes_to_datetimeary(year, mon, day, hr, minute, sec):
+    """Take arrays of datetime values and return array of datetime objects
+
+    Args:
+
+    Returns:
+        dtary : np.datetime64 (n)
+    """
+    n = len(year)
+    s = np.floor(sec).astype(int)
+    us = (np.mod(sec, 1) * 1e6).astype(int)
+    dtary = np.empty(n, dtype=object)
+    for i in range(len(year)):
+        # dtstr = f'{year[i]:4d}-{int(mon[i]):02d}-{int(day[i]):02d}T{int(hr[i]):02d}:{int(minute[i]):02d}:{sec[i]:05.2f}'
+        dtary[i] = datetime.datetime(year[i], int(mon[i]), int(day[i]), int(hr[i]), int(minute[i]), s[i], us[i], tzinfo=tz_utc)
+    return dtary
+
+
+def jday2datetime(jdt: float) -> datetime.datetime:
+    """Turn julian day into datetime object"""
+    datetuple = invjday(jdt)
+    yr, mo, date, hr, mn, sec = datetuple
+    sec, us = np.divmod(sec, 1)
+    return datetime.datetime(yr, mo, date, hr, mn, int(sec), int(us*1e6), tzinfo=tz_utc)
+    
+
+def invjday_array(jd):
     """This procedure finds the year, month, day, hour, minute and second given the
     julian date. jd can be ut1, tdt, tdb, etc.
     Args:
@@ -177,27 +238,9 @@ def invjday(jd):
     return year, mon, day, hr, minute, sec
 
 
-def datetimes_to_datetimeary(year, mon, day, hr, minute, sec):
-    """Take arrays of datetime values and return array of datetime objects
-
-    Args:
-
-    Returns:
-        dtary : np.datetime64 (n)
-    """
-    n = len(year)
-    s = np.floor(sec).astype(int)
-    us = (np.mod(sec, 1) * 1e6).astype(int)
-    dtary = np.empty(n, dtype=object)
-    for i in range(len(year)):
-        # dtstr = f'{year[i]:4d}-{int(mon[i]):02d}-{int(day[i]):02d}T{int(hr[i]):02d}:{int(minute[i]):02d}:{sec[i]:05.2f}'
-        dtary[i] = datetime.datetime(year[i], int(mon[i]), int(day[i]), int(hr[i]), int(minute[i]), s[i], us[i], tzinfo=tz_utc)
-    return dtary
-
-
-def jday2datetime(jdt):
+def jday2datetime_array(jdt_array):
     """Turn julian day into datetime object"""
-    datetuple = invjday(jdt)
+    datetuple = invjday_array(jdt)
     yr, mo, date, hr, mn, sec = datetuple
     sec, us = np.divmod(sec, 1)
     sec = sec.astype(int)
@@ -205,8 +248,6 @@ def jday2datetime(jdt):
     dt_array = np.empty(yr.size, dtype=object)
     for i, data in enumerate(zip(yr, mo, date, hr, mn, sec, us.astype(int))):
         dt_array[i] = datetime.datetime(*data, tzinfo=tz_utc)
-    if not isinstance(jdt, np.ndarray):
-        dt_array = dt_array[0]
     return dt_array
 
 
