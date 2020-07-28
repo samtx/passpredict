@@ -4,7 +4,6 @@ name: Build and upload to PyPI
 # on: [push, pull_request]
 # Alternatively, to publish when a (published) GitHub Release is created, use the following:
 on:
-  push:
   pull_request:
   release:
     types:
@@ -21,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest] #, macos-latest]
+        os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -34,11 +33,6 @@ jobs:
       - name: Install cibuildwheel
         run: |
           python -m pip install cibuildwheel==1.5.1
-
-      # - name: Install Visual C++ for Python 2.7
-      #   if: runner.os == 'Windows'
-      #   run: |
-      #     choco install vcpython27 -f -y
 
       - name: Build wheels
         run: |

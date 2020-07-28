@@ -9,7 +9,7 @@ with open("README.md") as f:
 
 setup(
     name="passpredict",
-    version="0.0.5",
+    version="0.0.6",
     packages=find_packages(
         exclude=[
             'docs', 'tests'
@@ -53,5 +53,5 @@ setup(
     ],
     # could also include long_description, download_url, etc.
     zip_safe = False,
-    extensions = ext,
+    ext_modules = ext,
 )
