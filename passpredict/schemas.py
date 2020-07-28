@@ -136,6 +136,9 @@ class Overpass(BaseModel):
     max_pt: Point
     end_pt: Point
     satellite_id: int = None
+    visibility: int = None
+    vis_start_pt: Point = None
+    vis_end_pt: Point = None
     
 
 class OverpassResultBase(BaseModel):
