@@ -64,7 +64,9 @@ class RhoVector():
         
         if sun is not None:
             # If the sun variable is set, it's time object must be identical to the sat
-            np.testing.assert_array_equal(sun.time, sat.time)
+            # assert np.all(sun.time.jd[[0, -1]], sat.time.jd[[0, -1]])
+            assert sun.time.jd[0] == sat.time.jd[0]
+            assert sun.time.jd[-1] == sat.time.jd[-1]
             assert sat.illuminated is not None
             self.sun = sun
             self.site_sun_rho = RhoVector(sun, location)
