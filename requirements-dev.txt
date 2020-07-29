@@ -1,6 +1,6 @@
 # Development Requirements
 Cython
-pytest
+pytest==5.4.3
 pytest-cov
 pytest-html
 flake8
