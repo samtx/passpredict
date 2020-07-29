@@ -2,9 +2,9 @@ import numpy as np
 from numpy.testing import assert_allclose, assert_almost_equal
 import pytest
 
+from .. import transform
 from passpredict.constants import DEG2RAD, RAD2DEG, ASEC2RAD
 from passpredict.utils import epoch_from_tle_datetime
-from passpredict.rotations import transform
 from passpredict.timefn import julian_date, jday2datetime
 
 

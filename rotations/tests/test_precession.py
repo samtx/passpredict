@@ -4,8 +4,8 @@ import numpy as np
 from numpy.testing import assert_almost_equal, assert_allclose
 import pytest
 
-import passpredict.rotations.precession as precession 
-from passpredict.rotations.core import mxv, mxmxm
+from .. import precession 
+from ..core import mxv, mxmxm
 import passpredict.constants as constants
 from passpredict.utils import epoch_from_tle_datetime
 from passpredict.timefn import julian_date, jd2jc

@@ -4,12 +4,11 @@ import numpy as np
 
 from .precession import fk5_precession
 from .nutation import fk5_nutation
-
 from .sidereal import theta_GMST1982, theta_GAST1982, equinox1982, equinox1982_geometric_terms
 from .core import rot3, mxv, mxmxm
-from ..constants import tau, ASEC2RAD, DEG2RAD
-from ..topocentric import site_ECEF, site_declination_and_K
-from ..timefn import jd2jc
+from passpredict.constants import tau, ASEC2RAD, DEG2RAD
+from passpredict.topocentric import site_ECEF, site_declination_and_K
+from passpredict.timefn import jd2jc
 
 
 def ecef2sez(r, phi, lmda):
@@ -30,7 +29,7 @@ def ecef2sez(r, phi, lmda):
     M = np.array(
         (
             (cosang1 * cosang2, cosang1 * sinang2, -sinang1),
-            (-sinang2, cosang2, 1),
+            (-sinang2, cosang2, 0),
             (sinang1 * cosang2, sinang1 * sinang2, cosang1)
         ),
         dtype=np.float64
