@@ -1,7 +1,7 @@
 # Test passpredict/schemas.py
 
 import passpredict.schemas as schemas
-from passpredict.propagate import epoch_from_tle
+from passpredict.utils import epoch_from_tle
 import datetime
 import pytest
 

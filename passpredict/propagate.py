@@ -1,26 +1,16 @@
-
-import numpy as np
-import functools
-from passpredict.timefn import julian_date, jdt_tsince, invjday, jday2datetime, \
-                                 jday2npdatetime64, truncate_datetime
-from passpredict.solar import is_sat_illuminated, sun_pos
-from passpredict.schemas import Tle
-from passpredict.models import SatelliteRV
-from passpredict.rotations.transform import teme2ecef
-from passpredict.utils import parse_tles_from_celestrak, epoch_from_tle
 import datetime
-from sgp4.api import Satrec, WGS84
-import json
-import requests
+import functools
 import os
 
-# use_cython = False
-# try:
-#     from passpredict._sgp4 import sgp4 as sgp4_pyx
-#     use_cython = True
-# except ImportError:
-#     pass
-# from passpredict.sgp4 import sgp4
+import numpy as np
+from astropy import units as u
+from astropy.coordinates import TEME, CartesianRepresentation, ITRS
+from astropy.time import Time
+from sgp4.api import Satrec, WGS84
+
+from passpredict.solar import is_sat_illuminated
+from passpredict.schemas import Tle
+from passpredict.models import Sat, Sun
 
 
 def propagate_satellite(tle1, tle2, jd, *args, **kwargs):
@@ -40,15 +30,33 @@ def propagate_satellite(tle1, tle2, jd, *args, **kwargs):
         v : float (3, n)
             satellite velocity vector in TEME coordinates
     """
-
     satrec = Satrec.twoline2rv(tle1, tle2, WGS84)
-
     jd_array, fr_array = np.divmod(jd, 1)
-
     error, r, v = satrec.sgp4_array(jd_array, fr_array)
-
     # Change arrays from column major to row major while keeping C-continuous
     r = np.reshape(r.ravel(order='F'), (3, r.shape[0]))
     v = np.reshape(v.ravel(order='F'), (3, v.shape[0]))
-
     return r, v
+
+
+def compute_satellite_data(tle: Tle, t: Time, sun: Sun = None) -> Sat:
+    """
+    Compute satellite data for Time
+    
+    Reference: 
+        https://docs.astropy.org/en/latest/coordinates/satellites.html
+
+    """
+    sat = Sat()
+    sat.time = t
+    r, _ = propagate_satellite(tle.tle1, tle.tle2, t.jd)
+    # Use the TEME reference frame from astropy
+    teme = TEME(CartesianRepresentation(r * u.km), obstime=t)
+    ecef = teme.transform_to(ITRS(obstime=t))
+    sat.rECEF = ecef.data.xyz.value  # extract numpy array from astropy object
+    sat.subpoint = ecef.earth_location
+    sat.latitude = sat.subpoint.lat.value
+    sat.longitude = sat.subpoint.lon.value
+    if sun is not None:
+        sat.illuminated = is_sat_illuminated(sat.rECEF, sun.rECEF)
+    return sat
