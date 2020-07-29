@@ -27,10 +27,15 @@ def ecef2sez(r, phi, lmda):
     sinang1 = math.sin(ang1)
     cosang2 = math.cos(lmda_rad)
     sinang2 = math.sin(lmda_rad)
-    rSEZ = np.empty(r.shape)
-    rSEZ[0] = cosang1 * cosang2 * r[0] + cosang1 * sinang2 * r[1] - sinang1 * r[2]
-    rSEZ[1] = -sinang2 * r[0] + cosang2 * r[1] + 1.0
-    rSEZ[2] = sinang1 * cosang2 * r[0] + sinang1 * sinang2 * r[1] + cosang1 * r[2]
+    M = np.array(
+        (
+            (cosang1 * cosang2, cosang1 * sinang2, -sinang1),
+            (-sinang2, cosang2, 1),
+            (sinang1 * cosang2, sinang1 * sinang2, cosang1)
+        ),
+        dtype=np.float64
+    )
+    rSEZ = mxv(M, r)
     return rSEZ
 
 
