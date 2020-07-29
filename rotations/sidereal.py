@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..constants import ASEC2RAD, DEG2RAD, RAD2DEG, tau
+from passpredict.constants import ASEC2RAD, DEG2RAD, RAD2DEG, tau
 
 
 def equinox1982(dPsi1980, eps1980, omega_moon):

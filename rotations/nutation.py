@@ -6,8 +6,8 @@ import math
 import numpy as np
 
 from .nutation1980coef import nut80_an, nut80_ABCD
-from ..constants import DEG2RAD, ASEC2RAD, tau
-from ..utils import shift_angle
+from passpredict.constants import DEG2RAD, ASEC2RAD, tau
+from passpredict.utils import shift_angle
 
 
 @dataclass

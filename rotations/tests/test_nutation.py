@@ -2,7 +2,7 @@ import pytest
 from numpy.testing import assert_almost_equal, assert_allclose
 import numpy as np
 
-import passpredict.rotations.nutation as nutation
+from .. import nutation
 from passpredict.constants import DEG2RAD, J2000, DJC, RAD2DEG
 from passpredict.utils import epoch_from_tle_datetime
 from passpredict.timefn import julian_date, jd2jc

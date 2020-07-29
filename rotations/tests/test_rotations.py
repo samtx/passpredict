@@ -5,9 +5,9 @@ import numpy as np
 from numpy.testing import assert_allclose, assert_almost_equal
 import pytest
 
-from passpredict.rotations import transform
-from passpredict.rotations import sidereal
-from passpredict.rotations import nutation
+from .. import transform
+from .. import sidereal
+from .. import nutation
 from passpredict import constants
 from passpredict import timefn
 from passpredict import topocentric

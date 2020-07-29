@@ -6,9 +6,9 @@ import numpy as np
 from .nutation import fk5_nutation
 from .precession import fk5_precession
 from .core import rot3
-from ..constants import tau, ASEC2RAD, DEG2RAD
-from ..topocentric import site_ECEF, site_declination_and_K
-from ..timefn import jd2jc
+from passpredict.constants import tau, ASEC2RAD, DEG2RAD
+from passpredict.topocentric import site_ECEF, site_declination_and_K
+from passpredict.timefn import jd2jc
 
 # _arrays = np.load('nutation.npz')
 # lunisolar_longitude_coefficients = _arrays['lunisolar_longitude_coefficients']

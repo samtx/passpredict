@@ -4,7 +4,7 @@ from functools import lru_cache
 
 import numpy as np
 
-from ..constants import ASEC2RAD
+from passpredict.constants import ASEC2RAD
 
 @dataclass
 class PrecessionParams:
