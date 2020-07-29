@@ -6,8 +6,8 @@ import numpy as np
 
 from .schemas import Location, Point, Overpass
 from .constants import RAD2DEG
-from .rotations.transform import ecef2sez
-from .rotations.rotations import site_ECEF
+from .rotations import ecef2sez
+from .topocentric import site_ECEF
 from .timefn import jday2datetime
 
 

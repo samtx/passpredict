@@ -3,8 +3,11 @@ import math
 
 import numpy as np
 from numpy.linalg import norm
+from astropy.time import Time
+from astropy.coordinates import CartesianRepresentation, ITRS, get_sun
 
 from .constants import DEG2RAD, RAD2DEG, AU_KM, R_EARTH
+from .models import Sun
 
 
 def sun_pos(t):
@@ -66,3 +69,22 @@ def is_sat_illuminated(rsat, rsun):
     zeta = sun_sat_angle(rsat, rsun)
     dist = sun_sat_orthogonal_distance(rsat, zeta)
     return dist > R_EARTH
+
+
+def compute_sun_data(t: Time) -> Sun:
+    """
+    Compute sun position data
+
+    Compute for each minute, then interpolate for each second
+    """
+    t_tmp = t[::60]
+    sun_tmp = get_sun(t_tmp)  # get astropy coordinates for sun in GCRS
+    sun_tmp = sun_tmp.transform_to(ITRS(obstime=t_tmp))  # transform to ECEF frame
+    sun_tmp = sun_tmp.data.xyz.to('km').value
+    sun_data = np.empty((3, t.size))
+    for i in range(3):
+        sun_data[i] = np.interp(t.jd, t_tmp.jd, sun_tmp[i])
+    sun = Sun()
+    sun.time = t
+    sun.rECEF = sun_data
+    return sun

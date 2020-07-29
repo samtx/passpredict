@@ -1,2 +1,2 @@
 [run]
-omit = passpredict/tests/*, passpredict/sgp4/*
+source = passpredict/

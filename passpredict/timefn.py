@@ -2,6 +2,7 @@ import datetime
 import itertools
 
 import numpy as np
+from astropy.time import Time
 
 from .constants import DAY_S, J2000
 
@@ -17,6 +18,7 @@ def jd2jc(jd1: float, jd2: float = 0.0) -> float:
 
 def jd2utc1(jd, deltaUT1=0.0):
     pass
+
 
 def utc2tt(UTC, deltaAT=37.0, deltaUT1=0.0):
     """Compute terrestial time from UTC
@@ -293,3 +295,15 @@ def datetime_linspace(datetime_start, datetime_end, dt_seconds):
         np.timedelta64(dt_seconds,'s'),
         dtype="datetime64[s]"
     )
+
+
+def compute_time_array(dt_start: datetime, dt_end: datetime, dt_seconds: float) -> Time:
+    """
+    Create astropy Time object
+    """
+    jdt0 = julian_date(dt_start)
+    jdtf = julian_date(dt_end)
+    total_days = (dt_start-dt_end).total_seconds()/60
+    dt_days = dt_seconds/(24*60*60.0)
+    jd_array = np.arange(jdt0, jdtf, dt_days, dtype=float)
+    return Time(jd_array, format='jd')

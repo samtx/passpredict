@@ -16,17 +16,17 @@ from passpredict.propagate import propagate_satellite
 
 
 
-def test_satellite_visible():
-    """
-    Vallado, Eg. 11-6, p.913
-    """
-    rsat = np.array([[-2811.2769, 3486.2632, 5069.5763]]).T  # ECI coords
-    rsite = np.array([[-3414.0283, 3258.1636, 4276.1212]]).T  # ECI coords
-    rho = np.array([[-773.8654, -581.4980, 328.8145]]).T  # SEZ coords
-    dt = datetime(1997, 4, 2, 1, 8)  # April 2, 1997, 01:08:0.00 UTC
-    jdt = np.array([timefn.julian_date2(dt)])
-    vis = predictions.satellite_visible(rsat, rsite, rho, jdt)
-    assert vis[0] > 2
+# def test_satellite_visible():
+#     """
+#     Vallado, Eg. 11-6, p.913
+#     """
+#     rsat = np.array([[-2811.2769, 3486.2632, 5069.5763]]).T  # ECI coords
+#     rsite = np.array([[-3414.0283, 3258.1636, 4276.1212]]).T  # ECI coords
+#     rho = np.array([[-773.8654, -581.4980, 328.8145]]).T  # SEZ coords
+#     dt = datetime(1997, 4, 2, 1, 8)  # April 2, 1997, 01:08:0.00 UTC
+#     jdt = np.array([timefn.julian_date2(dt)])
+#     vis = predictions.satellite_visible(rsat, rsite, rho, jdt)
+#     assert vis[0] > 2
 
 
 @pytest.mark.predict
