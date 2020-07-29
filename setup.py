@@ -30,7 +30,7 @@ setup(
     extras_require={
         'dev': [
             'Cython',
-            'pytest',
+            'pytest == 5.4.3',
             'pytest-html',
             'pytest-cov',
             'flake8',
