@@ -3,7 +3,7 @@ from pprint import pprint
 
 import click
 
-from .schemas import Satellite, Tle, Location
+from .schemas import Satellite, Tle, Location, PassType
 from .timefn import truncate_datetime
 from .geocoding import geocoder
 from .utils import get_TLE
@@ -14,11 +14,14 @@ from .predictions import predict
 @click.option('-l', '--location', 'location_string', type=str, prompt=True)  # location string
 @click.option('-u', '--utc-offset', default=0.0, type=float, prompt=True)  # utc offset
 @click.option('-d', '--days', default=10, type=click.IntRange(1, 14, clamp=True)) # day range
-# @click.option('--twelve/--twentyfour', '-12/-24', is_flag=True)  # 12 hour / 24 hour format
 @click.option('-lat', '--latitude', type=float)  # latitude
 @click.option('-lon', '--longitude', type=float)  # longitude
 @click.option('-h', '--height', default=0.0, type=float)    # height
-def main(satellite_id, location_string, utc_offset, days, latitude, longitude, height):
+@click.option('--twelve/--twentyfour', '-12/-24', is_flag=True, default=False)  # 12 hour / 24 hour format
+@click.option('-a', '--all', 'alltypes', is_flag=True, default=False)  # show all pass types
+@click.option('-q', '--quiet', is_flag=True, default=False)
+@click.option('-v', '--verbose', is_flag=True, default=False)
+def main(satellite_id, location_string, utc_offset, days, latitude, longitude, height, twelve, alltypes, quiet, verbose):
     """
     Command line interface for pass predictions
     """
@@ -44,15 +47,13 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
     dt_start = truncate_datetime(datetime.datetime.now())# - datetime.timedelta(days=1)
     dt_end = dt_start + datetime.timedelta(days=days)
     min_elevation = 10.01 # degrees
-    overpasses = predict(location, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=1, min_elevation=min_elevation, verbose=True)
-    print('begin printing table...')
-    twentyfour = True
-    table_str = overpass_table(overpasses, location, tle, tz, twentyfourhour=twentyfour)
+    overpasses = predict(location, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=1, min_elevation=min_elevation, verbose=verbose)
+    table_str = overpass_table(overpasses, location, tle, tz, twelvehour=twelve, alltypes=alltypes, quiet=quiet)
     print(table_str)
     return 0
 
 
-def overpass_table(overpasses, location, tle, tz=None, twentyfourhour=False):
+def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, alltypes=False, quiet=False):
     """
     Return a formatted string for tabular output
 
@@ -65,49 +66,54 @@ def overpass_table(overpasses, location, tle, tz=None, twentyfourhour=False):
     Return:
         table : str
             tabular formatted string
-    """
-    satellite_id = tle.satellite.id
-    # Print datetimes with the correct timezone
+"""
     table_title = ""
-    table_title += f"Satellite ID {satellite_id} overpasses for {location.name:s}\n"
-    table_title += f"Lat={location.lat:.4f}\u00B0, Lon={location.lon:.4f}\u00B0, Timezone {tz}\n"
-    table_title += f"Using TLE\n"
-    table_title += f"{tle.tle1:s}\n"
-    table_title += f"{tle.tle2:s}\n\n"
-    if not twentyfourhour:
-        point_header = "  Time    El\u00B0 Az\u00B0"
+    table_header = ""
+    table_data = ""
+    if not quiet:
+        satellite_id = tle.satellite.id
+        # Print datetimes with the correct timezone
+        table_title += f"Satellite ID {satellite_id} overpasses for {location.name:s}\n"
+        table_title += f"Lat={location.lat:.4f}\u00B0, Lon={location.lon:.4f}\u00B0, Timezone {tz}\n"
+        table_title += f"Using TLE\n"
+        table_title += f"{tle.tle1:s}\n"
+        table_title += f"{tle.tle2:s}\n\n"
+    if twelvehour:
+        point_header = "  Time    El  Az "
         point_header_underline = "--------- --- ---"
     else:
-
         #   Time   Elx Azx
-        point_header = "  Time   El\u00B0 Az\u00B0"
+        point_header = "  Time   El  Az "
         point_header_underline = "-------- --- ---"
-    table_header =  f"           {'Start':^17s}   {'Maximum':^17s}   {'End':^17s}\n"
-    table_header +=  "  Date     {0}   {0}   {0}     Type\n".format(point_header)
+    table_header +=  f"           {'Start':^17s}   {'Maximum':^17s}   {'End':^17s}\n"
+    table_header +=  "  Date     {0}   {0}   {0}      Type\n".format(point_header)
     table_header += "--------   "
     table_header += point_header_underline + " "*3
     table_header += point_header_underline + " "*3
     table_header += point_header_underline + " "*3
-    table_header += "--------"
+    table_header += "-"*10
     table_header += "\n"
 
     def point_string(point):
         time = point.datetime.astimezone(tz)
-        if not twentyfourhour:
+        if twelvehour:
             point_line = time.strftime("%I:%M:%S") + time.strftime("%p")[0].lower()
         else:
             point_line = time.strftime("%H:%M:%S")
-        point_line += " " + "{:>3}".format(int(point.elevation))
+        point_line += " " + "{:>2}\u00B0".format(int(point.elevation))
         point_line += " " + "{:3}".format(point.direction_from_azimuth())
         return point_line
 
-    table_data = ""
     for overpass in overpasses:
+        if not alltypes:
+            # filter overpasses to visible only
+            if overpass.type != PassType.visible:
+                continue
         table_data += "{}".format(overpass.start_pt.datetime.astimezone(tz).strftime("%m/%d/%y"))
         table_data += " "*3 + point_string(overpass.start_pt) + ' |'
         table_data += " " + point_string(overpass.max_pt) + ' |'
         table_data += " " + point_string(overpass.end_pt)
-        table_data += " "*5 + str(overpass.visibility)
+        table_data += " "*4 + f'{overpass.type.value:^9}'
         table_data += "\n"
     return table_title + table_header + table_data
 # --------- --- ---

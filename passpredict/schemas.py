@@ -9,68 +9,6 @@ from pydantic import BaseModel
 
 from .timefn import jday2datetime
 
-# From Pydantic, to use Numpy arrays
-# ref: https://github.com/samuelcolvin/pydantic/issues/380#issuecomment-620378743
-class _ArrayMeta(type):
-    def __getitem__(self, t):
-        return type('Array', (Array,), {'__dtype__': t})
-
-class Array(np.ndarray, metaclass=_ArrayMeta):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate_type
-
-    @classmethod
-    def validate_type(cls, val):
-        dtype = getattr(cls, '__dtype__', None)
-        if isinstance(dtype, tuple):
-            dtype, shape = dtype
-        else:
-            shape = tuple()
-
-        result = np.array(val, dtype=dtype, copy=False, ndmin=len(shape))
-        assert not shape or len(shape) == len(result.shape)  # ndmin guarantees this
-
-        if any((shape[i] != -1 and shape[i] != result.shape[i]) for i in range(len(shape))):
-            result = result.reshape(shape)
-        return result
-
-"""
-Example use: 
-
-class Model(pydantic.BaseModel):
-    int_values: Array[float]
-    any_values: Array
-    shaped1_values: Array[float, (-1, )]
-    shaped2_values: Array[float, (2, 1)]
-    shaped3_values: Array[float, (4, -1)]
-    shaped4_values: Array[float, (-1, 4)]
-"""
-
-# Create timezone field
-# ref: https://pydantic-docs.helpmanual.io/usage/types/#enums-and-choices
-# ref: https://pydantic-docs.helpmanual.io/usage/types/#custom-data-types
-# class Timezone(pytz.timezone):
-#     @classmethod
-#     def __get_validators__(cls):
-#         yield cls.validate
-
-#     @classmethod
-#     def validate(cls, v):
-#         if not isinstance(v, pytz.timezone):
-#             raise TypeError('not a pytz timezone')
-        
-#     def __repr__(self):
-#         return super().__repr__()
-
-
-class Timezone(BaseModel):
-    offset: float  # UTC offset
-    name: str = None
-    def __repr__(self):
-        return name
-
-
 COORDINATES = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N']
 
 
@@ -131,12 +69,18 @@ class Tle(BaseModel):
     satellite: Satellite
 
 
+class PassType(str, Enum):
+    daylight = 'daylight'
+    unlit = 'unlit'
+    visible = 'visible'
+
+
 class Overpass(BaseModel):
     start_pt: Point
     max_pt: Point
     end_pt: Point
     satellite_id: int = None
-    visibility: int = None
+    type: PassType = None
     vis_start_pt: Point = None
     vis_end_pt: Point = None
     
@@ -153,27 +97,3 @@ class SingleSatOverpassResult(OverpassResultBase):
 class MultiSatOverpassResult(OverpassResultBase):
     overpasses: List[Overpass]
 
-
-def process_overpasses(overpasses, t, az, el, rng, dt_start):
-    for j, overpass in enumerate(overpasses):
-        overpass_len = len(overpass)
-        start_idx = overpass[0]
-        end_idx = overpass[overpass_len]
-        start_pt = Point()
-
-
-def tsince_to_datetime(tsince, dt_start):
-    """
-    Convert vector of minutes since epoch to an array of corresponding
-    datetime values. Assumes that tsince is evenly spaced.
-    Args:
-        tsince : float (n)
-        dt_start : datetime, beginning of epoch
-    Returns:
-        dt_ary : datetime (n), array of datetime objects
-    """
-    n = len(tsince)
-    minute_step = datetime.timedelta(minutes=tsince[1] - tsince[0])
-    dt_end = dt_start + datetime.timedelta(minutes=tsince[n-1])
-    dt_ary = np.arange(dt_start, dt_end, minute_step)
-    return dt_ary.astype(datetime.datetime)
