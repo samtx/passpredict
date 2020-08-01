@@ -4,7 +4,7 @@ from functools import update_wrapper
 
 import numpy as np
 
-from .schemas import Location, Point, Overpass
+from .schemas import Location, Point, Overpass, PassType
 from .constants import RAD2DEG
 from .rotations import ecef2sez
 from .topocentric import site_ECEF
@@ -160,22 +160,21 @@ class RhoVector():
                 site_in_sunset = sun_el - sunset_el < 0
                 site_in_sunset_idx = np.nonzero(site_in_sunset)[0]
                 if site_in_sunset_idx.size == 0:
-                    # site is always sunlit, so overpass is in daylight
-                    visibility = 1
+                    passtype = PassType.daylight # site is always sunlit, so overpass is in daylight
                 else:
                     # get satellite illumination values for this overpass
                     sat_visible = (self.sat.illuminated[idx0:idxf+1] * site_in_sunset)
                     if np.any(sat_visible):
-                        visibility = 3 # site in night, sat is illuminated
                         sat_visible_idx = np.nonzero(sat_visible)[0]
                         sat_visible_start_idx = sat_visible_idx.min()
                         sat_visible_end_idx = sat_visible_idx.max()
                         vis_start_pt = self.point(idx0 + sat_visible_start_idx)
                         vis_end_pt = self.point(idx0 + sat_visible_end_idx)
+                        passtype = PassType.visible # site in night, sat is illuminated
                     else:
-                        visibility = 2 # nighttime, not illuminated (radio night)
+                        passtype = PassType.unlit  # nighttime, not illuminated (radio night)
             else:
-                visibility = None
+                passtype = None
             overpass_dict = {
                 'start_pt': start_pt,
                 'max_pt': max_pt,
@@ -183,10 +182,10 @@ class RhoVector():
             }
             if store_sat_id:
                 overpass_dict['satellite_id'] = self.sat.id
-            if (visibility is not None) and (visibility >= 3):
+            if (passtype is not None) and (passtype == PassType.visible):
                 overpass_dict['vis_start_pt'] = vis_start_pt
                 overpass_dict['vis_end_pt'] = vis_end_pt
-            overpass_dict['visibility'] = visibility
+            overpass_dict['type'] = passtype
             overpass = Overpass.construct(**overpass_dict)
             sat_overpasses[j] = overpass
         return sat_overpasses
