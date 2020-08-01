@@ -19,7 +19,7 @@ class ComputeTimeArray:
         
 
     def time_compute_time_array(self, *args):
-        t = compute_time_array(self.dt_start, self.dt_end, 1.0)
+        compute_time_array(self.dt_start, self.dt_end, 1.0)
 
 
 class Jday:
