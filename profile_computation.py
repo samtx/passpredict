@@ -7,6 +7,7 @@ from pprint import pprint
 import timeit
 
 import numpy as np
+import line_profiler
 
 from passpredict.predictions import predict, find_overpasses, compute_sun_data, compute_time_array, compute_satellite_data
 from passpredict.propagate import propagate_satellite
@@ -16,18 +17,27 @@ from passpredict.timefn import truncate_datetime
 from passpredict.utils import get_TLE, epoch_from_tle
 
 
+def f8(x):
+    """ from https://gist.github.com/romuald/0346c76cfbbbceb3e4d1 """
+    ret = "%8.3f" % x
+    if ret != '   0.000':
+        return ret
+    return "%6dµs" % (x * int(1e6))
+    
+def f8_milli(x):
+    ms = x * 1e3
+    ret = f'{ms:6.2f}ms'
+    return ret
+
+def f8_micro(x):
+    us = x * 1e6
+    ret = f'{us:6.0f}µs'
+    return ret
 
 
-"""    
-012345678
-1234567us
-123.456ms
- 12.456us
-1234.   s 
+if __name__ == "__main__":
 
-"""
 
-def setup():
     # Set up satellite position
     dt_seconds = 1
     min_elevation = 10.0
@@ -48,33 +58,9 @@ def setup():
     t = compute_time_array(dt_start, dt_end, dt_seconds)
     sun = compute_sun_data(t)
     sat = compute_satellite_data(tle, t, sun)
-    return location, sat, t, sun
-
-
-if __name__=="__main__":
-
-    def f8(x):
-        """ from https://gist.github.com/romuald/0346c76cfbbbceb3e4d1 """
-        us = x * 1e6
-        ret = "%8.3f" % x
-        if ret != '   0.000':
-            return ret
-        return "%6dµs" % (x * int(1e6))
     
-    def f8_milli(x):
-        ms = x * 1e3
-        ret = f'{ms:6.2f}ms'
-        return ret
-    
-    def f8_micro(x):
-        us = x * 1e6
-        ret = f'{us:6.0f}µs'
-        return ret
-        
-    n = 20
+    n = 50
 
-    location, sat, t, sun = setup()
-    
     # benchmark
     timer = timeit.Timer(
         'find_overpasses(location, [sat], t, sun)',
@@ -94,7 +80,7 @@ if __name__=="__main__":
 
     avg_res = res/n
     if res > 0:
-        print(f'Average time: {avg_res*1e3:.2f}ms from {n} runs\n')
+        print(f'\nAverage time: {avg_res*1e3:.2f}ms from {n} runs\n')
     
     if avg_res < 0.5:
         pstats.f8 = f8_milli # if benchmark is less than 1 second, return in microseconds
@@ -109,3 +95,11 @@ if __name__=="__main__":
     
     ps = pstats.Stats(pr).sort_stats('cumulative')
     ps.print_stats()
+
+    # Line Profile
+
+    lp = line_profiler.LineProfiler()
+    lp.add_function(RhoVector.find_overpasses)
+    lp.runcall(find_overpasses, location, [sat], t, sun)
+    lp_stats = lp.get_stats()
+    lp.print_stats()

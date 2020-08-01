@@ -74,32 +74,37 @@ class RhoVector():
             self.sun = sun
             self.site_sun_rho = None
 
-
     @reify
     def rsiteECEF(self):
         return site_ECEF(self.location.lat, self.location.lon, self.location.h)
     
-    @reify
-    def rECEF(self):
+    def  _rECEF(self):
         return self.sat.rECEF - np.array([[self.rsiteECEF[0]],[self.rsiteECEF[1]],[self.rsiteECEF[2]]], dtype=np.float64)
 
-    def _ecef2sez(self, idx):
-        pass 
+    @reify
+    def rECEF(self):
+        return self._rECEF()
+
+    def _rSEZ(self):
+        return ecef2sez(self.rECEF, self.location.lat, self.location.lon) 
 
     @reify
     def rSEZ(self):
-        return ecef2sez(self.rECEF, self.location.lat, self.location.lon)
+        return self._rSEZ()
+
+    def _rng(self):
+        return np.linalg.norm(self.rSEZ, axis=0)
 
     @reify
     def rng(self):
-        return np.linalg.norm(self.rSEZ, axis=0)
+        return self._rng()
 
-    def _elevation(self, rZ, rng):
+    def _el(self):
         return np.arcsin(self.rSEZ[2] / self.rng) * RAD2DEG
 
     @reify
     def el(self):
-        return self._elevation(self.rSEZ[2], self.rng)
+        return self._el()
 
     def az(self, idx):
         rS = self.rSEZ[0, idx]
