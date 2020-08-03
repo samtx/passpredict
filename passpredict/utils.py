@@ -6,7 +6,6 @@ from collections import OrderedDict
 
 import numpy as np
 import requests
-import diskcache
 
 from .schemas import Tle
 
@@ -194,6 +193,3 @@ def cache_satellite_position(data, method, cache_directory=CACHE_DIRECTORY):
     Get/Set satellite ECEF position vectors in cache
     """
     pass
-
-
-cache = diskcache.Cache(directory=CACHE_DIRECTORY)
