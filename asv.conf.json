@@ -75,7 +75,7 @@
         "pydantic": [""],
         "click": [""],
         "diskcache": [""],
-        // "Cython": [""],
+        "Cython": [""],
     },
 
     // Combinations of libraries/python versions can be excluded/included
