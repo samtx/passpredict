@@ -12,7 +12,7 @@ on:
 env:
   # CIBW_TEST_REQUIRES: pytest
   # CIBW_TEST_COMMAND: "pytest"
-  CIBW_BUILD: cp37-* cp38-*
+  CIBW_BUILD: cp38-*
 
 jobs:
   build_wheels:
