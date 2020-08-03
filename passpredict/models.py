@@ -1,11 +1,12 @@
 # models.py
 from dataclasses import dataclass
 from functools import update_wrapper
+import math
 
 import numpy as np
 
 from .schemas import Location, Point, Overpass, PassType
-from .constants import RAD2DEG
+from .constants import RAD2DEG, R_EARTH
 from .rotations import ecef2sez
 from .topocentric import site_ECEF
 from .timefn import jday2datetime
@@ -76,10 +77,11 @@ class RhoVector():
 
     @reify
     def rsiteECEF(self):
-        return site_ECEF(self.location.lat, self.location.lon, self.location.h)
+        r = site_ECEF(self.location.lat, self.location.lon, self.location.h)
+        return np.array([[r[0]],[r[1]],[r[2]]], dtype=np.float64)
     
     def  _rECEF(self):
-        return self.sat.rECEF - np.array([[self.rsiteECEF[0]],[self.rsiteECEF[1]],[self.rsiteECEF[2]]], dtype=np.float64)
+        return self.sat.rECEF - self.rsiteECEF
 
     @reify
     def rECEF(self):
@@ -135,6 +137,17 @@ class RhoVector():
         start_idx = np.nonzero(x_change_sign & (x0 < x1))[0]  # Find the start of an overpass
         end_idx = np.nonzero(x_change_sign & (x0 > x1))[0]    # Find the end of an overpass
         return start_idx, end_idx
+
+    def brightness(self, idx, sun_rho):
+        """
+        Compute the brightness magnitude of the satellite
+        """
+        assert self.sun is not None
+        # find phase angle between observer -- satellite -- sun
+        gamma = self.el[idx] - sun_el[idx]
+        
+        
+
         
 
     def find_overpasses(self, min_elevation=10, store_sat_id=False, sunset_el=-6):
@@ -154,7 +167,8 @@ class RhoVector():
 
             # Find visible start and end times
             if self.sun is not None:
-                sun_sez = ecef2sez(self.sun.rECEF[:,idx0:idxf+1], self.location.lat, self.location.lon)
+                sun_rho = self.sun.rECEF[:,idx0:idxf+1] - self.rsiteECEF
+                sun_sez = ecef2sez(sun_rho, self.location.lat, self.location.lon)
                 sun_rng = np.linalg.norm(sun_sez, axis=0)
                 sun_el = np.arcsin(sun_sez[2] / sun_rng) * RAD2DEG
                 site_in_sunset = sun_el - sunset_el < 0
@@ -171,6 +185,17 @@ class RhoVector():
                         vis_start_pt = self.point(idx0 + sat_visible_start_idx)
                         vis_end_pt = self.point(idx0 + sat_visible_end_idx)
                         passtype = PassType.visible # site in night, sat is illuminated
+                        brightness_idx = np.argmax(self.el[idx0 + sat_visible_start_idx: idx0 + sat_visible_end_idx + 1])
+                        sat_rho = self.rECEF[:, idx0 + sat_visible_start_idx + brightness_idx]
+                        sat_rng = self.rng[idx0 + sat_visible_start_idx + brightness_idx]
+                        sun_rho_b = sun_rho[:, sat_visible_start_idx + brightness_idx]
+                        sun_rng_b = sun_rng[sat_visible_start_idx + brightness_idx]
+                        sat_site_sun_angle = math.acos(  
+                            np.dot(sat_rho, sun_rho_b) / (sat_rng * sun_rng_b)
+                        )
+                        beta = math.pi - sat_site_sun_angle  # phase angle: site -- sat -- sun angle
+                        sat_intrinsic_mag = -1.8  # for ISS
+                        brightness = sat_intrinsic_mag - 15 + 5*math.log10(sat_rng) - 2.5*math.log10(math.sin(beta) + (math.pi - beta)*math.cos(beta))
                     else:
                         passtype = PassType.unlit  # nighttime, not illuminated (radio night)
             else:
@@ -185,6 +210,7 @@ class RhoVector():
             if (passtype is not None) and (passtype == PassType.visible):
                 overpass_dict['vis_start_pt'] = vis_start_pt
                 overpass_dict['vis_end_pt'] = vis_end_pt
+                overpass_dict['brightness'] = brightness
             overpass_dict['type'] = passtype
             overpass = Overpass.construct(**overpass_dict)
             sat_overpasses[j] = overpass

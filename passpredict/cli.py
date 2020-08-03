@@ -86,8 +86,8 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, alltype
         point_header = "  Time   El  Az "
         point_header_underline = "-------- --- ---"
     table_header +=  f"           {'Start':^17s}   {'Maximum':^17s}   {'End':^17s}\n"
-    table_header +=  "  Date     {0}   {0}   {0}      Type\n".format(point_header)
-    table_header += "--------   "
+    table_header +=  "  Date    Mag  {0}   {0}   {0}      Type\n".format(point_header)
+    table_header += "--------  ----  "
     table_header += point_header_underline + " "*3
     table_header += point_header_underline + " "*3
     table_header += point_header_underline + " "*3
@@ -110,7 +110,12 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, alltype
             if overpass.type != PassType.visible:
                 continue
         table_data += "{}".format(overpass.start_pt.datetime.astimezone(tz).strftime("%m/%d/%y"))
-        table_data += " "*3 + point_string(overpass.start_pt) + ' |'
+        if overpass.brightness is not None:
+            brightness_str = f"{overpass.brightness:4.1f}"
+        else:
+            brightness_str = " "*4
+        table_data += " "*2 + brightness_str
+        table_data += " "*2 + point_string(overpass.start_pt) + ' |'
         table_data += " " + point_string(overpass.max_pt) + ' |'
         table_data += " " + point_string(overpass.end_pt)
         table_data += " "*4 + f'{overpass.type.value:^9}'
