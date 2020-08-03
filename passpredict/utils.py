@@ -120,15 +120,8 @@ def parse_tle(tle_string_list):
     return {satellite_id : {'name': name, 'tle1': tle1, 'tle2': tle2}}
 
 
-def get_TLE(satellite, tle_data=None):
-    if tle_data is None:
-        if not os.path.exists('tle_data.json'):
-            tle_data = parse_tles_from_celestrak()
-            with open('tle_data.json', 'w') as file:
-                json.dump(tle_data, file)
-        else:
-            with open('tle_data.json', 'r') as file:
-                tle_data = json.load(file)
+def get_TLE(satellite):
+    tle_data = parse_tles_from_celestrak()
     tle1 = tle_data[str(satellite.id)]['tle1']
     tle2 = tle_data[str(satellite.id)]['tle2']
     epoch = epoch_from_tle(tle1)
