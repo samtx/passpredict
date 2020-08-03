@@ -57,8 +57,24 @@ class Location(BaseModel):
 
 
 class Satellite(BaseModel):
-    id: int
+    id: int    # NORAD ID
     name: str = None
+
+
+class SatelliteDetails(BaseModel):
+    id = int   # NORAD ID
+    name: str = None
+    cospar_id: str = None
+    radio_downlink: float = None  # MHz
+    intrinsic_brightness: float = None  # magnitude
+    maximum_brightness: float = None    # magnitude
+    category: str = None
+    description: str = None
+    country: str = None
+    launch_date: datetime.date = None
+    launch_site: str = None
+    mass: float = None   # kg
+
 
 
 class Tle(BaseModel):
@@ -83,6 +99,7 @@ class Overpass(BaseModel):
     type: PassType = None
     vis_start_pt: Point = None
     vis_end_pt: Point = None
+    brightness: float = None
     
 
 class OverpassResultBase(BaseModel):
