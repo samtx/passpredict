@@ -4,4 +4,3 @@ astropy >= 4.1rc1
 requests
 pydantic
 click
-diskcache
