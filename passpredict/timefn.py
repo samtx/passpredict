@@ -277,12 +277,23 @@ def jdt_tsince(tstart, tsince):
     return tstart + (tsince * 60.0) / 86400.0
 
 
-def truncate_datetime(dt):
+def truncate_datetime(dt, nearest='s', utc=True):
     """ Truncate datetime object to the previous second """
+    
     us = dt.microsecond
-    dt2 = dt - datetime.timedelta(microseconds=us)
-    return dt2
+    dt -= datetime.timedelta(microseconds=us)
+    if nearest in ('d', 'day'):
+        if utc is True:
+            dt = datetime.datetime(dt.year, dt.month, dt.day, tzinfo=tz_utc)
+        else:
+            dt = datetime.datetime(dt.year, dt.month, dt.day)
+    return dt
 
+def get_date(dt):
+    """ 
+    Return datetime object to 00:00:00 of that day
+    """
+    return datetime.datetime(dt.year, dt.month, dt.day, tzinfo=tz_utc)
 
 def datetime_linspace(datetime_start, datetime_end, dt_seconds):
     """
@@ -297,13 +308,24 @@ def datetime_linspace(datetime_start, datetime_end, dt_seconds):
     )
 
 
-def compute_time_array(dt_start: datetime, dt_end: datetime, dt_seconds: float) -> Time:
+def compute_time_array(dt_start: datetime.datetime, dt_end: datetime.datetime, dt_seconds: float) -> Time:
     """
     Create astropy Time object
     """
     jdt0 = julian_date(dt_start)
     jdtf = julian_date(dt_end)
-    total_days = (dt_start-dt_end).total_seconds()/60
     dt_days = dt_seconds/(24*60*60.0)
     jd_array = np.arange(jdt0, jdtf, dt_days, dtype=float)
     return Time(jd_array, format='jd')
+
+
+def time_array_from_date(date_start: datetime.date, date_end: datetime.date, dt_seconds: float) -> Time:
+    """
+    Create astropy Time object from python date
+    """
+    jdt0 = julian_day(date_start.year, date_start.month, date_start.day)
+    jdtf = julian_day(date_end.year, date_end.month, date_end.day)
+    dt_days = dt_seconds/(24*60*60.0)
+    jd_array = np.arange(jdt0, jdtf, dt_days, dtype=float)
+    return Time(jd_array, format='jd')
+

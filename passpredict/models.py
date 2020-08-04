@@ -1,29 +1,16 @@
 # models.py
 from dataclasses import dataclass
-from functools import update_wrapper
+from functools import update_wrapper, cached_property
 import math
 
 import numpy as np
+from astropy.time import Time
 
 from .schemas import Location, Point, Overpass, PassType
 from .constants import RAD2DEG, R_EARTH
 from .rotations import ecef2sez
 from .topocentric import site_ECEF
 from .timefn import jday2datetime
-
-
-class reify(object):
-    """From skyfield.descriptorlib"""
-    def __init__(self, method):
-        self.method = method
-        update_wrapper(self, method)
-
-    def __get__(self, instance, objtype=None):
-        if instance is None:
-            return self
-        value = self.method(instance)
-        instance.__dict__[self.__name__] = value
-        return value
 
 
 class SpaceObject:
@@ -49,6 +36,14 @@ class Sat(SpaceObject):
         self.id = None
 
 
+@dataclass
+class SatPredictData:
+    __slots__ = ['id', 'rECEF', 'illuminated']
+    id: int
+    rECEF: np.ndarray         # dtype np.float32
+    illuminated: np.ndarray   # dtype bool
+
+
 class RhoVectorBase:
     pass
 
@@ -58,24 +53,22 @@ class RhoVector():
     Vector from topographic location to space object
     """
     # __slots__ = ['time', 'rSEZ', 'rECEF', 'rng', 'az', 'el', 'ra', 'dec', 'sat', 'location']
-    def __init__(self, sat: SpaceObject, location: Location, sun: Sun = None):
+    def __init__(self, t: Time, sat: SpaceObject, location: Location, sun: Sun = None):
         self.sat = sat
         self.location = location
-        self.time = sat.time
+        self.time = t
         
         if sun is not None:
             # If the sun variable is set, it's time object must be identical to the sat
             # assert np.all(sun.time.jd[[0, -1]], sat.time.jd[[0, -1]])
-            assert sun.time.jd[0] == sat.time.jd[0]
-            assert sun.time.jd[-1] == sat.time.jd[-1]
             assert sat.illuminated is not None
             self.sun = sun
-            self.site_sun_rho = RhoVector(sun, location)
+            self.site_sun_rho = RhoVector(t, sun, location)
         else:
             self.sun = sun
             self.site_sun_rho = None
 
-    @reify
+    @cached_property
     def rsiteECEF(self):
         r = site_ECEF(self.location.lat, self.location.lon, self.location.h)
         return np.array([[r[0]],[r[1]],[r[2]]], dtype=np.float64)
@@ -83,28 +76,28 @@ class RhoVector():
     def  _rECEF(self):
         return self.sat.rECEF - self.rsiteECEF
 
-    @reify
+    @cached_property
     def rECEF(self):
         return self._rECEF()
 
     def _rSEZ(self):
         return ecef2sez(self.rECEF, self.location.lat, self.location.lon) 
 
-    @reify
+    @cached_property
     def rSEZ(self):
         return self._rSEZ()
 
     def _rng(self):
         return np.linalg.norm(self.rSEZ, axis=0)
 
-    @reify
+    @cached_property
     def rng(self):
         return self._rng()
 
     def _el(self):
         return np.arcsin(self.rSEZ[2] / self.rng) * RAD2DEG
 
-    @reify
+    @cached_property
     def el(self):
         return self._el()
 

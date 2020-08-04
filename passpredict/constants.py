@@ -1,12 +1,12 @@
 import numpy as np
 
 # Constants
-R_EARTH = np.float64(6378.137)  # [km] Mean equatorial radius
-R2_EARTH = np.longdouble(40680631.59076899)  # [km2] mean equat. radius sq.
-e_EARTH = np.longdouble(0.081816221456)  # Earth eccentricity
-e2_EARTH = np.longdouble(0.006694385000)  # Earth eccentricity squared
-MU = np.longdouble(398600.4418)  # [km3/(solar s)2] gravitational parameter
-J2 = np.longdouble(0.0010826267)
+R_EARTH = 6378.137  # [km] Mean equatorial radius
+R2_EARTH = 40680631.59076899  # [km2] mean equat. radius sq.
+e_EARTH = 0.081816221456  # Earth eccentricity
+e2_EARTH = 0.006694385000  # Earth eccentricity squared
+MU = 398600.4418  # [km3/(solar s)2] gravitational parameter
+J2 = 0.0010826267
 J2000 = 2451545.0
 DJC = 36525.0  # days per Julian century
 

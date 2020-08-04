@@ -81,10 +81,10 @@ def compute_sun_data(t: Time) -> Sun:
     sun_tmp = get_sun(t_tmp)  # get astropy coordinates for sun in GCRS
     sun_tmp = sun_tmp.transform_to(ITRS(obstime=t_tmp))  # transform to ECEF frame
     sun_tmp = sun_tmp.data.xyz.to('km').value
-    sun_data = np.empty((3, t.size))
+    sun_data = np.empty((3, t.size), dtype=np.float32)
     for i in range(3):
         sun_data[i] = np.interp(t.jd, t_tmp.jd, sun_tmp[i])
     sun = Sun()
     sun.time = t
-    sun.rECEF = sun_data
+    sun.rECEF = sun_data.astype(np.float32)
     return sun
