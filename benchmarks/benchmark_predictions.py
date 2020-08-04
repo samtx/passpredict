@@ -78,16 +78,17 @@ class RhoVectorBenchmark:
             epoch=epoch_from_tle(tle1),
             satellite=satellite
         ) 
-        dt_start = datetime.datetime(2020, 7, 14, 11, 17, 00, tzinfo=datetime.timezone.utc)
-        dt_end = dt_start + datetime.timedelta(days=14)
-        t = compute_time_array(dt_start, dt_end, dt_seconds)
+        date_start = datetime.date(2020, 7, 14)
+        date_end = date_start + datetime.timedelta(days=14)
+        t = time_array_from_date(date_start, date_end, dt_seconds)
         sun = compute_sun_data(t)
         sat = compute_satellite_data(tle, t, sun)
+        sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
         self.location = location
         self.sat = sat
         self.t = t
         self.sun = sun
-        self.rho = RhoVector(sat, location, sun)
+        self.rho = RhoVector(t, sat, location, sun)
         self.min_elevation = 10
         self.rho_el = self.rho._el()
 
