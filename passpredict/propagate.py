@@ -53,7 +53,7 @@ def compute_satellite_data(tle: Tle, t: Time, sun: Sun = None) -> Sat:
     # Use the TEME reference frame from astropy
     teme = TEME(CartesianRepresentation(r * u.km), obstime=t)
     ecef = teme.transform_to(ITRS(obstime=t))
-    sat.rECEF = ecef.data.xyz.value  # extract numpy array from astropy object
+    sat.rECEF = ecef.data.xyz.value.astype(np.float32)  # extract numpy array from astropy object
     sat.subpoint = ecef.earth_location
     sat.latitude = sat.subpoint.lat.value
     sat.longitude = sat.subpoint.lon.value

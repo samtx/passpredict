@@ -4,7 +4,7 @@ from pprint import pprint
 import click
 
 from .schemas import Satellite, Tle, Location, PassType
-from .timefn import truncate_datetime
+from .timefn import truncate_datetime, get_date
 from .geocoding import geocoder
 from .utils import get_TLE
 from .predictions import predict
@@ -44,10 +44,10 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
         # name="Int. Space Station"
     )
     tle = get_TLE(satellite)
-    dt_start = truncate_datetime(datetime.datetime.now())# - datetime.timedelta(days=1)
-    dt_end = dt_start + datetime.timedelta(days=days)
+    date_start = datetime.date.today()
+    date_end = date_start + datetime.timedelta(days=days)
     min_elevation = 10.01 # degrees
-    overpasses = predict(location, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=1, min_elevation=min_elevation, verbose=verbose)
+    overpasses = predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=verbose)
     table_str = overpass_table(overpasses, location, tle, tz, twelvehour=twelve, alltypes=alltypes, quiet=quiet)
     print(table_str)
     return 0

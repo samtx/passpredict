@@ -1,6 +1,6 @@
 # Test using pytest
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 
 from numpy.testing import assert_allclose, assert_almost_equal
 import numpy as np
@@ -36,11 +36,10 @@ def test_predict():
     """
     satellite = Satellite(id=25544, name='ISS')
     location = Location(lat=30.2711, lon=-97.7434, h=0, name='Austin, Texas')
-    tle = get_TLE(satellite)
-    dt_start = timefn.truncate_datetime(datetime.now())# - datetime.timedelta(days=1)
-    dt_end = dt_start + timedelta(days=2)
+    date_start = date.today()
+    date_end = date_start + timedelta(days=2)
     min_elevation = 10.01 # degrees
-    overpasses = predictions.predict(location, satellite, dt_start=dt_start, dt_end=dt_end, dt_seconds=1, min_elevation=min_elevation, verbose=True)
+    overpasses = predictions.predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=True)
     assert True
 
 
