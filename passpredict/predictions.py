@@ -1,6 +1,7 @@
 import pickle
 from datetime import datetime, timedelta
 from typing import List
+import time
 
 import numpy as np
 from numpy import dot, cross
@@ -14,7 +15,7 @@ from .solar import sun_pos, is_sat_illuminated, compute_sun_data
 from .propagate import propagate_satellite, compute_satellite_data
 from .timefn import julian_date, compute_time_array, julian_day, time_array_from_date
 from .schemas import Overpass, Satellite, Location, Tle
-from .models import Sun, RhoVector, Sat, SatPredictData
+from .models import Sun, RhoVector, Sat, SatPredictData, SunPredictData
 from .utils import get_TLE, Cache
 
 
@@ -68,8 +69,13 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
         # print(f'sun = {sun}')
         if sun is None:
             if verbose:
-                print("Compute sun position...")
+                print("Compute sun position...", end=' ')
+            t0 = time.perf_counter()
             sun = compute_sun_data(t)
+            sun = SunPredictData(rECEF=sun.rECEF)
+            tf = time.perf_counter() - t0
+            if verbose:
+                print(f'{tf:0.3f} sec')
             c.set(sun_key, sun, ttl=86400)
 
         tle_key = str(satellite.id) + '_tle'
@@ -84,15 +90,22 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
         # print(f'sat_key = {sat_key},   sat = {sat}')
         if sat is None:    
             if verbose:
-                print(f"Begin propagation from {date_start.isoformat()} to {date_end.isoformat()}...")
+                print(f"Begin propagation from {date_start.isoformat()} to {date_end.isoformat()}...", end=' ')
+            t0 = time.perf_counter()
             sat = compute_satellite_data(tle, t, sun)
-            sat_predict_data = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
-            c.set(sat_key, sat_predict_data, ttl=86400)
-            sat = sat_predict_data
+            sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
+            tf = time.perf_counter() - t0
+            if verbose:
+                print(f'{tf:0.3f} sec')
+            c.set(sat_key, sat, ttl=86400)
 
     if verbose:
-        print('begin prediction...')
+        print('begin prediction...', end=' ')
+    t0 = time.perf_counter()        
     overpasses = find_overpasses(t, location, [sat], sun, min_elevation)
+    tf = time.perf_counter() - t0
+    if verbose: 
+        print(f'{tf:0.3f} sec')
     return overpasses
     
 

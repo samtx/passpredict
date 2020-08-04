@@ -14,7 +14,7 @@ from .timefn import jday2datetime
 
 
 class SpaceObject:
-    # __slots__ = ['time', 'rECEF', 'rECI','latitude','longitude','altitude','illuminated', 'rECEF_astropy', 'subpoint']
+    __slots__ = ['time', 'rECEF', 'rECI']
     def __init__(self):
         self.time = None  # time object
         self.rECEF = None
@@ -34,6 +34,12 @@ class Sat(SpaceObject):
         self.rECEF_astropy = None
         self.subpoint = None
         self.id = None
+
+
+@dataclass
+class SunPredictData:
+    __slots__ = ['rECEF']
+    rECEF: np.ndarray
 
 
 @dataclass
