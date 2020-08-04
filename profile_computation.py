@@ -12,8 +12,8 @@ import line_profiler
 from passpredict.predictions import predict, find_overpasses, compute_sun_data, compute_time_array, compute_satellite_data
 from passpredict.propagate import propagate_satellite
 from passpredict.schemas import Location, Satellite, Tle, Point, Overpass
-from passpredict.models import SpaceObject, RhoVector, Sun, Sat
-from passpredict.timefn import truncate_datetime
+from passpredict.models import SpaceObject, RhoVector, Sun, Sat, SatPredictData
+from passpredict.timefn import truncate_datetime, julian_day, time_array_from_date
 from passpredict.utils import get_TLE, epoch_from_tle
 
 
@@ -53,17 +53,18 @@ if __name__ == "__main__":
         epoch=epoch_from_tle(tle1),
         satellite=satellite
     ) 
-    dt_start = datetime.datetime(2020, 7, 14, 11, 17, 00, tzinfo=datetime.timezone.utc)
-    dt_end = dt_start + datetime.timedelta(days=14)
-    t = compute_time_array(dt_start, dt_end, dt_seconds)
+    date_start = datetime.date(2020, 7, 14)
+    date_end = date_start + datetime.timedelta(days=14)
+    t = time_array_from_date(date_start, date_end, dt_seconds)
     sun = compute_sun_data(t)
     sat = compute_satellite_data(tle, t, sun)
-    
+    sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
+
     n = 50
 
     # benchmark
     timer = timeit.Timer(
-        'find_overpasses(location, [sat], t, sun)',
+        'find_overpasses(t, location, [sat], sun)',
         'from passpredict.predictions import find_overpasses',
         globals={
             'location': location,
@@ -89,7 +90,7 @@ if __name__ == "__main__":
     
     # profile
     with cProfile.Profile() as pr:
-        overpasses = find_overpasses(location, [sat], t, sun)
+        overpasses = find_overpasses(t, location, [sat], sun)
 
     pr.dump_stats('profile_computation.prof')
     
@@ -100,6 +101,6 @@ if __name__ == "__main__":
 
     lp = line_profiler.LineProfiler()
     lp.add_function(RhoVector.find_overpasses)
-    lp.runcall(find_overpasses, location, [sat], t, sun)
+    lp.runcall(find_overpasses, t, location, [sat], sun)
     lp_stats = lp.get_stats()
     lp.print_stats()

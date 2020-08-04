@@ -9,9 +9,9 @@ from astropy.time import Time
 
 from passpredict.predictions import predict, find_overpasses, compute_sun_data, compute_time_array, compute_satellite_data
 from passpredict.schemas import Location, Satellite, Tle, Point, Overpass
-from passpredict.models import SpaceObject, RhoVector, Sun, Sat
+from passpredict.models import SpaceObject, RhoVector, Sun, Sat, SatPredictData
 from passpredict.propagate import propagate_satellite
-from passpredict.timefn import julian_date, jd2jc, jd2utc1, jday2datetime
+from passpredict.timefn import julian_date, jd2jc, jd2utc1, jday2datetime, time_array_from_date
 # from passpredict.rotations.rotations import site_ECEF
 # from passpredict.rotations.transform import ecef2eci, ecef2eci, ecef2sez, teme2ecef, teme2eci
 from passpredict.solar import sun_pos, is_sat_illuminated
@@ -44,11 +44,12 @@ class Predict:
             epoch=epoch_from_tle(tle1),
             satellite=satellite
         ) 
-        dt_start = datetime.datetime(2020, 7, 14, 11, 17, 00, tzinfo=datetime.timezone.utc)
-        dt_end = dt_start + datetime.timedelta(days=14)
-        t = compute_time_array(dt_start, dt_end, dt_seconds)
+        date_start = datetime.date(2020, 7, 14)
+        date_end = date_start + datetime.timedelta(days=14)
+        t = time_array_from_date(date_start, date_end, dt_seconds)
         sun = compute_sun_data(t)
         sat = compute_satellite_data(tle, t, sun)
+        sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
         self.location = location
         self.sat = sat
         self.t = t
@@ -56,11 +57,11 @@ class Predict:
         
         
     def time_find_overpasses(self):
-        find_overpasses(self.location, [self.sat], self.t, self.sun)
+        find_overpasses(self.t, self.location, [self.sat], self.sun)
 
 
     def peakmem_predict_realtime_compute(self):
-        find_overpasses(self.location, [self.sat], self.t, self.sun)
+        find_overpasses(self.t, self.location, [self.sat], self.sun)
 
 
 class RhoVectorBenchmark:

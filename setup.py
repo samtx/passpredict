@@ -11,7 +11,7 @@ setup(
     name="passpredict",
     version="0.0.7",
     packages=['passpredict'],
-    python_requires="3.8", 
+    python_requires=">=3.8", 
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     install_requires=[
