@@ -7,6 +7,7 @@ from typing import NamedTuple
 import shelve
 import time
 from pathlib import Path
+from enum import Enum
 try:
     import cPickle as pickle
 except:
@@ -156,15 +157,23 @@ class ShelfCache(shelve.DbfilenameShelf):
     #     self.cache = shelve.open(*a, **kw)
 
 
+class DataCategory(str, Enum):
+    time = 'time'
+    sun = 'sun'
+    tle = 'tle'
+    sat = 'sat'
+
+
 class CacheItem(NamedTuple):
     data: object
     ttl: int = None            # time to live in seconds, default is one day
     timestamp: int = None   # unix timestamp
+    category: DataCategory = None
 
 
 class Cache:
     data_cache_filename = 'cache_data.db'
-    ttl_index_filename = 'cache_ttl_index.db'
+    data_index_filename = 'cache_index.db'
         
     def __init__(self, cache_directory='.passpredict_cache', ttl=84600):   
         self.directory = cache_directory
@@ -172,11 +181,12 @@ class Cache:
         self.ttl_default = ttl
         self.ttl = None
         self.cache = None
+        self.category = None
 
     def _get_ttl_timestamp(self, ttl: int) -> int:
         return int(time.time() + ttl)
 
-    def set(self, key, value, ttl: int = 0):
+    def set(self, key, value, ttl: int = 0, category: DataCategory = None):
         key_hash = self.hash(key)
         timestamp = self._get_ttl_timestamp(ttl)
         if key_hash in self.cache:
@@ -184,7 +194,7 @@ class Cache:
             old_timestamp = old_item.timestamp
             if old_timestamp is not None:
                 self.ttl[old_timestamp].remove(key_hash)
-        self.cache[key_hash] = CacheItem(data=value, ttl=ttl, timestamp=timestamp)
+        self.cache[key_hash] = CacheItem(data=value, ttl=ttl, timestamp=timestamp, category=category)
         if ttl > 0:
             self._set_ttl(key_hash, timestamp)
         
@@ -238,7 +248,7 @@ class Cache:
         self.close()
 
     def _open_ttl(self):
-        self.ttl_path = self.dir_path / self.ttl_index_filename
+        self.ttl_path = self.dir_path / self.data_index_filename
         if self.ttl_path.exists():
             with open(self.ttl_path, 'rb+') as f:
                 self.ttl = pickle.load(f)

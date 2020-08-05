@@ -33,7 +33,7 @@ def find_overpasses(t: Time, location: Location, sats: List[Sat], sun: Sun, min_
     return overpasses
 
 
-def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, min_elevation=None, cache=None, verbose=False, store_sat_id=False):
+def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, min_elevation=None, cache=None, verbose=False, store_sat_id=False, print_fn=print):
     """
     Full prediction algorithm:
       1. Download TLE data
@@ -75,13 +75,13 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
             sun = cache.get(sun_key)
             if sun is None:
                 if verbose:
-                    print("Compute sun position...", end=' ')
+                    print_fn("Compute sun position... ", end=' ')
                 t0 = time.perf_counter()
                 sun = compute_sun_data(t)
                 sun = SunPredictData(rECEF=sun.rECEF)
                 tf = time.perf_counter() - t0
                 if verbose:
-                    print(f'{tf:0.3f} sec')
+                    print_fn(f'{tf:0.3f} sec')
                 cache.set(sun_key, sun, ttl=86400)
 
             tle_key = str(satellite.id) + '_tle'
@@ -94,22 +94,22 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
             sat = cache.get(sat_key)
             if sat is None:    
                 if verbose:
-                    print(f"Begin propagation from {date_start.isoformat()} to {date_end.isoformat()}...", end=' ')
+                    print_fn(f"Propagate satellite from {date_start.isoformat()} to {date_end.isoformat()}... ", end=' ')
                 t0 = time.perf_counter()
                 sat = compute_satellite_data(tle, t, sun)
                 sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
                 tf = time.perf_counter() - t0
                 if verbose:
-                    print(f'{tf:0.3f} sec')
+                    print_fn(f'{tf:0.3f} sec')
                 cache.set(sat_key, sat, ttl=86400)
 
     if verbose:
-        print('begin prediction...', end=' ')
+        print_fn('Predict overpasses... ', end=' ')
     t0 = time.perf_counter()        
     overpasses = find_overpasses(t, location, [sat], sun, min_elevation)
     tf = time.perf_counter() - t0
     if verbose: 
-        print(f'{tf:0.3f} sec')
+        print_fn(f'{tf:0.3f} sec')
     return overpasses
     
 
