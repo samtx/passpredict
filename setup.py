@@ -48,5 +48,10 @@ setup(
     ],
     # could also include long_description, download_url, etc.
     zip_safe = False,
+    entry_points = {
+        'console_scripts': [
+            'passpredict = passpredict.cli:main'
+        ]
+    },
     ext_modules = ext,
 )
