@@ -52,7 +52,7 @@ def sun_sat_angle(rsat, rsun):
     crossproduct = np.cross(rsun, rsat, axisa=0, axisb=0).T
     sinzeta = norm(crossproduct, axis=0) / (norm(rsun, axis=0) * norm(rsat, axis=0))
     if len(sinzeta.shape) > 0:
-        sinzeta[1.0000003 > sinzeta > 1] = 1.0  # fix some out of bounds warnings where sinzeta > 1.0
+        sinzeta[np.logical_and(1.0000003 > sinzeta, sinzeta > 1)] = 1.0  # fix some out of bounds warnings where sinzeta > 1.0
     else: 
         sinzeta = 1 if (1.0000003 > sinzeta > 1) else sinzeta
     return np.arcsin(sinzeta)
