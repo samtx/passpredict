@@ -6,7 +6,7 @@ import click
 from .schemas import Satellite, Tle, Location, PassType
 from .timefn import truncate_datetime, get_date
 from .geocoding import geocoder
-from .utils import get_TLE
+from .utils import get_TLE, Cache
 from .predictions import predict
 
 @click.command()
@@ -21,7 +21,8 @@ from .predictions import predict
 @click.option('-a', '--all', 'alltypes', is_flag=True, default=False)  # show all pass types
 @click.option('-q', '--quiet', is_flag=True, default=False)
 @click.option('-v', '--verbose', is_flag=True, default=False)
-def main(satellite_id, location_string, utc_offset, days, latitude, longitude, height, twelve, alltypes, quiet, verbose):
+@click.option('--no-cache', is_flag=True, default=False)
+def main(satellite_id, location_string, utc_offset, days, latitude, longitude, height, twelve, alltypes, quiet, verbose, no_cache):
     """
     Command line interface for pass predictions
     """
@@ -47,7 +48,8 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
     date_start = datetime.date.today()
     date_end = date_start + datetime.timedelta(days=days)
     min_elevation = 10.01 # degrees
-    overpasses = predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=verbose)
+    cache = Cache() if not no_cache else None
+    overpasses = predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=verbose, cache=cache)
     table_str = overpass_table(overpasses, location, tle, tz, twelvehour=twelve, alltypes=alltypes, quiet=quiet)
     print(table_str)
     return 0

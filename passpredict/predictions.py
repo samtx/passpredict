@@ -13,7 +13,7 @@ from astropy.time import Time
 from .rotations import ecef2sez
 from .solar import sun_pos, is_sat_illuminated, compute_sun_data
 from .propagate import propagate_satellite, compute_satellite_data
-from .timefn import julian_date, compute_time_array, julian_day, time_array_from_date
+from .timefn import julian_date, compute_time_array, julian_day, compute_time_array_from_date
 from .schemas import Overpass, Satellite, Location, Tle
 from .models import Sun, RhoVector, Sat, SatPredictData, SunPredictData
 from .utils import get_TLE, Cache
@@ -52,52 +52,56 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
     if date_end is None:
         date_end = date_start + timedelta(days=14)
     
-    
-    with Cache() as c:
-   
-        time_key = date_start.strftime('%Y%m%d') + date_end.strftime('%Y%m%d') + str(dt_seconds)
-        
-        t = c.get(time_key)
-        # print(f't = {t}')
-        if t is None:
-            # t = compute_time_array(dt_start, dt_end, dt_seconds)
-            t = time_array_from_date(date_start, date_end, dt_seconds)
-            c.set(time_key, t, ttl=86400)
-        
-        sun_key = 'sun_' + time_key
-        sun = c.get(sun_key)
-        # print(f'sun = {sun}')
-        if sun is None:
-            if verbose:
-                print("Compute sun position...", end=' ')
-            t0 = time.perf_counter()
-            sun = compute_sun_data(t)
-            sun = SunPredictData(rECEF=sun.rECEF)
-            tf = time.perf_counter() - t0
-            if verbose:
-                print(f'{tf:0.3f} sec')
-            c.set(sun_key, sun, ttl=86400)
+    if cache is None:
+        t = compute_time_array_from_date(date_start, date_end, dt_seconds)
+        sun = compute_sun_data(t)
+        sun = SunPredictData(rECEF=sun.rECEF)
+        tle = get_TLE(satellite)
+        sat = compute_satellite_data(tle, t, sun)
+        sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
 
-        tle_key = str(satellite.id) + '_tle'
-        tle = c.get(tle_key)
-        # print(f'tle = {tle}')
-        if tle is None:
-            tle = get_TLE(satellite)
-            c.set(tle_key, tle, ttl=86400)
+    else:
 
-        sat_key = tle_key + time_key + '_sat'
-        sat = c.get(sat_key)
-        # print(f'sat_key = {sat_key},   sat = {sat}')
-        if sat is None:    
-            if verbose:
-                print(f"Begin propagation from {date_start.isoformat()} to {date_end.isoformat()}...", end=' ')
-            t0 = time.perf_counter()
-            sat = compute_satellite_data(tle, t, sun)
-            sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
-            tf = time.perf_counter() - t0
-            if verbose:
-                print(f'{tf:0.3f} sec')
-            c.set(sat_key, sat, ttl=86400)
+        with cache:
+
+            time_key = date_start.strftime('%Y%m%d') + date_end.strftime('%Y%m%d') + str(dt_seconds)
+            
+            t = cache.get(time_key)
+            if t is None:
+                t = compute_time_array_from_date(date_start, date_end, dt_seconds)
+                cache.set(time_key, t, ttl=86400)
+            
+            sun_key = 'sun_' + time_key
+            sun = cache.get(sun_key)
+            if sun is None:
+                if verbose:
+                    print("Compute sun position...", end=' ')
+                t0 = time.perf_counter()
+                sun = compute_sun_data(t)
+                sun = SunPredictData(rECEF=sun.rECEF)
+                tf = time.perf_counter() - t0
+                if verbose:
+                    print(f'{tf:0.3f} sec')
+                cache.set(sun_key, sun, ttl=86400)
+
+            tle_key = str(satellite.id) + '_tle'
+            tle = cache.get(tle_key)
+            if tle is None:
+                tle = get_TLE(satellite)
+                cache.set(tle_key, tle, ttl=86400)
+
+            sat_key = tle_key + time_key + '_sat'
+            sat = cache.get(sat_key)
+            if sat is None:    
+                if verbose:
+                    print(f"Begin propagation from {date_start.isoformat()} to {date_end.isoformat()}...", end=' ')
+                t0 = time.perf_counter()
+                sat = compute_satellite_data(tle, t, sun)
+                sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
+                tf = time.perf_counter() - t0
+                if verbose:
+                    print(f'{tf:0.3f} sec')
+                cache.set(sat_key, sat, ttl=86400)
 
     if verbose:
         print('begin prediction...', end=' ')
