@@ -319,6 +319,10 @@ def compute_time_array(dt_start: datetime.datetime, dt_end: datetime.datetime, d
     return Time(jd_array, format='jd')
 
 
+def compute_time_array_from_date(*a, **kw):
+    return time_array_from_date(*a, **kw)
+
+
 def time_array_from_date(date_start: datetime.date, date_end: datetime.date, dt_seconds: float) -> Time:
     """
     Create astropy Time object from python date

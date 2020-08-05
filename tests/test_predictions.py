@@ -30,7 +30,7 @@ from passpredict.propagate import propagate_satellite
 
 
 @pytest.mark.predict
-def test_predict():
+def test_predict_nocache():
     """
     Just confirm that the predict() function doesn't error
     """
@@ -39,7 +39,7 @@ def test_predict():
     date_start = date.today()
     date_end = date_start + timedelta(days=2)
     min_elevation = 10.01 # degrees
-    overpasses = predictions.predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=True)
+    predictions.predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=True)
     assert True
 
 

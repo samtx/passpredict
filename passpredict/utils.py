@@ -17,8 +17,6 @@ import requests
 
 from .schemas import Tle
 
-CACHE_DIRECTORY = ".passpredict_cache"
-
 
 def shift_angle(x: float) -> float:
     """Shift angle in radians to [-pi, pi)
@@ -165,8 +163,8 @@ class CacheItem(NamedTuple):
 
 
 class Cache:
-    data_cache_filename = 'data'
-    ttl_index_filename = 'ttl_index'
+    data_cache_filename = 'cache_data.db'
+    ttl_index_filename = 'cache_ttl_index.db'
         
     def __init__(self, cache_directory='.passpredict_cache', ttl=84600):   
         self.directory = cache_directory
@@ -270,22 +268,3 @@ class Cache:
         """Iterate through cache and build ttl index"""
         assert self.ttl is not None
         pass
-
-
-def cache_tle(data, method, cache_directory=CACHE_DIRECTORY):
-    """
-    Get/Set satellite TLE data
-
-    Params:
-        data = tle data
-        method = str ['get','set']
-        cache_directory: str, optional
-    """
-    pass
-
-
-def cache_satellite_position(data, method, cache_directory=CACHE_DIRECTORY):
-    """
-    Get/Set satellite ECEF position vectors in cache
-    """
-    pass
