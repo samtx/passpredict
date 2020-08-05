@@ -26,14 +26,8 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
     """
     Command line interface for pass predictions
     """
-    # Prompt for location
-    # query = input('Enter location: ')
-    data = geocoder(location_string)
-
-    # tz_offset_str = input('Enter timezone offset: ')
-    # tz_offset = float(tz_offset_str)
+    data = geocoder(location_string)      # Prompt for location
     tz = datetime.timezone(datetime.timedelta(hours=utc_offset))
-
     location = Location(
         lat=float(data['lat']),
         lon=float(data['lon']),
@@ -42,16 +36,14 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
     )
     satellite = Satellite(
         id=satellite_id,
-        # name="Int. Space Station"
     )
     tle = get_TLE(satellite)
     date_start = datetime.date.today()
     date_end = date_start + datetime.timedelta(days=days)
     min_elevation = 10.01 # degrees
     cache = Cache() if not no_cache else None
-    overpasses = predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=verbose, cache=cache)
-    table_str = overpass_table(overpasses, location, tle, tz, twelvehour=twelve, alltypes=alltypes, quiet=quiet)
-    print(table_str)
+    overpasses = predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=verbose, cache=cache, print_fn=echo)
+    overpass_table(overpasses, location, tle, tz, twelvehour=twelve, alltypes=alltypes, quiet=quiet)
     return 0
 
 
@@ -71,15 +63,15 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, alltype
 """
     table_title = ""
     table_header = ""
-    table_data = ""
     if not quiet:
         satellite_id = tle.satellite.id
         # Print datetimes with the correct timezone
         table_title += f"Satellite ID {satellite_id} overpasses for {location.name:s}\n"
         table_title += f"Lat={location.lat:.4f}\u00B0, Lon={location.lon:.4f}\u00B0, Timezone {tz}\n"
-        table_title += f"Using TLE\n"
+        table_title += f"Using TLE with epoch {tle.epoch.isoformat()}\n"
         table_title += f"{tle.tle1:s}\n"
-        table_title += f"{tle.tle2:s}\n\n"
+        table_title += f"{tle.tle2:s}\n"
+    click.secho(table_title)
     if twelvehour:
         point_header = "  Time    El  Az "
         point_header_underline = "--------- --- ---"
@@ -94,7 +86,7 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, alltype
     table_header += point_header_underline + " "*3
     table_header += point_header_underline + " "*3
     table_header += "-"*10
-    table_header += "\n"
+    click.echo(table_header)
 
     def point_string(point):
         time = point.datetime.astimezone(tz)
@@ -111,7 +103,7 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, alltype
             # filter overpasses to visible only
             if overpass.type != PassType.visible:
                 continue
-        table_data += "{}".format(overpass.start_pt.datetime.astimezone(tz).strftime("%m/%d/%y"))
+        table_data = "{}".format(overpass.start_pt.datetime.astimezone(tz).strftime("%m/%d/%y"))
         if overpass.brightness is not None:
             brightness_str = f"{overpass.brightness:4.1f}"
         else:
@@ -120,9 +112,11 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, alltype
         table_data += " "*2 + point_string(overpass.start_pt) + ' |'
         table_data += " " + point_string(overpass.max_pt) + ' |'
         table_data += " " + point_string(overpass.end_pt)
-        table_data += " "*4 + f'{overpass.type.value:^9}'
-        table_data += "\n"
-    return table_title + table_header + table_data
+        table_data += " "*4 + f'{overpass.type.value:^9}'# + '\n'
+        fg = 'green' if overpass.type.value == PassType.visible else None
+        click.secho(table_data, fg=fg)
+
+    
 # --------- --- ---
 
 def plot_elevation(date, elevation):
@@ -131,6 +125,11 @@ def plot_elevation(date, elevation):
     plt.grid()
     plt.show()
 
+def echo(*a, **kw):
+    if 'end' in kw:
+        kw.pop('end')
+        kw.update({'nl': False})
+    return click.echo(*a, **kw)
 
 if __name__ == "__main__":
     main()
