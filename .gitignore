@@ -1,5 +1,12 @@
 .vscode/
 
+.passpredict_cache/
+.asv/
+*.prof
+*.lprof
+*.npy
+*.pkl
+
 # Pipfile.lock
 
 # Byte-compiled / optimized / DLL files
