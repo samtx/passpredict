@@ -11,6 +11,7 @@ def geocoder(q, source=nominatim_url):
     params = {
         'q': q,
         'format': 'json',
+        'limit': 1,
     }
     response = requests.get(source, params=params)
     data = response.json()

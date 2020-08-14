@@ -61,6 +61,14 @@ class Satellite(BaseModel):
     name: str = None
 
 
+class SatelliteCategory(str, Enum):
+    military = 'military'
+    communication = 'communication'
+    earth_observing = 'earth observing'
+    space_science = 'space science'
+
+
+
 class SatelliteDetails(BaseModel):
     id = int   # NORAD ID
     name: str = None
@@ -74,6 +82,8 @@ class SatelliteDetails(BaseModel):
     launch_date: datetime.date = None
     launch_site: str = None
     mass: float = None   # kg
+    perigee: float = None  # km
+    apogee: float = None   # km
 
 
 
