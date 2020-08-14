@@ -44,6 +44,9 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
     cache = Cache() if not no_cache else None
     overpasses = predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=verbose, cache=cache, print_fn=echo)
     overpass_table(overpasses, location, tle, tz, twelvehour=twelve, alltypes=alltypes, quiet=quiet)
+    if cache is not None:
+        with cache:
+            cache.flush()
     return 0
 
 
@@ -79,8 +82,8 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, alltype
         #   Time   Elx Azx
         point_header = "  Time   El  Az "
         point_header_underline = "-------- --- ---"
-    table_header +=  f"           {'Start':^17s}   {'Maximum':^17s}   {'End':^17s}\n"
-    table_header +=  "  Date    Mag  {0}   {0}   {0}      Type\n".format(point_header)
+    table_header +=  f"            {'Start':^17s}   {'Maximum':^17s}   {'End':^17s}\n"
+    table_header +=  "  Date    Mag   {0}   {0}   {0}      Type\n".format(point_header)
     table_header += "--------  ----  "
     table_header += point_header_underline + " "*3
     table_header += point_header_underline + " "*3

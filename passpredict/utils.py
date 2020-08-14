@@ -173,13 +173,15 @@ class CacheItem(NamedTuple):
 
 class Cache:
     data_cache_filename = 'cache_data.db'
-    data_index_filename = 'cache_index.db'
+    indices = {  # index table name: index item name
+        'ttl': 'timestamp',
+        'cat': 'category',
+      }
         
     def __init__(self, cache_directory='.passpredict_cache', ttl=84600):   
         self.directory = cache_directory
         self.dir_path = Path(cache_directory)
         self.ttl_default = ttl
-        self.ttl = None
         self.cache = None
         self.category = None
 
@@ -189,14 +191,17 @@ class Cache:
     def set(self, key, value, ttl: int = 0, category: DataCategory = None):
         key_hash = self.hash(key)
         timestamp = self._get_ttl_timestamp(ttl)
-        if key_hash in self.cache:
-            old_item = self.cache[key_hash]
-            old_timestamp = old_item.timestamp
-            if old_timestamp is not None:
-                self.ttl[old_timestamp].remove(key_hash)
+        # if key_hash in self.cache:
+        #     old_item = self.cache[key_hash]
+        #     # Remove old item from indices
+        #     for index_tbl, index_field in self.indices:
+        #         self.pop_index_item(index_tbl, old_item.__dict__() )
+        #     old_timestamp = old_item.timestamp
+        #     if old_timestamp is not None:
+        #         self.ttl[old_timestamp].remove(key_hash)
         self.cache[key_hash] = CacheItem(data=value, ttl=ttl, timestamp=timestamp, category=category)
-        if ttl > 0:
-            self._set_ttl(key_hash, timestamp)
+        # if ttl > 0:
+        #     self._set_ttl(key_hash, timestamp)
         
             
     def _set_ttl(self, key_hash, timestamp: int):
@@ -215,14 +220,49 @@ class Cache:
         else:
             return item.data
 
-    def pop(self, key, default_value=None):
+    def pop(self, key, default_value=None, index=None):
         key_hash = self.hash(key)
         if key_hash in self.cache:
             value = self.get(key)
             del self.cache[key_hash]
+            # if index is not None:
+            #     self.pop_index_item(index, )
             return value
         else:
             return default_value
+
+    def get_index_items(self, index, index_key):
+        index_dict = self.cache[index + '_index']
+        return index_dict.get(index_key)
+
+    def set_index_item(self, index, index_key, index_item):
+        key = index + '_index'
+        index_dict = self.cache[key]
+        index_result = index_dict.get(index_key, set())
+        index_result += {index_item}
+        index_dict.update({
+            index_key: index_result
+        })
+        self.cache[key] = index_dict
+
+    def remove_item_from_cache(self, item):
+        pass
+
+    def pop_index_item(self, index, index_key, index_item):
+        key = index + '_index'
+        index_dict = self.cache[key]
+        index_result = index_dict.get(index_key, set())
+        if index_item in index_result:
+            index_result.remove(index_item)
+        if len(index_result) == 0:
+            index_dict.pop(index_key)
+        else:
+            index_dict.update({
+                index_key: index_result
+            })
+        self.cache[key] = index_dict
+
+        
 
     def __contains__(self, key):
         key_hash = self.hash(key)
@@ -239,7 +279,16 @@ class Cache:
 
     def flush(self):
         """Remove expired cache entires"""
-        pass
+        current_time = time.time()
+        for key, value in self.cache.items():
+            t = value.timestamp
+            if (t is not None) and (current_time > t):
+                del self.cache[key]
+        # ttl_index_dict = self.cache['ttl_index']
+        # current_timestamp = time.time()
+        # expired_keys = (key for key in ttl_index_dict.keys() if key >= current_timestamp)
+        # for key in expired_keys:
+
 
     def __enter__(self, *a, **kw):
         return self.open()
@@ -247,14 +296,19 @@ class Cache:
     def __exit__(self, *a, **kw):
         self.close()
 
-    def _open_ttl(self):
-        self.ttl_path = self.dir_path / self.data_index_filename
-        if self.ttl_path.exists():
-            with open(self.ttl_path, 'rb+') as f:
-                self.ttl = pickle.load(f)
-        else:
-            self.ttl = OrderedDict()
-            self._build_ttl_index()
+    def _build_indices(self):
+        for idx, _ in self.indices:
+            key = idx + '_index'
+            self.cache[key] = OrderedDict()
+
+    # def _open_ttl(self):
+    #     self.ttl_path = self.dir_path / self.data_index_filename
+    #     if self.ttl_path.exists():
+    #         with open(self.ttl_path, 'rb+') as f:
+    #             self.ttl = pickle.load(f)
+    #     else:
+    #         self.ttl = OrderedDict()
+    #         self._build_ttl_index()
 
     def open(self):
         """
@@ -266,13 +320,13 @@ class Cache:
             dir_path.mkdir()
         cache_path = dir_path / self.data_cache_filename
         self.cache = shelve.DbfilenameShelf(str(cache_path))
-        self._open_ttl()
+        # self._open_ttl()
         return self
         
     def close(self):
         self.cache.close()
-        with open(self.ttl_path, 'wb') as f:
-            pickle.dump(self.ttl, f)
+        # with open(self.ttl_path, 'wb') as f:
+        #     pickle.dump(self.ttl, f)
 
     def _build_ttl_index(self):
         """Iterate through cache and build ttl index"""
