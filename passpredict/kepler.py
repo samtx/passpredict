@@ -1,28 +1,25 @@
 from math import sqrt, sin, cos, cosh, acosh, tan, atan, acos, radians, degrees, pi
 import datetime
+from collections import namedtuple
+from typing import NamedTuple
 
 import numpy as np
 from numpy import dot, cross
 
+from .constants import R2_EARTH, MU, J2
 
-# Constants
-R_EARTH = np.float64(6378.137)  # [km] Mean equatorial radius
-R2_EARTH = np.longdouble(40680631.59076899)  # [km2] mean equat. radius sq.
-e_EARTH = np.longdouble(0.081816221456)  # Earth eccentricity
-e2_EARTH = np.longdouble(0.006694385000)  # Earth eccentricity squared
-MU = np.longdouble(398600.4418)  # [km3/(solar s)2] gravitational parameter
-J2 = np.longdouble(0.0010826267)
-
-# Various constants required by Skyfield
-AU_M = 149597870700  # per IAU 2012 Resolution B2
-AU_KM = 149597870.700
-ASEC360 = 1296000.0
-DAY_S = 86400.0
-# Angles.
-ASEC2RAD = 4.848136811095359935899141e-6
-DEG2RAD = 0.017453292519943296
-RAD2DEG = 57.295779513082321
-tau = 6.283185307179586476925287  # lower case, for symmetry with math.pi
+# Model of classical orbital elements
+class COE(NamedTuple):
+    p: float
+    a: float
+    e: float
+    i: float
+    Omega: float
+    w: float
+    nu: float
+    u: float
+    lmda_true: float
+    what_true: float
 
 
 def coe2rv(p, e, i, Omega, w, nu, u=0.0, lmda_true=0.0, w_hat_true=0.0):
@@ -160,20 +157,8 @@ def rv2coe(rIJK, vIJK, findall=False):
         else:
             lmda_true = degrees(acos(cos_lmda_true))
 
-    # dictionary of classical orbital elements
-    coe = {}
-    coe["p"] = p
-    coe["a"] = a
-    coe["e"] = e
-    coe["i"] = i
-    coe["Omega"] = Omega
-    coe["w"] = w
-    coe["nu"] = nu
-    coe["u"] = u
-    coe["lmda_true"] = lmda_true
-    coe["what_true"] = what_true
-
-    return coe
+    # object of classical orbital elements
+    return COE(p=p, a=a, e=e, i=i, Omega=Omega, w=w, nu=nu, u=u, lmda_true=lmda_true, what_true=what_true)
 
 
 def pkepler_rv(r0, v0, dt, ndt=0.0, nddt=0.0):
@@ -185,15 +170,15 @@ def pkepler_rv(r0, v0, dt, ndt=0.0, nddt=0.0):
 
     coe = rv2coe(r0, v0)
 
-    p0 = coe.get("p")
-    a0 = coe.get("a")
-    e0 = coe.get("e")
-    i0 = coe.get("i")
-    Omega0 = coe.get("Omega")
-    w0 = coe.get("w")
-    u = coe.get("u")
-    lmda_true = coe.get("lmda_true")
-    nu0 = coe.get("nu")
+    p0 = coe.p
+    a0 = coe.a
+    e0 = coe.e
+    i0 = coe.i
+    Omega0 = coe.Omega
+    w0 = coe.w
+    u = coe.u
+    lmda_true = coe.lmda_true
+    nu0 = coe.nu
 
     if not a0:
         a0 = 1 / p0 * (1 - e0 ** 2)
