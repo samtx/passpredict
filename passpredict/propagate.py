@@ -10,7 +10,7 @@ from sgp4.api import Satrec, WGS84
 
 from passpredict.solar import is_sat_illuminated
 from passpredict.schemas import Tle
-from passpredict.models import Sat, Sun, SatPredictData
+from passpredict.models import Sat, SatPredictData, SunPredictData
 
 
 def propagate_satellite(tle1, tle2, jd, *args, **kwargs):
@@ -39,7 +39,7 @@ def propagate_satellite(tle1, tle2, jd, *args, **kwargs):
     return r, v
 
 
-def compute_satellite_data(tle: Tle, t: Time, sun: Sun = None) -> Sat:
+def compute_satellite_data(tle: Tle, t: Time, sun: SunPredictData = None) -> SatPredictData:
     """
     Compute satellite data for Time
     
@@ -54,10 +54,9 @@ def compute_satellite_data(tle: Tle, t: Time, sun: Sun = None) -> Sat:
     teme = TEME(CartesianRepresentation(r * u.km), obstime=t)
     ecef = teme.transform_to(ITRS(obstime=t))
     sat.rECEF = ecef.data.xyz.value.astype(np.float32)  # extract numpy array from astropy object
-    sat.subpoint = ecef.earth_location
-    sat.latitude = sat.subpoint.lat.value
-    sat.longitude = sat.subpoint.lon.value
+    # sat.subpoint = ecef.earth_location
+    # sat.latitude = sat.subpoint.lat.value
+    # sat.longitude = sat.subpoint.lon.value
     if sun is not None:
         sat.illuminated = is_sat_illuminated(sat.rECEF, sun.rECEF)
-    return sat
-    # return SatPredictData(id=sat
+    return SatPredictData(id=tle.satid, rECEF=sat.rECEF, illuminated=sat.illuminated)

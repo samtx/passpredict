@@ -55,10 +55,8 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
     if cache is None:
         t = compute_time_array_from_date(date_start, date_end, dt_seconds)
         sun = compute_sun_data(t)
-        sun = SunPredictData(rECEF=sun.rECEF)
         tle = get_TLE(satellite.id)
         sat = compute_satellite_data(tle, t, sun)
-        sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
 
     else:
 
@@ -78,7 +76,6 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
                     print_fn("Compute sun position... ", end=' ')
                 t0 = time.perf_counter()
                 sun = compute_sun_data(t)
-                sun = SunPredictData(rECEF=sun.rECEF)
                 tf = time.perf_counter() - t0
                 if verbose:
                     print_fn(f'{tf:0.3f} sec')
@@ -97,7 +94,6 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
                     print_fn(f"Propagate satellite from {date_start.isoformat()} to {date_end.isoformat()}... ", end=' ')
                 t0 = time.perf_counter()
                 sat = compute_satellite_data(tle, t, sun)
-                sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
                 tf = time.perf_counter() - t0
                 if verbose:
                     print_fn(f'{tf:0.3f} sec')
