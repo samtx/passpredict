@@ -37,31 +37,31 @@ def test_rv2coe():
         247.806,
     )
     coe = kepler.rv2coe(rIJK, vIJK, findall=True)
-    assert_almost_equal(coe["p"], p_true, decimal=2)
-    assert_almost_equal(coe["a"], a_true, decimal=2)
-    assert_almost_equal(coe["e"], e_true, decimal=6)
-    assert_almost_equal(coe["i"], i_true, decimal=3)
-    assert_almost_equal(coe["Omega"], Omega_true, decimal=3)
-    assert_almost_equal(coe["w"], w_true, decimal=2)
-    assert_almost_equal(coe["nu"], nu_true, decimal=3)
-    assert_almost_equal(coe["u"], u_true, decimal=0)
-    assert_almost_equal(coe["lmda_true"], lmda_true_true, decimal=3)
-    assert_almost_equal(coe["what_true"], what_true_true, decimal=3)
+    assert_almost_equal(coe.p, p_true, decimal=2)
+    assert_almost_equal(coe.a, a_true, decimal=2)
+    assert_almost_equal(coe.e, e_true, decimal=6)
+    assert_almost_equal(coe.i, i_true, decimal=3)
+    assert_almost_equal(coe.Omega, Omega_true, decimal=3)
+    assert_almost_equal(coe.w, w_true, decimal=2)
+    assert_almost_equal(coe.nu, nu_true, decimal=3)
+    assert_almost_equal(coe.u, u_true, decimal=0)
+    assert_almost_equal(coe.lmda_true, lmda_true_true, decimal=3)
+    assert_almost_equal(coe.what_true, what_true_true, decimal=3)
 
 
 def test_rv2coe_to_coe2rv():
     rIJK = np.array([6524.834, 6862.875, 6448.296])  # [km]
     vIJK = np.array([4.901327, 5.533756, -1.976341])  # [km/s]
     coe = kepler.rv2coe(rIJK, vIJK, findall=True)
-    p = coe.get("p")
-    e = coe.get("e")
-    i = coe.get("i")
-    Omega = coe.get("Omega")
-    w = coe.get("w")
-    u = coe.get("u")
-    lmda_true = coe.get("lmda_true")
-    nu = coe.get("nu")
-    what_true = coe.get("what_true")
+    p = coe.p
+    e = coe.e
+    i = coe.i
+    Omega = coe.Omega
+    w = coe.w
+    u = coe.u
+    lmda_true = coe.lmda_true
+    nu = coe.nu
+    what_true = coe.what_true
     r_calc, v_calc = kepler.coe2rv(p, e, i, Omega, w, nu, u, lmda_true, what_true)
     assert_allclose(r_calc, rIJK)
     assert_allclose(v_calc, vIJK)
@@ -76,12 +76,12 @@ def test_coe2rv_to_rv2coe():
     nu = 92.335  # [deg]
     r, v = kepler.coe2rv(p, e, i, Omega, w, nu)
     coeT = kepler.rv2coe(r, v, findall=True)
-    assert_almost_equal(p, coeT["p"], decimal=2)
-    assert_almost_equal(e, coeT["e"], decimal=6)
-    assert_almost_equal(i, coeT["i"], decimal=3)
-    assert_almost_equal(Omega, coeT["Omega"], decimal=3)
-    assert_almost_equal(w, coeT["w"], decimal=2)
-    assert_almost_equal(nu, coeT["nu"], decimal=3)
+    assert_almost_equal(p, coeT.p, decimal=2)
+    assert_almost_equal(e, coeT.e, decimal=6)
+    assert_almost_equal(i, coeT.i, decimal=3)
+    assert_almost_equal(Omega, coeT.Omega, decimal=3)
+    assert_almost_equal(w, coeT.w, decimal=2)
+    assert_almost_equal(nu, coeT.nu, decimal=3)
 
 
 def test_nu2anomaly():
