@@ -7,7 +7,7 @@ from astropy.time import Time
 from astropy.coordinates import CartesianRepresentation, ITRS, get_sun
 
 from .constants import DEG2RAD, RAD2DEG, AU_KM, R_EARTH
-from .models import Sun
+from .models import Sun, SunPredictData
 
 
 def sun_pos(t):
@@ -75,7 +75,7 @@ def is_sat_illuminated(rsat, rsun):
     return dist > R_EARTH
 
 
-def compute_sun_data(t: Time) -> Sun:
+def compute_sun_data(t: Time) -> SunPredictData:
     """
     Compute sun position data
 
@@ -88,7 +88,5 @@ def compute_sun_data(t: Time) -> Sun:
     sun_data = np.empty((3, t.size), dtype=np.float32)
     for i in range(3):
         sun_data[i] = np.interp(t.jd, t_tmp.jd, sun_tmp[i])
-    sun = Sun()
-    sun.time = t
-    sun.rECEF = sun_data.astype(np.float32)
-    return sun
+    rECEF = sun_data.astype(np.float32)
+    return SunPredictData(rECEF)
