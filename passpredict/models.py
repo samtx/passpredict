@@ -137,17 +137,13 @@ class RhoVector():
         end_idx = np.nonzero(x_change_sign & (x0 > x1))[0]    # Find the end of an overpass
         return start_idx, end_idx
 
-    def brightness(self, idx, sun_rho):
-        """
-        Compute the brightness magnitude of the satellite
-        """
-        assert self.sun is not None
-        # find phase angle between observer -- satellite -- sun
-        gamma = self.el[idx] - sun_el[idx]
-        
-        
-
-        
+    # def brightness(self, idx, sun_rho):
+    #     """
+    #     Compute the brightness magnitude of the satellite
+    #     """
+    #     assert self.sun is not None
+    #     # find phase angle between observer -- satellite -- sun
+    #     gamma = self.el[idx] - sun_el[idx]
 
     def find_overpasses(self, min_elevation=10, store_sat_id=False, sunset_el=-6):
         start_idx, end_idx = self._start_end_index(self.el - min_elevation)

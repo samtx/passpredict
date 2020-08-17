@@ -82,7 +82,7 @@ class Tle(BaseModel):
     tle1: str
     tle2: str
     epoch: datetime.datetime
-    satellite: Satellite
+    satid: int
 
 
 class PassType(str, Enum):

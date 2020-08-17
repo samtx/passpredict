@@ -40,11 +40,11 @@ def test_Tle():
     tle1 = '1 25544U 98067A   20166.98401036  .00000505  00000-0  17092-4 0  9999'
     tle2 = '2 25544  51.6466 359.3724 0002481  58.1246  97.0831 15.49444148231675'
     epoch = epoch_from_tle(tle1)
-    tle = schemas.Tle(tle1=tle1, tle2=tle2, epoch=epoch, satellite=satellite)
+    tle = schemas.Tle(tle1=tle1, tle2=tle2, epoch=epoch, satid=satid)
     assert tle.tle1 == tle1
     assert tle.tle2 == tle2
     assert tle.epoch == epoch
-    assert tle.satellite == satellite
+    assert tle.satid == satid
 
 
 def test_Point():
