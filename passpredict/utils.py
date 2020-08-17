@@ -67,6 +67,13 @@ def epoch_from_tle(tle1: str) -> datetime.datetime:
     return epoch_from_tle_datetime(epoch_string)
     
 
+def satid_from_tle(tle1: str) -> int:
+    """
+    Extract satellite NORAD ID as int from tle line 1
+    """
+    return int(tle1[2:7])
+
+
 def get_orbit_data_from_celestrak(satellite_id):
     """
 
@@ -123,16 +130,16 @@ def parse_tle(tle_string_list):
     """
     tle0, tle1, tle2 = tle_string_list
     name = tle0.strip()  # satellite name
-    satellite_id = tle1[2:7]
+    satellite_id = satid_from_tle(tle1)
     return {satellite_id : {'name': name, 'tle1': tle1, 'tle2': tle2}}
 
 
-def get_TLE(satellite, tle_data=None):
-    tle_data = parse_tles_from_celestrak(satellite.id)
-    tle1 = tle_data[str(satellite.id)]['tle1']
-    tle2 = tle_data[str(satellite.id)]['tle2']
+def get_TLE(satid: int, tle_data=None):
+    tle_data = parse_tles_from_celestrak(satid)
+    tle1 = tle_data[satid]['tle1']
+    tle2 = tle_data[satid]['tle2']
     epoch = epoch_from_tle(tle1)
-    tle = Tle(tle1=tle1, tle2=tle2, epoch=epoch, satellite=satellite)
+    tle = Tle(tle1=tle1, tle2=tle2, epoch=epoch, satid=satid)
     return tle
 
 

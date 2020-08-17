@@ -32,7 +32,7 @@ def test_propagate_iss():
         tle1=tle1,
         tle2=tle2,
         epoch=epoch_from_tle(tle1),
-        satellite=satellite
+        satid=satellite.id
     )
     t = compute_time_array(datetime_start, datetime_end, dt_sec)
     sat = propagate.compute_satellite_data(tle, t)

@@ -10,7 +10,7 @@ from sgp4.api import Satrec, WGS84
 
 from passpredict.solar import is_sat_illuminated
 from passpredict.schemas import Tle
-from passpredict.models import Sat, Sun
+from passpredict.models import Sat, Sun, SatPredictData
 
 
 def propagate_satellite(tle1, tle2, jd, *args, **kwargs):
@@ -60,3 +60,4 @@ def compute_satellite_data(tle: Tle, t: Time, sun: Sun = None) -> Sat:
     if sun is not None:
         sat.illuminated = is_sat_illuminated(sat.rECEF, sun.rECEF)
     return sat
+    # return SatPredictData(id=sat

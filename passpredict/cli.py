@@ -1,10 +1,8 @@
 import datetime
-from pprint import pprint
 
 import click
 
-from .schemas import Satellite, Tle, Location, PassType
-from .timefn import truncate_datetime, get_date
+from .schemas import Satellite, Location, PassType
 from .geocoding import geocoder
 from .utils import get_TLE, Cache
 from .predictions import predict
@@ -37,7 +35,7 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
     satellite = Satellite(
         id=satellite_id,
     )
-    tle = get_TLE(satellite)
+    tle = get_TLE(satellite.id)
     date_start = datetime.date.today()
     date_end = date_start + datetime.timedelta(days=days)
     min_elevation = 10.01 # degrees
@@ -64,7 +62,7 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, alltype
     table_title = ""
     table_header = ""
     if not quiet:
-        satellite_id = tle.satellite.id
+        satellite_id = tle.satid
         # Print datetimes with the correct timezone
         table_title += f"Satellite ID {satellite_id} overpasses for {location.name:s}\n"
         table_title += f"Lat={location.lat:.4f}\u00B0, Lon={location.lon:.4f}\u00B0, Timezone {tz}\n"
@@ -117,14 +115,6 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, alltype
         click.secho(table_data, fg=fg)
 
     
-# --------- --- ---
-
-def plot_elevation(date, elevation):
-    import matplotlib.pyplot as plt
-    plt.plot(date, elevation)
-    plt.grid()
-    plt.show()
-
 def echo(*a, **kw):
     if 'end' in kw:
         kw.pop('end')

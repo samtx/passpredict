@@ -56,7 +56,7 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
         t = compute_time_array_from_date(date_start, date_end, dt_seconds)
         sun = compute_sun_data(t)
         sun = SunPredictData(rECEF=sun.rECEF)
-        tle = get_TLE(satellite)
+        tle = get_TLE(satellite.id)
         sat = compute_satellite_data(tle, t, sun)
         sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
 
@@ -87,7 +87,7 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
             tle_key = str(satellite.id) + '_tle'
             tle = cache.get(tle_key)
             if tle is None:
-                tle = get_TLE(satellite)
+                tle = get_TLE(satellite.id)
                 cache.set(tle_key, tle, ttl=86400)
 
             sat_key = tle_key + time_key + '_sat'
