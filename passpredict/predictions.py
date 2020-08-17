@@ -24,7 +24,7 @@ def find_overpasses(t: Time, location: Location, sats: List[Sat], sun: Sun, min_
     Real-time computation for finding satellite overpasses of a topographic location.
     Can support multiple satellites over a single location
     """
-    store_sat_id = True if len(sats) > 0 else False
+    store_sat_id = True if len(sats) > 1 else False
     overpasses = []
     for sat in sats:
         rho = RhoVector(t, sat, location, sun)

@@ -29,8 +29,8 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
     data = geocoder(location_string)      # Prompt for location
     tz = datetime.timezone(datetime.timedelta(hours=utc_offset))
     location = Location(
-        lat=float(data['lat']),
-        lon=float(data['lon']),
+        lat=round(float(data['lat']), 4),
+        lon=round(float(data['lon']), 4),
         h=0.0,
         name=location_string
     )
