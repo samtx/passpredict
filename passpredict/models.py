@@ -212,21 +212,21 @@ class RhoVector():
         return sat_overpasses
 
 
-class SatelliteRV():
-    __slots__ = ['satellite','tle','rsun','datetime','julian_date','rECEF',
-                 'rECI','latitude','longitude','altitude','visible']
-    def __init__(self):
-        self.satellite = None
-        self.tle = None
-        self.rsun = None
-        self.datetime = None
-        self.julian_date = None
-        self.rECEF = None
-        self.rECI = None
-        self.latitude = None
-        self.longitude = None
-        self.altitude = None
-        self.visible = None
+# class SatelliteRV():
+#     __slots__ = ['satellite','tle','rsun','datetime','julian_date','rECEF',
+#                  'rECI','latitude','longitude','altitude','visible']
+#     def __init__(self):
+#         self.satellite = None
+#         self.tle = None
+#         self.rsun = None
+#         self.datetime = None
+#         self.julian_date = None
+#         self.rECEF = None
+#         self.rECI = None
+#         self.latitude = None
+#         self.longitude = None
+#         self.altitude = None
+#         self.visible = None
 
 
 

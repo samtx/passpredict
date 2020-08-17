@@ -67,6 +67,22 @@ def test_jday2datetime(yr, mo, dy, hr, mn, sec, jd, decimal):
     assert abs(dt_difference.total_seconds()) < 200e-6  # 200 microseconds
 
 
+def test_jday2datetime_array():
+    """Convert a Julian date to a datetime and back"""
+    p = list(zip(*(params.values for params in jd_params)))
+    yr, mo, dy, hr, mn, sec, jd, decimal = p
+    jd_array = np.array(jd)
+    dt_array_computed = timefn.jday2datetime_array(jd_array)
+    sec, us = np.divmod(sec, 1)
+    n = len(yr)
+    dt_desired = np.empty(n, dtype=object)
+    for i in range(n):
+        dt_desired[i] = datetime(yr[i], mo[i], dy[i], hr[i], mn[i], int(sec[i]), int(us[i]*1e6), tzinfo=timezone.utc)
+    dt_difference = dt_array_computed - dt_desired
+    for i in range(n):
+        assert abs(dt_difference[i].total_seconds()) < 200e-6 # 200 microseconds
+
+
 @pytest.mark.parametrize(
     'jd1, jd2, tt_expected',
     [

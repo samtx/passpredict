@@ -1,5 +1,6 @@
 import datetime
 import itertools
+from tests.test_timefn import jd_params
 
 import numpy as np
 from astropy.time import Time
@@ -14,10 +15,6 @@ def jd2jc(jd1: float, jd2: float = 0.0) -> float:
     Convert julian date to julian century
     """
     return ((jd1 - J2000) + jd2) / 36525.0
-
-
-def jd2utc1(jd, deltaUT1=0.0):
-    pass
 
 
 def utc2tt(UTC, deltaAT=37.0, deltaUT1=0.0):
@@ -171,24 +168,6 @@ def invjday(jd: float):
     return year, mon, day, hr, minute, sec
 
 
-def datetimes_to_datetimeary(year, mon, day, hr, minute, sec):
-    """Take arrays of datetime values and return array of datetime objects
-
-    Args:
-
-    Returns:
-        dtary : np.datetime64 (n)
-    """
-    n = len(year)
-    s = np.floor(sec).astype(int)
-    us = (np.mod(sec, 1) * 1e6).astype(int)
-    dtary = np.empty(n, dtype=object)
-    for i in range(len(year)):
-        # dtstr = f'{year[i]:4d}-{int(mon[i]):02d}-{int(day[i]):02d}T{int(hr[i]):02d}:{int(minute[i]):02d}:{sec[i]:05.2f}'
-        dtary[i] = datetime.datetime(year[i], int(mon[i]), int(day[i]), int(hr[i]), int(minute[i]), s[i], us[i], tzinfo=tz_utc)
-    return dtary
-
-
 def jday2datetime(jdt: float) -> datetime.datetime:
     """Turn julian day into datetime object"""
     datetuple = invjday(jdt)
@@ -242,7 +221,7 @@ def invjday_array(jd):
 
 def jday2datetime_array(jdt_array):
     """Turn julian day into datetime object"""
-    datetuple = invjday_array(jdt)
+    datetuple = invjday_array(jdt_array)
     yr, mo, date, hr, mn, sec = datetuple
     sec, us = np.divmod(sec, 1)
     sec = sec.astype(int)
@@ -251,61 +230,6 @@ def jday2datetime_array(jdt_array):
     for i, data in enumerate(zip(yr, mo, date, hr, mn, sec, us.astype(int))):
         dt_array[i] = datetime.datetime(*data, tzinfo=tz_utc)
     return dt_array
-
-
-def jday2npdatetime64(jdt):
-    """Turn julian day into np.datetime64 object"""
-    datetuple = invjday(jdt)
-    yr, mo, date, hr, mn, sec = datetuple
-    ms = int((sec % 1)*(10**6))
-    sec = int(sec)
-    dt = datetime.datetime(yr, mo, date, hr, mn, sec, ms, tzinfo=tz_utc)
-    return np.datetime64(dt)
-
-
-def jdt_tsince(tstart, tsince):
-    """Return a vector of julian dates from tstart with points at tsince
-    Args:
-        tstart : float, julian date
-        tsince: float (n), vector of minutes past tstart to calculate the julian date
-    Output:
-        jdt : float (n), vector of julian date ouputs. Can be inputted into solar functions
-    References:
-        Rhodes, python-sgp4/sgp4/ext.py
-        Vallado, 'Revisiting Spacetrack Report #3'
-    """
-    return tstart + (tsince * 60.0) / 86400.0
-
-
-def truncate_datetime(dt, nearest='s', utc=True):
-    """ Truncate datetime object to the previous second """
-    
-    us = dt.microsecond
-    dt -= datetime.timedelta(microseconds=us)
-    if nearest in ('d', 'day'):
-        if utc is True:
-            dt = datetime.datetime(dt.year, dt.month, dt.day, tzinfo=tz_utc)
-        else:
-            dt = datetime.datetime(dt.year, dt.month, dt.day)
-    return dt
-
-def get_date(dt):
-    """ 
-    Return datetime object to 00:00:00 of that day
-    """
-    return datetime.datetime(dt.year, dt.month, dt.day, tzinfo=tz_utc)
-
-def datetime_linspace(datetime_start, datetime_end, dt_seconds):
-    """
-    Use numpy.arange to create an array of datetime objects
-
-    """
-    return np.arange(
-        dt_start.isoformat(),
-        dt_end.isoformat(),
-        np.timedelta64(dt_seconds,'s'),
-        dtype="datetime64[s]"
-    )
 
 
 def compute_time_array(dt_start: datetime.datetime, dt_end: datetime.datetime, dt_seconds: float) -> Time:

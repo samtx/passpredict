@@ -57,50 +57,50 @@ def site_ECEF2(phi_gd, lmda, h_ellp):
     return r_site_ECEF
 
 
-def rng_el(r):
-    """Get range and elevation from SEZ vector"""
-    rng = np.linalg.norm(r, axis=1)
-    el = np.arcsin(r[2] / rng)
-    el *= RAD2DEG
-    return el, rng
+# def rng_el(r):
+#     """Get range and elevation from SEZ vector"""
+#     rng = np.linalg.norm(r, axis=1)
+#     el = np.arcsin(r[2] / rng)
+#     el *= RAD2DEG
+#     return el, rng
 
 
-def razel(r):
-    """Get range, azimuth, and elevation from SEZ vector"""
-    rng = np.linalg.norm(r, axis=0)
-    el = np.arcsin(r[2] / rng) * RAD2DEG
-    tmp = np.arctan2(r[0], r[1])
-    az = (tmp + np.pi * 0.5) * RAD2DEG
-    idx = np.all([r[0] < 0,r[1] < 0], axis=0)
-    az[idx] %= 360
-    return rng, az, el
+# def razel(r):
+#     """Get range, azimuth, and elevation from SEZ vector"""
+#     rng = np.linalg.norm(r, axis=0)
+#     el = np.arcsin(r[2] / rng) * RAD2DEG
+#     tmp = np.arctan2(r[0], r[1])
+#     az = (tmp + np.pi * 0.5) * RAD2DEG
+#     idx = np.all([r[0] < 0,r[1] < 0], axis=0)
+#     az[idx] %= 360
+#     return rng, az, el
 
 
-def azimuth(s, e):
-    """Compute azimuth from topocentric horizon coordinates SEZ
-    Args:
-        s : south vector from SEZ coordinate
-        e : east vector from SEZ coordinate
-    Output:
-        azimuth angle in radians with 0 at north.
-    """
-    out = np.arctan2(s, e) + math.pi * 0.5
-    if s < 0 and e < 0:
-        out = out % (2 * math.pi)
-    return out
+# def azimuth(s, e):
+#     """Compute azimuth from topocentric horizon coordinates SEZ
+#     Args:
+#         s : south vector from SEZ coordinate
+#         e : east vector from SEZ coordinate
+#     Output:
+#         azimuth angle in radians with 0 at north.
+#     """
+#     out = np.arctan2(s, e) + math.pi * 0.5
+#     if s < 0 and e < 0:
+#         out = out % (2 * math.pi)
+#     return out
 
 
-def elevation(z, rhomag):
-    """Compute elevation angle from topocentric horizon coordinates SEZ
-    Args:
-        z : Z vector from SEZ coordinate
-        rhomag : magnitude of SEZ coordinate vector
-    Output:
-        elevation angle in radians with 0 at horizon, pi/2 straight up
-    """
-    return np.arcsin(z / rhomag)
+# def elevation(z, rhomag):
+#     """Compute elevation angle from topocentric horizon coordinates SEZ
+#     Args:
+#         z : Z vector from SEZ coordinate
+#         rhomag : magnitude of SEZ coordinate vector
+#     Output:
+#         elevation angle in radians with 0 at horizon, pi/2 straight up
+#     """
+#     return np.arcsin(z / rhomag)
 
 
-def site_sat_rotations(rsiteECEF, rsatECEF):
-    rho = rsatECEF - np.array([[rsiteECEF[0]],[rsiteECEF[1]],[rsiteECEF[2]]], dtype=np.float64)
-    return rho
+# def site_sat_rotations(rsiteECEF, rsatECEF):
+#     rho = rsatECEF - np.array([[rsiteECEF[0]],[rsiteECEF[1]],[rsiteECEF[2]]], dtype=np.float64)
+#     return rho
