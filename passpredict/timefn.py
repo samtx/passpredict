@@ -1,6 +1,4 @@
 import datetime
-import itertools
-from tests.test_timefn import jd_params
 
 import numpy as np
 from astropy.time import Time
@@ -243,11 +241,7 @@ def compute_time_array(dt_start: datetime.datetime, dt_end: datetime.datetime, d
     return Time(jd_array, format='jd')
 
 
-def compute_time_array_from_date(*a, **kw):
-    return time_array_from_date(*a, **kw)
-
-
-def time_array_from_date(date_start: datetime.date, date_end: datetime.date, dt_seconds: float) -> Time:
+def compute_time_array_from_date(date_start: datetime.date, date_end: datetime.date, dt_seconds: float) -> Time:
     """
     Create astropy Time object from python date
     """
@@ -256,4 +250,3 @@ def time_array_from_date(date_start: datetime.date, date_end: datetime.date, dt_
     dt_days = dt_seconds/(24*60*60.0)
     jd_array = np.arange(jdt0, jdtf, dt_days, dtype=float)
     return Time(jd_array, format='jd')
-

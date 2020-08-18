@@ -1,6 +1,5 @@
 import json
 import datetime
-import os
 from itertools import zip_longest
 from collections import OrderedDict
 from typing import NamedTuple

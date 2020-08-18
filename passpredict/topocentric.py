@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from .constants import DEG2RAD, R_EARTH, e2_EARTH, RAD2DEG
+from .constants import DEG2RAD, R_EARTH, e2_EARTH
 
 
 def site_declination_and_K(phi_gd, h_ellp):

@@ -1,12 +1,10 @@
 import datetime
-from pathlib import Path
 import os
 
 import numpy as np
 
 from passpredict import propagate
-from passpredict.timefn import julian_date
-from passpredict.predictions import compute_time_array
+from passpredict.timefn import compute_time_array
 from passpredict.schemas import Satellite, Tle
 from passpredict.utils import epoch_from_tle
 

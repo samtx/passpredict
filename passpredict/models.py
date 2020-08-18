@@ -1,13 +1,13 @@
 # models.py
 from dataclasses import dataclass
-from functools import update_wrapper, cached_property
+from functools import cached_property
 import math
 
 import numpy as np
 from astropy.time import Time
 
 from .schemas import Location, Point, Overpass, PassType
-from .constants import RAD2DEG, R_EARTH
+from .constants import RAD2DEG
 from .rotations import ecef2sez
 from .topocentric import site_ECEF
 from .timefn import jday2datetime

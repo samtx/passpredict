@@ -4,10 +4,10 @@ import math
 import numpy as np
 from numpy.linalg import norm
 from astropy.time import Time
-from astropy.coordinates import CartesianRepresentation, ITRS, get_sun
+from astropy.coordinates import ITRS, get_sun
 
-from .constants import DEG2RAD, RAD2DEG, AU_KM, R_EARTH
-from .models import Sun, SunPredictData
+from .constants import DEG2RAD, AU_KM, R_EARTH
+from .models import SunPredictData
 
 
 def sun_pos(t):

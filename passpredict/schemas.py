@@ -1,7 +1,6 @@
 # schemas
 import datetime
-from dataclasses import dataclass
-from typing import Any, List
+from typing import List
 from enum import Enum
 
 import numpy as np
