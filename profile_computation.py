@@ -9,12 +9,11 @@ import timeit
 import numpy as np
 import line_profiler
 
-from passpredict.predictions import predict, find_overpasses, compute_sun_data, compute_time_array, compute_satellite_data
-from passpredict.propagate import propagate_satellite
-from passpredict.schemas import Location, Satellite, Tle, Point, Overpass
-from passpredict.models import SpaceObject, RhoVector, Sun, Sat, SatPredictData
-from passpredict.timefn import truncate_datetime, julian_day, time_array_from_date
-from passpredict.utils import get_TLE, epoch_from_tle
+from passpredict.predictions import find_overpasses, compute_sun_data, compute_satellite_data
+from passpredict.schemas import Location, Satellite, Tle
+from passpredict.models import RhoVector, SatPredictData
+from passpredict.timefn import compute_time_array_from_date
+from passpredict.utils import epoch_from_tle
 
 
 def f8(x):
@@ -51,11 +50,11 @@ if __name__ == "__main__":
         tle1=tle1,
         tle2=tle2,
         epoch=epoch_from_tle(tle1),
-        satellite=satellite
+        satid=satellite.id
     ) 
     date_start = datetime.date(2020, 7, 14)
     date_end = date_start + datetime.timedelta(days=14)
-    t = time_array_from_date(date_start, date_end, dt_seconds)
+    t = compute_time_array_from_date(date_start, date_end, dt_seconds)
     sun = compute_sun_data(t)
     sat = compute_satellite_data(tle, t, sun)
     sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
