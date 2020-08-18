@@ -1,22 +1,15 @@
-import pickle
 from datetime import datetime, timedelta
 from typing import List
 import time
 
-import numpy as np
-from numpy import dot, cross
-from numpy.linalg import norm
-from astropy import units as u
-from astropy.coordinates import TEME, CartesianRepresentation, ITRS, get_sun
 from astropy.time import Time
 
-from .rotations import ecef2sez
-from .solar import sun_pos, is_sat_illuminated, compute_sun_data
-from .propagate import propagate_satellite, compute_satellite_data
-from .timefn import julian_date, compute_time_array, julian_day, compute_time_array_from_date
-from .schemas import Overpass, Satellite, Location, Tle
-from .models import Sun, RhoVector, Sat, SatPredictData, SunPredictData
-from .utils import get_TLE, Cache
+from .solar import compute_sun_data
+from .propagate import compute_satellite_data
+from .timefn import compute_time_array_from_date
+from .schemas import Overpass, Location
+from .models import Sun, RhoVector, Sat
+from .utils import get_TLE
 
 
 def find_overpasses(t: Time, location: Location, sats: List[Sat], sun: Sun, min_elevation: float = 10) -> List[Overpass]:
