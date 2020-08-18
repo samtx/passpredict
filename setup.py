@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 ext = []
 # from Cython.Build import cythonize
@@ -9,7 +9,7 @@ with open("README.md") as f:
 
 setup(
     name="passpredict",
-    version="0.0.8",
+    version="0.0.9",
     packages=['passpredict'],
     python_requires=">=3.8", 
     # Project uses reStructuredText, so ensure that the docutils get
