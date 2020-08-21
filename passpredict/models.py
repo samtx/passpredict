@@ -4,7 +4,6 @@ from functools import cached_property
 import math
 
 import numpy as np
-from astropy.time import Time
 
 from .schemas import Location, Point, Overpass, PassType
 from .constants import RAD2DEG
@@ -59,21 +58,15 @@ class RhoVector():
     Vector from topographic location to space object
     """
     # __slots__ = ['time', 'rSEZ', 'rECEF', 'rng', 'az', 'el', 'ra', 'dec', 'sat', 'location']
-    def __init__(self, t: Time, sat: SpaceObject, location: Location, sun: Sun = None):
+    def __init__(self, jd: np.ndarray, sat: SpaceObject, location: Location, sun: Sun = None):
+        self.jd = jd  # numpy array of julian date floats
         self.sat = sat
         self.location = location
-        self.time = t
+        self.sun = sun
         
         if sun is not None:
-            # If the sun variable is set, it's time object must be identical to the sat
-            # assert np.all(sun.time.jd[[0, -1]], sat.time.jd[[0, -1]])
             assert sat.illuminated is not None
-            self.sun = sun
-            self.site_sun_rho = RhoVector(t, sun, location)
-        else:
-            self.sun = sun
-            self.site_sun_rho = None
-
+        
     @cached_property
     def rsiteECEF(self):
         r = site_ECEF(self.location.lat, self.location.lon, self.location.h)
@@ -120,7 +113,7 @@ class RhoVector():
 
     def point(self, idx):
         return Point.construct(
-            datetime=jday2datetime(self.time.jd[idx]),
+            datetime=jday2datetime(self.jd[idx]),
             azimuth=round(self.az(idx), 3),
             elevation=round(self.el[idx], 3),
             range=round(self.rng[idx], 4)
@@ -210,23 +203,3 @@ class RhoVector():
             overpass = Overpass.construct(**overpass_dict)
             sat_overpasses[j] = overpass
         return sat_overpasses
-
-
-# class SatelliteRV():
-#     __slots__ = ['satellite','tle','rsun','datetime','julian_date','rECEF',
-#                  'rECI','latitude','longitude','altitude','visible']
-#     def __init__(self):
-#         self.satellite = None
-#         self.tle = None
-#         self.rsun = None
-#         self.datetime = None
-#         self.julian_date = None
-#         self.rECEF = None
-#         self.rECI = None
-#         self.latitude = None
-#         self.longitude = None
-#         self.altitude = None
-#         self.visible = None
-
-
-

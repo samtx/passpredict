@@ -1,4 +1,5 @@
 import datetime
+from typing import NamedTuple
 
 import click
 
@@ -42,6 +43,10 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
     cache = Cache() if not no_cache else None
     overpasses = predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=verbose, cache=cache, print_fn=echo)
     overpass_table(overpasses, location, tle, tz, twelvehour=twelve, alltypes=alltypes, quiet=quiet)
+    if cache is not None:
+        with cache:
+            cache.flush()
+            
     return 0
 
 
@@ -120,6 +125,14 @@ def echo(*a, **kw):
         kw.pop('end')
         kw.update({'nl': False})
     return click.echo(*a, **kw)
+
+
+@click.command()
+def flush():
+    """
+    Remove all expired keys from cache
+    """
+    pass
 
 if __name__ == "__main__":
     main()

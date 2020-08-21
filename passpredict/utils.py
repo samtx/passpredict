@@ -1,16 +1,11 @@
 import json
 import datetime
 from itertools import zip_longest
-from collections import OrderedDict
 from typing import NamedTuple
 import shelve
 import time
 from pathlib import Path
-from enum import Enum
-try:
-    import cPickle as pickle
-except:
-    import pickle
+# from collections.abc import Mapping
 
 import numpy as np
 import requests
@@ -148,75 +143,35 @@ def save_TLE_data(url=None):
         json.dump(tle_data, file)
 
 
-class ShelfCache(shelve.DbfilenameShelf):
-    """
-    Default cache backend 
-    """
-
-    def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
-
-    def set(self, key, value):
-        self.__setitem__(key, value)
-
-    # def open(self, *a, **kw):
-    #     self.cache = shelve.open(*a, **kw)
-
-
-class DataCategory(str, Enum):
-    time = 'time'
-    sun = 'sun'
-    tle = 'tle'
-    sat = 'sat'
-
-
 class CacheItem(NamedTuple):
     data: object
-    ttl: int = None            # time to live in seconds, default is one day
-    timestamp: int = None   # unix timestamp
-    category: DataCategory = None
+    ttl: int = -1    # time to live in seconds
 
 
 class Cache:
-    data_cache_filename = 'cache_data.db'
-    data_index_filename = 'cache_index.db'
+    cache_filename = 'passpredict_cache.db'
         
-    def __init__(self, cache_directory='.passpredict_cache', ttl=84600):   
-        self.directory = cache_directory
-        self.dir_path = Path(cache_directory)
+    def __init__(self, filename='passpredict_cache.db', ttl=84600):   
+        self.filename = filename
         self.ttl_default = ttl
-        self.ttl = None
-        self.cache = None
+        self.cache = {}
         self.category = None
 
     def _get_ttl_timestamp(self, ttl: int) -> int:
         return int(time.time() + ttl)
 
-    def set(self, key, value, ttl: int = 0, category: DataCategory = None):
+    def set(self, key, value, ttl: int = None):
         key_hash = self.hash(key)
-        timestamp = self._get_ttl_timestamp(ttl)
-        if key_hash in self.cache:
-            old_item = self.cache[key_hash]
-            old_timestamp = old_item.timestamp
-            if old_timestamp is not None:
-                self.ttl[old_timestamp].remove(key_hash)
-        self.cache[key_hash] = CacheItem(data=value, ttl=ttl, timestamp=timestamp, category=category)
-        if ttl > 0:
-            self._set_ttl(key_hash, timestamp)
-        
+        if ttl is None:
+            ttl = self.ttl_default
+        ttl_timestamp = self._get_ttl_timestamp(ttl)
+        self.cache[key_hash] = CacheItem(data=value, ttl=ttl_timestamp)
             
-    def _set_ttl(self, key_hash, timestamp: int):
-        timestamp_keys = self.ttl.get(timestamp)
-        if timestamp_keys is not None:
-            timestamp_keys.add(key_hash)
-            self.ttl[timestamp] = timestamp_keys
-        else:
-            self.ttl[timestamp] = {key_hash}
-
     def get(self, key, *a):
+        ttl_now = time.time()
         key_hash = self.hash(key)
         item = self.cache.get(key_hash, *a)
-        if (item is None) or ((item.ttl is not None) and (time.time() > item.timestamp)):
+        if (item is None) or (0 < item.ttl < ttl_now):
             return None
         else:
             return item.data
@@ -240,47 +195,38 @@ class Cache:
     def __getitem__(self, key):
         return self.get(key)
 
+    def __delitem__(self, key):
+        key_hash = self.hash(key)
+        del self.cache[key_hash]
+
     def hash(self, key):
         return str(key)
 
     def flush(self):
         """Remove expired cache entires"""
-        pass
+        ttl_now = time.time()
+        for key, item in list(self.cache.items()):
+            if 0 < item.ttl < ttl_now:
+                key_hash = self.hash(key)
+                del self.cache[key_hash]
 
-    def __enter__(self, *a, **kw):
+
+    def __enter__(self):
         return self.open()
 
-    def __exit__(self, *a, **kw):
+    def __exit__(self, *a):
         self.close()
-
-    def _open_ttl(self):
-        self.ttl_path = self.dir_path / self.data_index_filename
-        if self.ttl_path.exists():
-            with open(self.ttl_path, 'rb+') as f:
-                self.ttl = pickle.load(f)
-        else:
-            self.ttl = OrderedDict()
-            self._build_ttl_index()
 
     def open(self):
         """
         Need to create the cache directory if it doesn't exist
         This is due to a bug that is fixed in PR 20274 but isn't merged yet [https://github.com/python/cpython/pull/20274]
         """
-        dir_path = Path(self.directory)
-        if not dir_path.exists():
-            dir_path.mkdir()
-        cache_path = dir_path / self.data_cache_filename
-        self.cache = shelve.DbfilenameShelf(str(cache_path))
-        self._open_ttl()
+        filename_path = Path(self.filename)
+        dir_path = filename_path.parent
+        dir_path.mkdir(parents=True, exist_ok=True)
+        self.cache = shelve.DbfilenameShelf(str(filename_path))
         return self
         
     def close(self):
         self.cache.close()
-        with open(self.ttl_path, 'wb') as f:
-            pickle.dump(self.ttl, f)
-
-    def _build_ttl_index(self):
-        """Iterate through cache and build ttl index"""
-        assert self.ttl is not None
-        pass
