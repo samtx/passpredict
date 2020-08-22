@@ -7,7 +7,7 @@ from numpy import ndarray
 
 from .solar import compute_sun_data
 from .propagate import compute_satellite_data
-from .timefn import compute_time_array_from_date
+from .timefn import julian_date_array_from_date
 from .schemas import Overpass, Location
 from .models import Sun, RhoVector, Sat
 from .utils import get_TLE
@@ -45,9 +45,11 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
         date_start = datetime.date.today()
     if date_end is None:
         date_end = date_start + timedelta(days=14)
-    
+
+    jd = julian_date_array_from_date(date_start, date_end, dt_seconds)
+
     if cache is None:
-        t = compute_time_array_from_date(date_start, date_end, dt_seconds)
+        t = Time(jd, format='jd')
         sun = compute_sun_data(t)
         tle = get_TLE(satellite.id)
         sat = compute_satellite_data(tle, t, sun)
@@ -57,17 +59,13 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
         with cache:
 
             time_key = 'time:' + date_start.strftime('%Y%m%d') + date_end.strftime('%Y%m%d') + str(dt_seconds)
-            
-            t = cache.get(time_key)
-            if t is None:
-                t = compute_time_array_from_date(date_start, date_end, dt_seconds)
-                cache.set(time_key, t, ttl=86400)
-            
+
             sun_key = 'sun:' + time_key
             sun = cache.get(sun_key)
             if sun is None:
                 if verbose:
                     print_fn("Compute sun position... ")
+                t = Time(jd, format='jd')
                 sun = compute_sun_data(t)
                 cache.set(sun_key, sun, ttl=86400)
 
@@ -77,13 +75,14 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
                 if verbose:
                     print_fn(f"Propagate satellite from {date_start.isoformat()} to {date_end.isoformat()}... ")
                 tle = get_TLE(satellite.id)
+                t = Time(jd, format='jd')
                 sat = compute_satellite_data(tle, t, sun)
                 cache.set(sat_key, sat, ttl=86400)
 
     if verbose:
         print_fn('Predict overpasses... ')
-    overpasses = find_overpasses(t.jd, location, [sat], sun, min_elevation)
+    overpasses = find_overpasses(jd, location, [sat], sun, min_elevation)
     return overpasses
-    
+
 
 

@@ -152,7 +152,7 @@ def invjday(jd: float):
     tu = temp / 365.25  # julian centuries from 0 h jan 0, 1900
     year = 1900 + int(tu // 1.0)
     leapyrs = int(((year - 1901) * 0.25) // 1.0)
-    
+
     # optional nudge by 8.64x10-7 sec to get even outputs
     days  = temp - ((year - 1900) * 365.0 + leapyrs) + 0.00000000001
     # check for case of beginning of a year
@@ -172,7 +172,7 @@ def jday2datetime(jdt: float) -> datetime.datetime:
     yr, mo, date, hr, mn, sec = datetuple
     sec, us = np.divmod(sec, 1)
     return datetime.datetime(yr, mo, date, hr, mn, int(sec), int(us*1e6), tzinfo=tz_utc)
-    
+
 
 def invjday_array(jd):
     """This procedure finds the year, month, day, hour, minute and second given the
@@ -245,8 +245,15 @@ def compute_time_array_from_date(date_start: datetime.date, date_end: datetime.d
     """
     Create astropy Time object from python date
     """
+    jd_array = julian_date_array_from_date(date_start, date_end, dt_seconds)
+    return Time(jd_array, format='jd')
+
+
+def julian_date_array_from_date(date_start: datetime.date, date_end: datetime.date, dt_seconds: float) -> np.ndarray:
+    """
+    Create a numpy array of julian date values from python dates
+    """
     jdt0 = julian_day(date_start.year, date_start.month, date_start.day)
     jdtf = julian_day(date_end.year, date_end.month, date_end.day)
     dt_days = dt_seconds/(24*60*60.0)
-    jd_array = np.arange(jdt0, jdtf, dt_days, dtype=float)
-    return Time(jd_array, format='jd')
+    return np.arange(jdt0, jdtf, dt_days, dtype=float)
