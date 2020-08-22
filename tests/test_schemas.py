@@ -23,14 +23,14 @@ def test_Satellite_fail():
     name = "International Space Station"
     with pytest.raises(TypeError) as err:
         satellite = schemas.Satellite(satid, name)
-    assert '__init__() takes exactly 1 positional argument (3 given)' in str(err.value)
-    
+    assert '__init__() takes' in str(err.value)
+
 
 def test_Tle():
     """
     From Celestrak
 
-    ISS (ZARYA)             
+    ISS (ZARYA)
     1 25544U 98067A   20166.98401036  .00000505  00000-0  17092-4 0  9999
     2 25544  51.6466 359.3724 0002481  58.1246  97.0831 15.49444148231675
     """
