@@ -9,13 +9,13 @@ with open("README.md") as f:
 
 setup(
     name="passpredict",
-    version="0.0.9",
+    version="0.0.10",
     packages=['passpredict'],
-    python_requires=">=3.8", 
+    python_requires=">=3.8",
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     install_requires=[
-        "numpy",        
+        "numpy",
         "sgp4 >= 2.8",
         "astropy >= 4.1rc1",  # for the TEME coordinate frame
         "requests",
@@ -37,7 +37,7 @@ setup(
     },
     # metadata to display on PyPI
     author="Sam Friedman",
-    author_email="samtx@outlook.com",
+    author_email=None,
     description="Predict upcoming satellite overpasses",
     long_description=long_description,
     long_description_content_type="text/markdown",
