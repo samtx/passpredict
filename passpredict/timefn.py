@@ -167,7 +167,17 @@ def invjday(jd: float):
 
 
 def jday2datetime(jdt: float) -> datetime.datetime:
-    """Turn julian day into datetime object"""
+    """Turn julian day into datetime object rounded to nearest second"""
+    datetuple = invjday(jdt)
+    yr, mo, date, hr, mn, sec = datetuple
+    sec = round(sec)
+    if sec == 60:
+        return datetime.datetime(yr, mo, date, hr, mn, 59, tzinfo=tz_utc) + datetime.timedelta(seconds=1) 
+    return datetime.datetime(yr, mo, date, hr, mn, sec, tzinfo=tz_utc)
+    
+
+def jday2datetime_us(jdt: float) -> datetime.datetime:
+    """Turn julian day into datetime object to nearest microsecond"""
     datetuple = invjday(jdt)
     yr, mo, date, hr, mn, sec = datetuple
     sec, us = np.divmod(sec, 1)
@@ -218,7 +228,18 @@ def invjday_array(jd):
 
 
 def jday2datetime_array(jdt_array):
-    """Turn julian day into datetime object"""
+    """Turn julian day into datetime object rounded to the second"""
+    datetuple = invjday_array(jdt_array)
+    yr, mo, date, hr, mn, sec = datetuple
+    sec = np.around(sec).astype(int)
+    dt_array = np.empty(yr.size, dtype=object)
+    for i, data in enumerate(zip(yr, mo, date, hr, mn, sec)):
+        dt_array[i] = datetime.datetime(*data, tzinfo=tz_utc)
+    return dt_array
+
+
+def jday2datetime_us_array(jdt_array):
+    """Turn julian day into datetime object rounded to microsecond"""
     datetuple = invjday_array(jdt_array)
     yr, mo, date, hr, mn, sec = datetuple
     sec, us = np.divmod(sec, 1)
