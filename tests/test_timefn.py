@@ -64,15 +64,27 @@ def test_jday2datetime(yr, mo, dy, hr, mn, sec, jd, decimal):
     sec, us = np.divmod(sec, 1)
     dt_desired = datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
     dt_difference = dt_computed - dt_desired
+    assert abs(dt_difference.total_seconds()) < 0.5 
+
+
+@pytest.mark.parametrize(
+    'yr, mo, dy, hr, mn, sec, jd, decimal', jd_params
+)
+def test_jday2datetime_us(yr, mo, dy, hr, mn, sec, jd, decimal):
+    """Convert a Julian date to a datetime and back"""
+    dt_computed = timefn.jday2datetime_us(jd)
+    sec, us = np.divmod(sec, 1)
+    dt_desired = datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
+    dt_difference = dt_computed - dt_desired
     assert abs(dt_difference.total_seconds()) < 200e-6  # 200 microseconds
 
 
-def test_jday2datetime_array():
+def test_jday2datetime_us_array():
     """Convert a Julian date to a datetime and back"""
     p = list(zip(*(params.values for params in jd_params)))
     yr, mo, dy, hr, mn, sec, jd, decimal = p
     jd_array = np.array(jd)
-    dt_array_computed = timefn.jday2datetime_array(jd_array)
+    dt_array_computed = timefn.jday2datetime_us_array(jd_array)
     sec, us = np.divmod(sec, 1)
     n = len(yr)
     dt_desired = np.empty(n, dtype=object)
@@ -102,15 +114,26 @@ def test_jday_to_datetime_and_back(yr, mo, dy, hr, mn, sec, jd, decimal):
     dt = timefn.jday2datetime(jd_computed)
     sec, us = np.divmod(sec, 1)
     delta = dt - datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
+    assert abs(delta.total_seconds()) < 0.5
+
+
+@pytest.mark.parametrize(
+    'yr, mo, dy, hr, mn, sec, jd, decimal', jd_params
+)
+def test_jday_to_datetime_us_and_back(yr, mo, dy, hr, mn, sec, jd, decimal):
+    jd_computed = timefn.julian_date(yr, mo, dy, hr, mn, sec)
+    dt = timefn.jday2datetime_us(jd_computed)
+    sec, us = np.divmod(sec, 1)
+    delta = dt - datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
     assert abs(delta.total_seconds()) < 25e-6  # 25 microseconds
 
 
 @pytest.mark.parametrize(
     'yr, mo, dy, hr, mn, sec, jd, decimal', jd_params
 )
-def test_datetime_to_jday_and_back(yr, mo, dy, hr, mn, sec, jd, decimal):
+def test_datetime_us_to_jday_and_back(yr, mo, dy, hr, mn, sec, jd, decimal):
     jd_1 = timefn.julian_date(yr, mo, dy, hr, mn, sec)
-    dt = timefn.jday2datetime(jd_1)
+    dt = timefn.jday2datetime_us(jd_1)
     jd_2 = timefn.julian_date(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second + dt.microsecond*1e-6)
     assert_almost_equal(jd_1, jd_2, decimal=16)
     
