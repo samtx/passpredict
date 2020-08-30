@@ -9,8 +9,8 @@ from .utils import get_TLE, Cache
 from .predictions import predict
 
 @click.command()
-@click.option('-s', '--satellite-id', type=int, prompt=True)  # satellite id
-@click.option('-l', '--location', 'location_string', type=str, prompt=True)  # location string
+@click.option('-s', '--satellite-id', type=int)  # satellite id
+@click.option('-l', '--location', 'location_string', default="", type=str)  # location string
 @click.option('-u', '--utc-offset', default=0.0, type=float, prompt=True)  # utc offset
 @click.option('-d', '--days', default=10, type=click.IntRange(1, 14, clamp=True)) # day range
 @click.option('-lat', '--latitude', type=float)  # latitude
@@ -25,12 +25,19 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
     """
     Command line interface for pass predictions
     """
-    data = geocoder(location_string)      # Prompt for location
+    if latitude and longitude:
+        lat = round(float(latitude), 4)
+        lon = round(float(longitude), 4)
+    else:
+        data = geocoder(location_string)      # Prompt for location
+        lat = round(float(data['lat']), 4)
+        lon = round(float(data['lon']), 4)
+
     tz = datetime.timezone(datetime.timedelta(hours=utc_offset))
     location = Location(
-        lat=round(float(data['lat']), 4),
-        lon=round(float(data['lon']), 4),
-        h=0.0,
+        lat=lat,
+        lon=lon,
+        h=height,
         name=location_string
     )
     satellite = Satellite(
@@ -41,8 +48,9 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
     date_end = date_start + datetime.timedelta(days=days)
     min_elevation = 10.01 # degrees
     cache = Cache() if not no_cache else None
-    overpasses = predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=verbose, cache=cache, print_fn=echo)
-    overpass_table(overpasses, location, tle, tz, twelvehour=twelve, alltypes=alltypes, quiet=quiet)
+    visible_only = not alltypes
+    overpasses = predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=verbose, cache=cache, print_fn=echo, visible_only=visible_only)
+    overpass_table(overpasses, location, tle, tz, twelvehour=twelve, quiet=quiet)
     if cache is not None:
         with cache:
             cache.flush()
@@ -50,7 +58,7 @@ def main(satellite_id, location_string, utc_offset, days, latitude, longitude, h
     return 0
 
 
-def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, alltypes=False, quiet=False):
+def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, quiet=False):
     """
     Return a formatted string for tabular output
 
@@ -102,10 +110,6 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, alltype
         return point_line
 
     for overpass in overpasses:
-        if not alltypes:
-            # filter overpasses to visible only
-            if overpass.type != PassType.visible:
-                continue
         table_data = "{}".format(overpass.start_pt.datetime.astimezone(tz).strftime("%m/%d/%y"))
         if overpass.brightness is not None:
             brightness_str = f"{overpass.brightness:4.1f}"

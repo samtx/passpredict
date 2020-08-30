@@ -13,7 +13,7 @@ from .models import Sun, RhoVector, Sat
 from .utils import get_TLE
 
 
-def find_overpasses(jd: ndarray, location: Location, sats: List[Sat], sun: Sun, min_elevation: float = 10) -> List[Overpass]:
+def find_overpasses(jd: ndarray, location: Location, sats: List[Sat], sun: Sun, min_elevation: float = 10, visible_only=False) -> List[Overpass]:
     """
     Real-time computation for finding satellite overpasses of a topographic location.
     Can support multiple satellites over a single location
@@ -22,12 +22,12 @@ def find_overpasses(jd: ndarray, location: Location, sats: List[Sat], sun: Sun, 
     overpasses = []
     for sat in sats:
         rho = RhoVector(jd, sat, location, sun)
-        sat_overpasses = rho.find_overpasses(min_elevation, store_sat_id)
+        sat_overpasses = rho.find_overpasses(min_elevation, store_sat_id, visible_only=visible_only)
         overpasses += sat_overpasses
     return overpasses
 
 
-def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, min_elevation=None, cache=None, verbose=False, store_sat_id=False, print_fn=print):
+def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, min_elevation=None, cache=None, verbose=False, store_sat_id=False, print_fn=print, visible_only=False):
     """
     Full prediction algorithm:
       1. Download TLE data
@@ -81,7 +81,7 @@ def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, m
 
     if verbose:
         print_fn('Predict overpasses... ')
-    overpasses = find_overpasses(jd, location, [sat], sun, min_elevation)
+    overpasses = find_overpasses(jd, location, [sat], sun, min_elevation, visible_only=visible_only)
     return overpasses
 
 
