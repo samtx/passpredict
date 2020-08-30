@@ -138,12 +138,15 @@ class RhoVector():
     #     # find phase angle between observer -- satellite -- sun
     #     gamma = self.el[idx] - sun_el[idx]
 
-    def find_overpasses(self, min_elevation=10, store_sat_id=False, sunset_el=-6):
+    def find_overpasses(self, min_elevation=10, store_sat_id=False, sunset_el=-6, visible_only=False):
         start_idx, end_idx = self._start_end_index(self.el - min_elevation)
         num_overpasses = min(start_idx.size, end_idx.size)       # Iterate over start/end indecies and gather inbetween indecies
         if start_idx.size < end_idx.size:
             end_idx = end_idx[1:]
-        sat_overpasses = [None] * num_overpasses
+        if not visible_only:
+            sat_overpasses = [None] * num_overpasses
+        else:
+            sat_overpasses = []
         for j in range(num_overpasses):
             # Store indecies of overpasses in a list
             idx0 = start_idx[j]
@@ -167,12 +170,12 @@ class RhoVector():
                     # get satellite illumination values for this overpass
                     sat_visible = (self.sat.illuminated[idx0:idxf+1] * site_in_sunset)
                     if np.any(sat_visible):
+                        passtype = PassType.visible # site in night, sat is illuminated
                         sat_visible_idx = np.nonzero(sat_visible)[0]
                         sat_visible_start_idx = sat_visible_idx.min()
                         sat_visible_end_idx = sat_visible_idx.max()
                         vis_start_pt = self.point(idx0 + sat_visible_start_idx)
                         vis_end_pt = self.point(idx0 + sat_visible_end_idx)
-                        passtype = PassType.visible # site in night, sat is illuminated
                         brightness_idx = np.argmax(self.el[idx0 + sat_visible_start_idx: idx0 + sat_visible_end_idx + 1])
                         sat_rho = self.rECEF[:, idx0 + sat_visible_start_idx + brightness_idx]
                         sat_rng = self.rng[idx0 + sat_visible_start_idx + brightness_idx]
@@ -188,6 +191,10 @@ class RhoVector():
                         passtype = PassType.unlit  # nighttime, not illuminated (radio night)
             else:
                 passtype = None
+
+            if visible_only and passtype != PassType.visible:
+                continue
+
             overpass_dict = {
                 'start_pt': start_pt,
                 'max_pt': max_pt,
@@ -201,5 +208,8 @@ class RhoVector():
                 overpass_dict['brightness'] = round(brightness, 3)
             overpass_dict['type'] = passtype
             overpass = Overpass.construct(**overpass_dict)
-            sat_overpasses[j] = overpass
+            if not visible_only:
+                sat_overpasses[j] = overpass
+            else:
+                sat_overpasses.append(overpass)
         return sat_overpasses
