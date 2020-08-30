@@ -127,9 +127,9 @@ class RhoVector():
     def point(self, idx):
         return Point.construct(
             datetime=jday2datetime(self.jd[idx]),
-            azimuth=round(self.az(idx), 3),
-            elevation=round(self.el[idx], 3),
-            range=round(self.rng[idx], 4)
+            azimuth=round(self.az(idx), 2),
+            elevation=round(self.el[idx], 2),
+            range=round(self.rng[idx], 3)
         )
 
     def _start_end_index(self, x):
@@ -218,7 +218,7 @@ class RhoVector():
             if (passtype is not None) and (passtype == PassType.visible):
                 overpass_dict['vis_start_pt'] = vis_start_pt
                 overpass_dict['vis_end_pt'] = vis_end_pt
-                overpass_dict['brightness'] = round(brightness, 3)
+                overpass_dict['brightness'] = round(brightness, 2)
             overpass_dict['type'] = passtype
             overpass = Overpass.construct(**overpass_dict)
             if not visible_only:
