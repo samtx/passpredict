@@ -40,6 +40,11 @@ class SunPredictData:
     __slots__ = ['rECEF']
     rECEF: np.ndarray
 
+    def __getitem__(self, slc):
+        return SunPredictData(
+            rECEF=self.rECEF[:, slc]
+        )
+
 
 @dataclass
 class SatPredictData:
@@ -47,6 +52,13 @@ class SatPredictData:
     id: int
     rECEF: np.ndarray         # dtype np.float32
     illuminated: np.ndarray   # dtype bool
+
+    def __getitem__(self, slc):
+        return SatPredictData(
+            id=self.id,
+            rECEF=self.rECEF[:, slc],
+            illuminated=self.illuminated[slc]
+        )
 
 
 class RhoVectorBase:
