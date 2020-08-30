@@ -12,8 +12,7 @@ from passpredict.constants import ASEC2RAD
 from passpredict.tle import get_TLE
 from passpredict.schemas import Location, Satellite
 from passpredict.propagate import propagate_satellite
-
-
+from passpredict.models import PassType
 
 
 # def test_satellite_visible():
@@ -30,17 +29,24 @@ from passpredict.propagate import propagate_satellite
 
 
 @pytest.mark.predict
-def test_predict_nocache():
+def test_predict_nocache(init_predict):
     """
     Just confirm that the predict() function doesn't error
     """
-    satellite = Satellite(id=25544, name='ISS')
-    location = Location(lat=30.2711, lon=-97.7434, h=0, name='Austin, Texas')
-    date_start = date.today()
-    date_end = date_start + timedelta(days=2)
-    min_elevation = 10.01 # degrees
-    predictions.predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=True)
+    location, satellite, date_start, date_end = init_predict
+    min_elevation = 8.0
+    predictions.predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=10, min_elevation=min_elevation, verbose=True)
     assert True
+
+
+def test_predict_nocache_visible_only(init_predict):
+    """
+    Confirm that the predict() function only returns visible overpasses when requested
+    """
+    location, satellite, date_start, date_end = init_predict
+    overpasses = predictions.predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=10, verbose=True, visible_only=True)
+    for overpass in overpasses:
+        assert overpass.type == PassType.visible
 
 
 # @pytest.mark.predict

@@ -138,7 +138,7 @@ class RhoVector():
     #     # find phase angle between observer -- satellite -- sun
     #     gamma = self.el[idx] - sun_el[idx]
 
-    def find_overpasses(self, min_elevation=10, store_sat_id=False, sunset_el=-6, visible_only=False):
+    def find_overpasses(self, min_elevation=10.0, store_sat_id=False, sunset_el=-6, visible_only=False):
         start_idx, end_idx = self._start_end_index(self.el - min_elevation)
         num_overpasses = min(start_idx.size, end_idx.size)       # Iterate over start/end indecies and gather inbetween indecies
         if start_idx.size < end_idx.size:
