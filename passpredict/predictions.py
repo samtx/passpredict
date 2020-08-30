@@ -10,7 +10,7 @@ from .propagate import compute_satellite_data
 from .timefn import julian_date_array_from_date
 from .schemas import Overpass, Location
 from .models import Sun, RhoVector, Sat
-from .utils import get_TLE
+from .tle import get_TLE
 
 
 def find_overpasses(jd: ndarray, location: Location, sats: List[Sat], sun: Sun, min_elevation: float = 10, visible_only=False) -> List[Overpass]:

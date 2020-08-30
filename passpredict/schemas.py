@@ -2,11 +2,13 @@
 import datetime
 from typing import List
 from enum import Enum
+from functools import cached_property
 
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .timefn import jday2datetime
+from .tle import TleSchema as Tle
 
 COORDINATES = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N']
 
@@ -73,15 +75,6 @@ class SatelliteDetails(BaseModel):
     launch_date: datetime.date = None
     launch_site: str = None
     mass: float = None   # kg
-
-
-
-class Tle(BaseModel):
-    # __slots__ = ['tle1','tle2','epoch','satellite']
-    tle1: str
-    tle2: str
-    epoch: datetime.datetime
-    satid: int
 
 
 class PassType(str, Enum):

@@ -1,7 +1,7 @@
 # Test passpredict/schemas.py
 
 import passpredict.schemas as schemas
-from passpredict.utils import epoch_from_tle
+from passpredict.tle import epoch_from_tle
 import datetime
 import pytest
 
@@ -24,27 +24,6 @@ def test_Satellite_fail():
     with pytest.raises(TypeError) as err:
         satellite = schemas.Satellite(satid, name)
     assert '__init__() takes' in str(err.value)
-
-
-def test_Tle():
-    """
-    From Celestrak
-
-    ISS (ZARYA)
-    1 25544U 98067A   20166.98401036  .00000505  00000-0  17092-4 0  9999
-    2 25544  51.6466 359.3724 0002481  58.1246  97.0831 15.49444148231675
-    """
-    satid = 25544
-    name = "International Space Station"
-    satellite = schemas.Satellite(id=satid, name=name)
-    tle1 = '1 25544U 98067A   20166.98401036  .00000505  00000-0  17092-4 0  9999'
-    tle2 = '2 25544  51.6466 359.3724 0002481  58.1246  97.0831 15.49444148231675'
-    epoch = epoch_from_tle(tle1)
-    tle = schemas.Tle(tle1=tle1, tle2=tle2, epoch=epoch, satid=satid)
-    assert tle.tle1 == tle1
-    assert tle.tle2 == tle2
-    assert tle.epoch == epoch
-    assert tle.satid == satid
 
 
 def test_Point():
