@@ -4,11 +4,11 @@ import pytest
 from passpredict import models
 
 
-def test_find_overpasses_visible_only(init_prediction):
+def test_find_overpasses_visible_only(init_find_overpasses):
     """
     jd, location, sun, sat are created from fixture
     """
-    jd, location, sun, sat = init_prediction
+    jd, location, sun, sat = init_find_overpasses
     rho = models.RhoVector(jd, sat, location, sun)
     overpasses = rho.find_overpasses(visible_only=True)
     for overpass in overpasses:
