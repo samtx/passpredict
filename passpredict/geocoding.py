@@ -12,6 +12,9 @@ def geocoder(q, source=nominatim_url):
         'q': q,
         'format': 'json',
     }
-    response = requests.get(source, params=params)
-    data = response.json()
-    return data[0]
+    try:
+        response = requests.get(source, params=params)
+        data = response.json()[0]
+    except requests.exceptions.RequestException:
+        data = None
+    return data
