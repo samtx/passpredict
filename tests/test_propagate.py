@@ -6,7 +6,7 @@ import numpy as np
 from passpredict import propagate
 from passpredict.timefn import compute_time_array
 from passpredict.schemas import Satellite, Tle
-from passpredict.utils import epoch_from_tle
+from passpredict.tle import epoch_from_tle
 
 tz_utc = datetime.timezone.utc
 

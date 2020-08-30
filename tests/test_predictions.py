@@ -9,7 +9,7 @@ import pytest
 from passpredict import predictions
 from passpredict import timefn
 from passpredict.constants import ASEC2RAD
-from passpredict.utils import get_TLE
+from passpredict.tle import get_TLE
 from passpredict.schemas import Location, Satellite
 from passpredict.propagate import propagate_satellite
 

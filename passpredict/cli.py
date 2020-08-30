@@ -5,7 +5,8 @@ import click
 
 from .schemas import Satellite, Location, PassType
 from .geocoding import geocoder
-from .utils import get_TLE, Cache
+from .utils import Cache
+from .tle import get_TLE
 from .predictions import predict
 
 @click.command()
