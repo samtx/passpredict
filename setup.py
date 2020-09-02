@@ -9,7 +9,7 @@ with open("README.md") as f:
 
 setup(
     name="passpredict",
-    version="0.0.10",
+    version="0.0.11",
     packages=['passpredict'],
     python_requires=">=3.8",
     # Project uses reStructuredText, so ensure that the docutils get
