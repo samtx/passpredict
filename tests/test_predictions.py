@@ -34,8 +34,8 @@ def test_predict_nocache(init_predict):
     Just confirm that the predict() function doesn't error
     """
     location, satellite, date_start, date_end = init_predict
-    min_elevation = 8.0
-    predictions.predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=10, min_elevation=min_elevation, verbose=True)
+    min_elevation = 10.0
+    predictions.predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=True)
     assert True
 
 
@@ -47,6 +47,16 @@ def test_predict_nocache_visible_only(init_predict):
     overpasses = predictions.predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=10, verbose=True, visible_only=True)
     for overpass in overpasses:
         assert overpass.type == PassType.visible
+
+
+# def test_predict_nocache_time_slice(init_predict):
+#     """
+#     Confirm that the predict() function only returns visible overpasses when requested
+#     """
+#     location, satellite, date_start, date_end = init_predict
+#     overpasses = predictions.predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=20, verbose=True, visible_only=True)
+#     for overpass in overpasses:
+#         assert overpass.type == PassType.visible
 
 
 # @pytest.mark.predict
@@ -147,6 +157,7 @@ def test_predict_nocache_visible_only(init_predict):
 #     Christchurch, New Zealand (-43)
 #     Punta Arenas, Chile (-53)
 #     McMurdo Station, Antarctica (-77)
-predict_results = {
 
-}
+# predict_results = {
+
+# }

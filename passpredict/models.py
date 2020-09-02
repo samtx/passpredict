@@ -6,7 +6,7 @@ import math
 import numpy as np
 
 from .schemas import Location, Point, Overpass, PassType
-from .constants import RAD2DEG
+from .constants import RAD2DEG, DAY_S
 from .rotations import ecef2sez
 from .topocentric import site_ECEF
 from .timefn import jday2datetime
@@ -75,6 +75,7 @@ class RhoVector():
         self.sat = sat
         self.location = location
         self.sun = sun
+        self.dt_seconds = int(round((jd[1] - jd[0]) * DAY_S, 0))
         
         if sun is not None:
             assert sat.illuminated is not None
@@ -109,7 +110,7 @@ class RhoVector():
         return np.arcsin(self.rSEZ[2] / self.rng) * RAD2DEG
 
     @cached_property
-    def el(self):
+    def el(self) -> np.ndarray:
         return self._el()
 
     def az(self, idx):
@@ -150,7 +151,7 @@ class RhoVector():
     #     # find phase angle between observer -- satellite -- sun
     #     gamma = self.el[idx] - sun_el[idx]
 
-    def find_overpasses(self, min_elevation=10.0, store_sat_id=False, sunset_el=-6, visible_only=False):
+    def find_overpasses(self, min_elevation: float = 10.0, store_sat_id: bool = False, sunset_el: float = -6.0, visible_only: bool = False):
         start_idx, end_idx = self._start_end_index(self.el - min_elevation)
         num_overpasses = min(start_idx.size, end_idx.size)       # Iterate over start/end indecies and gather inbetween indecies
         if start_idx.size < end_idx.size:
