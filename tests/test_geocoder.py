@@ -8,5 +8,5 @@ def test_geocoder_nominatium():
     res = geocoding.geocoder(query_str)
     lat = round(float(res['lat']), 4)
     lon = round(float(res['lon']), 4)
-    assert lat == 30.2672
-    assert lon == -97.7431
+    assert 30.2 <= lat <= 30.3
+    assert -97.7 >= lon >= -97.8

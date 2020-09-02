@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Callable
 import time
 
 from astropy.time import Time
@@ -8,12 +8,19 @@ from numpy import ndarray
 from .solar import compute_sun_data
 from .propagate import compute_satellite_data
 from .timefn import julian_date_array_from_date
-from .schemas import Overpass, Location
+from .schemas import Overpass, Location, Satellite
 from .models import Sun, RhoVector, Sat
 from .tle import get_TLE
 
 
-def find_overpasses(jd: ndarray, location: Location, sats: List[Sat], sun: Sun, min_elevation: float = 10.0, visible_only=False) -> List[Overpass]:
+def find_overpasses(
+    jd: ndarray, 
+    location: Location, 
+    sats: List[Sat], 
+    sun: Sun, 
+    min_elevation: float = 10.0, 
+    visible_only: bool =False
+) -> List[Overpass]:
     """
     Real-time computation for finding satellite overpasses of a topographic location.
     Can support multiple satellites over a single location
@@ -27,7 +34,19 @@ def find_overpasses(jd: ndarray, location: Location, sats: List[Sat], sun: Sun, 
     return overpasses
 
 
-def predict(location, satellite, date_start=None, date_end=None, dt_seconds=1, min_elevation=10.0, cache=None, verbose=False, store_sat_id=False, print_fn=print, visible_only=False):
+def predict(
+    location: Location,
+    satellite: Satellite,
+    date_start: datetime = None,
+    date_end: datetime = None,
+    dt_seconds: int = 1,
+    min_elevation: float = 10.0,
+    cache: 'Cache' = None,
+    verbose: bool = False, 
+    store_sat_id: bool = False, 
+    print_fn: Callable = print, 
+    visible_only: bool = False
+):
     """
     Full prediction algorithm:
       1. Download TLE data
