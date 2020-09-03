@@ -7,13 +7,14 @@ from pprint import pprint
 import timeit
 
 import numpy as np
+from astropy.time import Time
 import line_profiler
 
 from passpredict.predictions import find_overpasses, compute_sun_data, compute_satellite_data
 from passpredict.schemas import Location, Satellite, Tle
 from passpredict.models import RhoVector, SatPredictData
-from passpredict.timefn import compute_time_array_from_date
-from passpredict.utils import epoch_from_tle
+from passpredict.timefn import compute_time_array_from_date, julian_date_array_from_date
+from passpredict.tle import epoch_from_tle
 
 
 def f8(x):
@@ -54,7 +55,8 @@ if __name__ == "__main__":
     ) 
     date_start = datetime.date(2020, 7, 14)
     date_end = date_start + datetime.timedelta(days=14)
-    t = compute_time_array_from_date(date_start, date_end, dt_seconds)
+    jd = julian_date_array_from_date(date_start, date_end, dt_seconds)
+    t = Time(jd, format='jd')
     sun = compute_sun_data(t)
     sat = compute_satellite_data(tle, t, sun)
     sat = SatPredictData(id=sat.id, rECEF=sat.rECEF, illuminated=sat.illuminated)
@@ -63,12 +65,12 @@ if __name__ == "__main__":
 
     # benchmark
     timer = timeit.Timer(
-        'find_overpasses(t, location, [sat], sun)',
+        'find_overpasses(jd, location, [sat], sun)',
         'from passpredict.predictions import find_overpasses',
         globals={
             'location': location,
             'sat': sat,
-            't': t,
+            'jd': jd,
             'sun': sun
         }
     )
@@ -89,7 +91,7 @@ if __name__ == "__main__":
     
     # profile
     with cProfile.Profile() as pr:
-        overpasses = find_overpasses(t, location, [sat], sun)
+        overpasses = find_overpasses(jd, location, [sat], sun)
 
     pr.dump_stats('profile_computation.prof')
     
@@ -100,6 +102,6 @@ if __name__ == "__main__":
 
     lp = line_profiler.LineProfiler()
     lp.add_function(RhoVector.find_overpasses)
-    lp.runcall(find_overpasses, t, location, [sat], sun)
+    lp.runcall(find_overpasses, jd, location, [sat], sun)
     lp_stats = lp.get_stats()
     lp.print_stats()
