@@ -1,13 +1,11 @@
 import datetime
-from typing import NamedTuple
 
 import click
 
 from .schemas import Satellite, Location, PassType
-from .geocoding import geocoder
 from .caches import JsonCache
 from .tle import get_TLE
-from .predictions import predict
+from .predict import predict
 
 @click.command()
 @click.option('-s', '--satellite-id', type=int)  # satellite id
