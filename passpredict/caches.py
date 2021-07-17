@@ -27,10 +27,13 @@ class JsonCache:
 
     def __enter__(self):
         if pathlib.Path(self.filename).is_file():
-            self.cache = json.load(self.filename)
+            with open(self.filename, 'r') as f:
+                self.cache = json.load(f)
+        return self
         
     def __exit__(self, *args):
-        json.dump(self.cache, self.filename)
+        with open(self.filename, 'w') as f:
+            json.dump(self.cache, f)
 
     def get(self, key, ignore_ttl=False):
         if key not in self: return None
@@ -42,7 +45,8 @@ class JsonCache:
         return item['data']
 
     def set(self, key, value, ttl=None):
-        ttl += time.time()
+        if ttl is not None:
+            ttl += time.time()
         item = {'ttl': ttl, 'data': value}
         self[key] = item
 

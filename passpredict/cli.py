@@ -5,7 +5,7 @@ import click
 
 from .schemas import Satellite, Location, PassType
 from .geocoding import geocoder
-from .cache import JsonCache
+from .caches import JsonCache
 from .tle import get_TLE
 from .predictions import predict
 
