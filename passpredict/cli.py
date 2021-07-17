@@ -11,7 +11,6 @@ from .predictions import predict
 
 @click.command()
 @click.option('-s', '--satellite-id', type=int)  # satellite id
-@click.option('-l', '--location', 'location_string', default="", type=str)  # location string
 @click.option('-u', '--utc-offset', default=0.0, type=float, prompt=True)  # utc offset
 @click.option('-d', '--days', default=10, type=click.IntRange(1, 14, clamp=True)) # day range
 @click.option('-lat', '--latitude', type=float)  # latitude
@@ -22,40 +21,38 @@ from .predictions import predict
 @click.option('-q', '--quiet', is_flag=True, default=False)
 @click.option('-v', '--verbose', is_flag=True, default=False)
 @click.option('--no-cache', is_flag=True, default=False)
-def main(satellite_id, location_string, utc_offset, days, latitude, longitude, height, twelve, alltypes, quiet, verbose, no_cache):
+def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, alltypes, quiet, verbose, no_cache):
     """
     Command line interface for pass predictions
     """
-    if latitude and longitude:
-        lat = round(float(latitude), 4)
-        lon = round(float(longitude), 4)
-    else:
-        data = geocoder(location_string)      # Prompt for location
-        lat = round(float(data['lat']), 4)
-        lon = round(float(data['lon']), 4)
-
     tz = datetime.timezone(datetime.timedelta(hours=utc_offset))
+
     location = Location(
-        lat=lat,
-        lon=lon,
+        lat=latitude,
+        lon=longitude,
         h=height,
-        name=location_string
     )
     satellite = Satellite(
         id=satellite_id,
     )
-    tle = get_TLE(satellite.id)
     date_start = datetime.date.today()
     date_end = date_start + datetime.timedelta(days=days)
     min_elevation = 10.01 # degrees
-    cache = Cache() if not no_cache else None
-    visible_only = not alltypes
-    overpasses = predict(location, satellite, date_start=date_start, date_end=date_end, dt_seconds=1, min_elevation=min_elevation, verbose=verbose, cache=cache, print_fn=echo, visible_only=visible_only)
-    overpass_table(overpasses, location, tle, tz, twelvehour=twelve, quiet=quiet)
-    if cache is not None:
-        with cache:
-            cache.flush()
+    
+    if no_cache:
+        tle = get_TLE(satellite.id)
+    else:
+        with JsonCache() as cache:
+            sat_key = f'sat:{satellite.id}'
+            res = cache.get(sat_key)
+            if res:
+                tle = res
+            else:
+                tle = get_TLE(satellite.id)
+                cache.set(sat_key, tle, ttl=86400)    
             
+    overpasses = predict(location, tle, date_start=date_start, date_end=date_end, min_elevation=min_elevation)
+    overpass_table(overpasses, location, tle, tz, twelvehour=twelve, quiet=quiet)
     return 0
 
 

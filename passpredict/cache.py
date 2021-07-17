@@ -1,7 +1,7 @@
 import json
 import shelve
 import time
-
+import pathlib
 
 class JsonCache:
     """
@@ -26,7 +26,8 @@ class JsonCache:
         del self.cache[key]
 
     def __enter__(self):
-        self.cache = json.load(self.filename)
+        if pathlib.Path(self.filename).is_file():
+            self.cache = json.load(self.filename)
         
     def __exit__(self, *args):
         json.dump(self.cache, self.filename)
@@ -41,6 +42,7 @@ class JsonCache:
         return item['data']
 
     def set(self, key, value, ttl=None):
+        ttl += time.time()
         item = {'ttl': ttl, 'data': value}
         self[key] = item
 
