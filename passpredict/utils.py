@@ -1,6 +1,9 @@
 from itertools import zip_longest
 import shelve
 import time
+import json
+from dataclasses import dataclass, asdict
+from typing import Any
 
 import numpy as np
 
@@ -26,7 +29,49 @@ def grouper(iterable, n, fillvalue=None):
     return zip_longest(*args, fillvalue=fillvalue)
 
 
-class Cache:
+class JsonCache:
+    """
+    A cache for downloaded TLE data using a json file
+    """
+    filename = 'tle.json'
+
+    def __init__(self, filename=filename):
+        self.filename = filename
+        self.cache = {}
+
+    def __contains__(self, key):
+        return key in self.cache
+
+    def __setitem__(self, key, value):
+        self.cache[key] = value
+
+    def __getitem__(self, key):
+        return self.cache[key]
+
+    def __delitem__(self, key):
+        del self.cache[key]
+
+    def __enter__(self):
+        self.cache = json.load(self.filename)
+        
+    def __exit__(self, *args):
+        json.dump(self.cache, self.filename)
+
+    def get(self, key, ignore_ttl=False):
+        if key not in self: return None
+        item = self.cache[key]
+        if (not ignore_ttl) and (ttl := item['ttl']):
+            if time.time() > ttl:
+                del self.cache[key]
+                return None
+        return item['data']
+
+    def set(self, key, value, ttl=None):
+        item = {'ttl': ttl, 'data': value}
+        self[key] = item
+
+
+class ShelfCache:
     """
     A cache for downloaded TLE data using a shelf.
     """
