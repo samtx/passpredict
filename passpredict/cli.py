@@ -26,7 +26,6 @@ def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, al
     Command line interface for pass predictions
     """
     tz = datetime.timezone(datetime.timedelta(hours=utc_offset))
-
     location = Location(
         lat=latitude,
         lon=longitude,
