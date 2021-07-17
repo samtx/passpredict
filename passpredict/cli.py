@@ -91,8 +91,8 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, quiet=F
         #   Time   Elx Azx
         point_header = "  Time   El  Az "
         point_header_underline = "-------- --- ---"
-    table_header +=  f"           {'Start':^17s}   {'Maximum':^17s}   {'End':^17s}\n"
-    table_header +=  "  Date    Mag  {0}   {0}   {0}      Type\n".format(point_header)
+    table_header +=  f"            {'Start':^17s}   {'Maximum':^17s}   {'End':^17s}\n"
+    table_header +=  "  Date    Mag   {0}   {0}   {0}      Type\n".format(point_header)
     table_header += "--------  ----  "
     table_header += point_header_underline + " "*3
     table_header += point_header_underline + " "*3

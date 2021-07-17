@@ -65,14 +65,49 @@ class Cache:
         else:
             return item.data
 
-    def pop(self, key, default_value=None):
+    def pop(self, key, default_value=None, index=None):
         key_hash = self.hash(key)
         if key_hash in self.cache:
             value = self.get(key)
             del self.cache[key_hash]
+            # if index is not None:
+            #     self.pop_index_item(index, )
             return value
         else:
             return default_value
+
+    def get_index_items(self, index, index_key):
+        index_dict = self.cache[index + '_index']
+        return index_dict.get(index_key)
+
+    def set_index_item(self, index, index_key, index_item):
+        key = index + '_index'
+        index_dict = self.cache[key]
+        index_result = index_dict.get(index_key, set())
+        index_result += {index_item}
+        index_dict.update({
+            index_key: index_result
+        })
+        self.cache[key] = index_dict
+
+    def remove_item_from_cache(self, item):
+        pass
+
+    def pop_index_item(self, index, index_key, index_item):
+        key = index + '_index'
+        index_dict = self.cache[key]
+        index_result = index_dict.get(index_key, set())
+        if index_item in index_result:
+            index_result.remove(index_item)
+        if len(index_result) == 0:
+            index_dict.pop(index_key)
+        else:
+            index_dict.update({
+                index_key: index_result
+            })
+        self.cache[key] = index_dict
+
+        
 
     def __contains__(self, key):
         key_hash = self.hash(key)
