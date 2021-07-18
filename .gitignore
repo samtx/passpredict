@@ -1,3 +1,12 @@
+# c++ files
+passpredict/ext/main
+passpredict/ext/*.o
+
+# sofa library
+/cextern/sofa/*.o
+include/
+lib/o
+
 *.json
 *.db
 
