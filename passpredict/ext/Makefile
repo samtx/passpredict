@@ -2,5 +2,7 @@
 
 
 build:
-	g++ -I/home/sam/passpredict/include -L/home/sam/passpredict/lib -lsofa_c -lm -o main main.cpp
+	g++ -I../../include \
+		-L../../lib -lsgp4 -lsofa_c -lm \
+		-O2 -o main main.cpp
 	chmod +x main
