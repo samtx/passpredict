@@ -1,6 +1,17 @@
-from setuptools import setup
+from setuptools import Extension, setup
+from Cython.Build import cythonize
 
-ext = []
+include_dir = "./include"
+library_dir = "./lib"
+
+extensions = [
+    Extension("passpredict.timefn", ["passpredict/timefn.pyx"],
+        include_dirs=[include_dir],
+        libraries=['sgp4','m'],
+        library_dirs=[library_dir],
+        language="c++"
+    ),
+]
 # from Cython.Build import cythonize
 # ext.append(cythonize(['passpredict/timefn_ext.pyx']))
 
@@ -9,15 +20,13 @@ with open("README.md") as f:
 
 setup(
     name="passpredict",
-    version="0.0.11",
+    version="0.0.12",
     packages=['passpredict'],
     python_requires=">=3.8",
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     install_requires=[
         "numpy",
-        "sgp4 >= 2.8",
-        "astropy >= 4.1rc1",  # for the TEME coordinate frame
         "requests",
         "pydantic",
         "click",
@@ -53,5 +62,5 @@ setup(
             'passpredict = passpredict.cli:main'
         ]
     },
-    ext_modules = ext,
+    ext_modules = cythonize(extensions),
 )
