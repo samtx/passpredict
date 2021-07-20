@@ -2,10 +2,15 @@
 passpredict/ext/main
 passpredict/ext/*.o
 
+# sgp4 library
+/cextern/sgp4/*.o
+/cextern/sgp4/*.a
+/lib/*.a
+
 # sofa library
 /cextern/sofa/*.o
 include/
-lib/o
+lib/*.o
 
 *.json
 *.db
