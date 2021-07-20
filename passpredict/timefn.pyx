@@ -10,9 +10,8 @@ def epoch_to_jd(epoch_year, epoch_days):
     """
     Convert TLE epoch value to julian date
     """
-    cdef int year
-    cdef int mon, day, hr, minute, sec
-    cdef double jd, jdfr
+    cdef int year, mon, day, hr, minute
+    cdef double sec, jd, jdfr
     if epoch_year < 57:
         year = epoch_year + 2000
     else:
