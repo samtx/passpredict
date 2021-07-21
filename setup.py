@@ -1,19 +1,27 @@
+import glob
+
 from setuptools import Extension, setup
 from Cython.Build import cythonize
+import numpy
 
-include_dir = "./include"
-library_dir = "./lib"
+source_files = glob.glob("passpredict/*.pyx")
+source_files += glob.glob("passpredict/ext/*.cpp")
+source_files += glob.glob("passpredict/ext/sgp4/*.cpp")
+source_files += glob.glob("passpredict/ext/sofa/*.cpp")
+
+include_dirs = [
+    'passpredict/ext',
+    'passpredict/ext/sgp4',
+    'passpredict/ext/sofa',
+    numpy.get_include(),
+]
 
 extensions = [
-    Extension("passpredict.timefn", ["passpredict/timefn.pyx"],
-        include_dirs=[include_dir],
-        libraries=['sgp4','m'],
-        library_dirs=[library_dir],
+    Extension("passpredict.timefn", source_files,
+        include_dirs=include_dirs,
         language="c++"
     ),
 ]
-# from Cython.Build import cythonize
-# ext.append(cythonize(['passpredict/timefn_ext.pyx']))
 
 with open("README.md") as f:
     long_description = f.read()
