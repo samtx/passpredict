@@ -6,7 +6,7 @@ extern "C"
 #include "sofa.h"
 };
 
-#include "sgp4.h"
+#include "SGP4.h"
 
 
 #define D_R_EARTH 6378.137        //  Earth mean equatorial radius [km]
@@ -28,8 +28,8 @@ public:
         elsetrec asatrec;
 
         SGP4Funcs::twoline2rv(
-            const_cast<char*>(atle1), const_cast<char*>(atle2), 
-            ' ', ' ', 'i', whichconst, 
+            const_cast<char*>(atle1), const_cast<char*>(atle2),
+            ' ', ' ', 'i', whichconst,
             dummy, dummy, dummy, asatrec
         );
     };
@@ -124,7 +124,7 @@ int main()
     std::cout << "H: " << location.h << "\n";
 
     // Put TLE and Location data structures into Observer cpp data structure
-    // ISS (ZARYA)             
+    // ISS (ZARYA)
     const char* tle1 = "1 25544U 98067A   21201.46980141  .00001879  00000-0  42487-4 0  9993";
     const char* tle2 = "2 25544  51.6426 178.1369 0001717 174.7410 330.7918 15.48826828293750";
     Orbit sat (tle1, tle2);

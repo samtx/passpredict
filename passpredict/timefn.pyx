@@ -2,7 +2,7 @@
 
 cimport cython
 
-cdef extern from "sgp4.h" namespace "SGP4Funcs":
+cdef extern from "SGP4.h" namespace "SGP4Funcs":
     cdef void days2mdhms_SGP4(int year, double days, int& mon, int& day, int& hr, int& minute, double& sec)
     cdef void jday_SGP4(int year, int mon, int day, int hr, int minute, double sec, double& jd, double& jdFrac)
 
