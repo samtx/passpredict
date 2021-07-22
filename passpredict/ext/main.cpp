@@ -1,5 +1,6 @@
 #include <iostream>
 #include <math.h>
+#include <string.h>
 
 extern "C"
 {
@@ -7,41 +8,95 @@ extern "C"
 };
 
 #include "SGP4.h"
+#include "passpredict.h"
 
 
 #define D_R_EARTH 6378.137        //  Earth mean equatorial radius [km]
 #define D_e2_EARTH 0.006694385000 // Earth eccentricity squared
 
+struct Omm {
+    char satnum[9];
+    double jdsatepoch;
+    double jdsatepochF;
+    double bstar;
+    double inclo;  // deg
+    double nodeo;  // deg
+    double ecco;
+    double argpo;  // deg
+    double mo;     // deg
+    double no_kozai;
+    int revnum;
+    int elnum;
+    char classification;
+    int ephtype;
+};
+
 class Orbit
 {
 private:
-    elsetrec satrec;
+    gravconsttype m_whichconst = wgs84;
 
 public:
     const char *tle1;
     const char *tle2;
+    elsetrec satrec;
 
-    Orbit(const char* atle1, const char* atle2)
+    Orbit() {};
+
+    Orbit(const Omm &omm)
+    {
+        bool err;
+        double ndot, nddot;  // These aren't used in sgp4 so they are dummy variables
+
+        const double deg2rad = PASSPREDICT_DEG2RAD;
+        const double xpdotp = 1440.0 / PASSPREDICT_2PI;
+
+        strcpy(satrec.satnum, omm.satnum);
+        satrec.jdsatepoch = omm.jdsatepoch;
+        satrec.jdsatepochF = omm.jdsatepochF;
+		satrec.bstar = omm.bstar;
+        satrec.ecco = omm.ecco;
+        satrec.argpo = omm.argpo * deg2rad;
+        satrec.inclo = omm.inclo * deg2rad,
+        satrec.mo = omm.mo * deg2rad;
+        satrec.no_kozai = omm.no_kozai / xpdotp;
+        satrec.nodeo = omm.nodeo * deg2rad;
+        satrec.revnum = omm.revnum;
+
+        err = SGP4Funcs::sgp4init(
+            m_whichconst, 'i', satrec.satnum, satrec.jdsatepoch + satrec.jdsatepochF - 2433281.5,
+		    satrec.bstar, ndot, nddot, satrec.ecco, satrec.argpo, satrec.inclo, satrec.mo,
+            satrec.no_kozai, satrec.nodeo, satrec
+		);
+    };
+
+    Orbit(char* atle1, char* atle2)
     {
         double dummy;
-        gravconsttype whichconst = wgs84;
-        elsetrec asatrec;
-
         SGP4Funcs::twoline2rv(
-            const_cast<char*>(atle1), const_cast<char*>(atle2),
-            ' ', ' ', 'i', whichconst,
-            dummy, dummy, dummy, asatrec
+            atle1, atle2, ' ', ' ', 'i', m_whichconst, dummy, dummy, dummy, satrec
         );
     };
 };
 
 class Satellite
 {
+private:
+    double rteme[3];  // TEME position vector at time jd
+    double vteme[3];  // TEME velocity vector at time jd
 public:
     Orbit orbit;    // orbit data, OMM/TLE
     double epoch;     // epoch, julian date
     std::string name; // satellite name
     int satid;        // NORAD satellite ID number
+    double jd;        // julian date
+    double recef[3];  // ECEF position vector at time jd
+    double vecef[3];  // ECEF velocity vector at time jd
+
+    Satellite(Orbit aorbit)
+    {
+        orbit = aorbit;
+    };
 };
 
 class Location
@@ -122,15 +177,6 @@ int main()
     std::cout << "Lat: " << location.lat << "\n";
     std::cout << "Lon: " << location.lon << "\n";
     std::cout << "H: " << location.h << "\n";
-
-    // Put TLE and Location data structures into Observer cpp data structure
-    // ISS (ZARYA)
-    const char* tle1 = "1 25544U 98067A   21201.46980141  .00001879  00000-0  42487-4 0  9993";
-    const char* tle2 = "2 25544  51.6426 178.1369 0001717 174.7410 330.7918 15.48826828293750";
-    Orbit sat (tle1, tle2);
-
-    // Propagate satellite
-
     // Find location ecef position
     location.site_ecef();
     std::cout << "recef: ";
@@ -140,6 +186,72 @@ int main()
         std::cout << location.recef[i] << ", ";
     }
     std::cout << std::endl;
+
+    // Put TLE and Location data structures into Observer cpp data structure
+    // ISS (ZARYA)
+    char tle1[] = "1 25544U 98067A   21201.46980141  .00001879  00000-0  42487-4 0  9993";
+    char tle2[] = "2 25544  51.6426 178.1369 0001717 174.7410 330.7918 15.48826828293750";
+    Orbit sat (tle1, tle2);
+
+    const double pi = 3.14159265358979323846;
+    const double deg2rad = PASSPREDICT_DEG2RAD;
+	const double xpdotp = 1440.0 / PASSPREDICT_2PI;
+
+    // Print satrec
+    {
+        using namespace std;
+        cout << endl << "satrec from TLE strings" << endl;
+        cout << "satrec.jdsatepoch = " << sat.satrec.jdsatepoch << endl;
+        cout << "satrec.jdsatepochF = " << sat.satrec.jdsatepochF << endl;
+        cout << "sgp4init epoch = " << (sat.satrec.jdsatepoch + sat.satrec.jdsatepochF) - 2433281.5 << endl;
+        cout << "satrec.bstar = " << sat.satrec.bstar << endl;
+        cout << "satrec.inclo = " << sat.satrec.inclo / deg2rad << endl;
+        cout << "satrec.nodeo = " << sat.satrec.nodeo / deg2rad << endl;
+        cout << "satrec.ecco = " << sat.satrec.ecco << endl;
+        cout << "satrec.argpo = " << sat.satrec.argpo / deg2rad << endl;
+        cout << "satrec.mo = " << sat.satrec.mo / deg2rad << endl;
+        cout << "satrec.no_kozai = " << sat.satrec.no_kozai * xpdotp << endl;
+        cout << "satrec.revnum = " << sat.satrec.revnum << endl;
+    };
+
+    // Use Omm
+    Omm omm;
+    strcpy(omm.satnum, "25544");        // satnum
+    omm.jdsatepoch = 2.45942e+6;     // jdsatepoch
+    omm.jdsatepochF = 0.469801;       // jdsatepochF
+    omm.bstar = 4.2487e-5;      // bstar
+    omm.inclo = 51.6426;        // inclo
+    omm.nodeo = 178.1369;       // nodeo
+    omm.ecco = 0.0001717;      // ecco
+    omm.argpo = 174.7410;       // argpo
+    omm.mo = 330.7918;       // mo
+    omm.no_kozai = 15.4883;        // no_kozai
+    omm.revnum = 293750;         // revnum
+    omm.elnum = 993;            // elnum
+    omm.classification = 'u';            // classification
+    omm.ephtype = 0;               // ephtype
+
+    Orbit sat2 (omm);
+    // Print satrec
+    {
+        using namespace std;
+        cout << endl << "satrec from Omm" << endl;
+        cout << "satrec.jdsatepoch = " << sat2.satrec.jdsatepoch << endl;
+        cout << "satrec.jdsatepochF = " << sat2.satrec.jdsatepochF << endl;
+        cout << "sgp4init epoch = " << (sat2.satrec.jdsatepoch + sat2.satrec.jdsatepochF) - 2433281.5 << endl;
+        cout << "satrec.bstar = " << sat2.satrec.bstar << endl;
+        cout << "satrec.inclo = " << sat2.satrec.inclo / deg2rad << endl;
+        cout << "satrec.nodeo = " << sat2.satrec.nodeo / deg2rad << endl;
+        cout << "satrec.ecco = " << sat2.satrec.ecco << endl;
+        cout << "satrec.argpo = " << sat2.satrec.argpo / deg2rad << endl;
+        cout << "satrec.mo = " << sat2.satrec.mo / deg2rad << endl;
+        cout << "satrec.no_kozai = " << sat2.satrec.no_kozai * xpdotp << endl;
+        cout << "satrec.revnum = " << sat2.satrec.revnum << endl;
+    };
+
+    // Propagate satellite
+
+
 
     // Find az, el, range of observer
 
