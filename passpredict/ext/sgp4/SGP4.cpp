@@ -140,8 +140,8 @@ double& mm, double& xni, double& nodem, double& dndt, double& nm
 
 static void initl
 (
-// not needeed. included in satrec if needed later 
-// int satn,      
+// not needeed. included in satrec if needed later
+// int satn,
 // sgp4fix assin xke and j2
 // gravconsttype whichconst,
 double xke, double j2,
@@ -701,7 +701,7 @@ namespace SGP4Funcs
 	static void dsinit
 		(
 		// sgp4fix just send in xke as a constant and eliminate getgravconst call
-		// gravconsttype whichconst, 
+		// gravconsttype whichconst,
 		double xke,
 		double cosim, double emsq, double argpo, double s1, double s2,
 		double s3, double s4, double s5, double sinim, double ss1,
@@ -1201,10 +1201,10 @@ namespace SGP4Funcs
 
 	static void initl
 		(
-		// sgp4fix satn not needed. include in satrec in case needed later  
-		// int satn,      
+		// sgp4fix satn not needed. include in satrec in case needed later
+		// int satn,
 		// sgp4fix just pass in xke and j2
-		// gravconsttype whichconst, 
+		// gravconsttype whichconst,
 		double xke, double j2,
 		double ecco, double epoch, double inclo, double no_kozai, char opsmode,
 		char& method, double& ainv, double& ao, double& con41, double& con42, double& cosio,
@@ -2423,7 +2423,7 @@ namespace SGP4Funcs
 			}
 		}
 
-		// ------------ perform complete catalog evaluation, -+ 1 day ----------- 
+		// ------------ perform complete catalog evaluation, -+ 1 day -----------
 		if (typerun == 'c')
 		{
 			startmfe = -1440.0;
@@ -2506,7 +2506,7 @@ namespace SGP4Funcs
 	*
 	*                           function mag_SGP4
 	*
-	*  this procedure finds the magnitude of a vector.  
+	*  this procedure finds the magnitude of a vector.
 	*
 	*  author        : david vallado                  719-573-2600    1 mar 2001
 	*
@@ -2514,7 +2514,7 @@ namespace SGP4Funcs
 	*    vec         - vector
 	*
 	*  outputs       :
-	*    mag         - answer 
+	*    mag         - answer
 	*
 	*  locals        :
 	*    none.
@@ -2679,7 +2679,7 @@ namespace SGP4Funcs
 	*
 	*  this function solves keplers equation when the true anomaly is known.
 	*    the mean and eccentric, parabolic, or hyperbolic anomaly is also found.
-	*    the parabolic limit at 168ø is arbitrary. the hyperbolic anomaly is also
+	*    the parabolic limit at 168ï¿½ is arbitrary. the hyperbolic anomaly is also
 	*    limited. the hyperbolic sine is used because it's not double valued.
 	*
 	*  author        : david vallado                  719-573-2600   27 may 2002
@@ -2692,8 +2692,8 @@ namespace SGP4Funcs
 	*    nu          - true anomaly                   -2pi to 2pi rad
 	*
 	*  outputs       :
-	*    e0          - eccentric anomaly              0.0  to 2pi rad       153.02 ø
-	*    m           - mean anomaly                   0.0  to 2pi rad       151.7425 ø
+	*    e0          - eccentric anomaly              0.0  to 2pi rad       153.02 ï¿½
+	*    m           - mean anomaly                   0.0  to 2pi rad       151.7425 ï¿½
 	*
 	*  locals        :
 	*    e1          - eccentric anomaly, next value  rad
@@ -2836,7 +2836,7 @@ namespace SGP4Funcs
 		// switch this to an integer msvs seems to have probelms with this and strncpy_s
 		//char typeorbit[2];
 		int typeorbit;
-		// here 
+		// here
 		// typeorbit = 1 = 'ei'
 		// typeorbit = 2 = 'ce'
 		// typeorbit = 3 = 'ci'

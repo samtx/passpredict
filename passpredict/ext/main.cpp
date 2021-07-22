@@ -174,18 +174,21 @@ int main()
     lon = -104.883;
     h = 2187.0;
     Location location(lat, lon, h);
-    std::cout << "Lat: " << location.lat << "\n";
-    std::cout << "Lon: " << location.lon << "\n";
-    std::cout << "H: " << location.h << "\n";
-    // Find location ecef position
-    location.site_ecef();
-    std::cout << "recef: ";
-    std::cout << std::fixed;
-    for (i = 0; i < 3; i++)
     {
-        std::cout << location.recef[i] << ", ";
+        using namespace std;
+        cout << "Lat: " << location.lat << "\n";
+        cout << "Lon: " << location.lon << "\n";
+        cout << "H: " << location.h << "\n";
+        // Find location ecef position
+        location.site_ecef();
+        cout << "recef: ";
+        cout << fixed;
+        for (i = 0; i < 3; i++)
+        {
+            cout << location.recef[i] << ", ";
+        }
+        cout << endl;
     }
-    std::cout << std::endl;
 
     // Put TLE and Location data structures into Observer cpp data structure
     // ISS (ZARYA)
