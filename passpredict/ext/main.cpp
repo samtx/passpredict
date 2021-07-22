@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <math.h>
 #include <string.h>
 
@@ -82,21 +83,76 @@ public:
 class Satellite
 {
 private:
-    double rteme[3];  // TEME position vector at time jd
-    double vteme[3];  // TEME velocity vector at time jd
+    double m_rteme[3] = {0, 0, 0};  // TEME position vector at time jd
+    double m_vteme[3] = {0, 0, 0};  // TEME velocity vector at time jd
+    double m_jd;        // julian date
+    double m_tsince;    // minutes since epoch
+    double m_epoch;     // epoch, julian date
 public:
     Orbit orbit;    // orbit data, OMM/TLE
-    double epoch;     // epoch, julian date
     std::string name; // satellite name
     int satid;        // NORAD satellite ID number
-    double jd;        // julian date
     double recef[3];  // ECEF position vector at time jd
     double vecef[3];  // ECEF velocity vector at time jd
 
     Satellite(Orbit aorbit)
     {
         orbit = aorbit;
+        m_epoch = orbit.satrec.jdsatepoch + orbit.satrec.jdsatepochF;
     };
+
+    void propagate_tsince(double t_tsince)
+    {
+        // find time since julian date in minutes
+        m_jd = m_epoch + (t_tsince / 1440.0);
+        m_tsince = t_tsince;
+        SGP4Funcs::sgp4(orbit.satrec, m_tsince, m_rteme, m_vteme);
+    }
+
+    /*
+    Propagate the Satellite to time t
+
+    inputs:
+        t       time in julian date
+    */
+    void propagate_jd(double t_jd)
+    {
+        // find time since julian date in minutes
+        m_jd = t_jd;
+        m_tsince = (m_epoch - m_jd) / 1440.0;
+        SGP4Funcs::sgp4(orbit.satrec, m_tsince, m_rteme, m_vteme);
+    }
+
+
+    void print()
+    {
+        int i;
+        using namespace std;
+        cout.precision(10);
+        cout << "jd    =  " << fixed << m_jd << endl;
+        cout.precision(4);
+        cout << "rteme = [" << fixed;
+        for (i=0; i<3; i++) {
+            cout << m_rteme[i] << ", ";
+        }
+        cout << "]" << endl;
+        cout << "vteme = [" << fixed;
+        for (i=0; i<3; i++)
+            cout << m_vteme[i] << ", ";
+        cout << "]" << endl;
+    };
+
+    void print_oneline()
+    {
+        int i;
+        using namespace std;
+        cout.precision(8);
+        cout << "   " << setw(14) << m_tsince;
+        for (i=0; i<3; i++)
+            cout << "   " << setw(14) << m_rteme[i];
+        for (i=0; i<3; i++)
+            cout << "   " << setw(12) << m_vteme[i];
+    }
 };
 
 class Location
@@ -231,6 +287,8 @@ int main()
     omm.no_kozai = 15.4883;        // no_kozai
     omm.revnum = 293750;         // revnum
     omm.elnum = 993;            // elnum
+
+
     omm.classification = 'u';            // classification
     omm.ephtype = 0;               // ephtype
 
@@ -253,6 +311,20 @@ int main()
     };
 
     // Propagate satellite
+    {
+        char tle1[] = "1 00005U 58002B   00179.78495062  .00000023  00000-0  28098-4 0  4753";
+        char tle2[] = "2 00005  34.2682 348.7242 1859667 331.7664  19.3264 10.82419157413667";
+        double tsince;
+        Orbit orbit (tle1, tle2);
+        Satellite satellite (orbit);
+        for (i=0; i<13; i++) {
+            tsince = i * 360.0;
+            satellite.propagate_tsince(tsince);
+            satellite.print_oneline();
+            std::cout << std::endl;
+        }
+
+    }
 
 
 
