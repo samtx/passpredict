@@ -1,8 +1,18 @@
 .PHONY: all build test clean debug
 
 SOURCE_FILES = 	*.cpp \
-				sgp4/*.cpp \
-				sofa/*.c
+				sgp4/SGP4.cpp \
+				sofa/gmst82.c \
+				sofa/utctai.c \
+				sofa/taitt.c \
+				sofa/obl80.c \
+				sofa/nut80.c \
+				sofa/eqeq94.c \
+				sofa/anp.c \
+				sofa/jd2cal.c \
+				sofa/dat.c \
+				sofa/cal2jd.c \
+				sofa/anpm.c
 
 OBJECT_FILES = 	observer.o \
 				location.o \
@@ -21,7 +31,6 @@ OBJECT_FILES = 	observer.o \
 				cal2jd.o \
 				anpm.o
 
-
 build:
 	g++ -I. -Isgp4 -Isofa -O2 -c main.cpp $(SOURCE_FILES)
 	g++ main.o $(OBJECT_FILES) -lm -o main
@@ -34,9 +43,9 @@ debug:
 	gdb ./main
 
 test:
-	g++ -I. -Isgp4 -Isofa -Itests -c $(SOURCE_FILES) tests/*.cpp
+	g++ -I. -Isgp4 -Isofa -Itests -w -c tests/*.cpp
 	g++ test_*.o $(OBJECT_FILES) -lm -o test_passpredict
-	./test_passpredict -s
+	./test_passpredict
 
 clean:
-	rm -r $(*.o)
+	rm -r *.o
