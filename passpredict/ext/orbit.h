@@ -8,8 +8,7 @@ namespace passpredict
 {
     class Orbit
     {
-    private:
-        gravconsttype m_whichconst = wgs84;
+    gravconsttype whichconst;
 
     public:
         const char *tle1;
@@ -17,8 +16,10 @@ namespace passpredict
         elsetrec satrec;
 
         Orbit(){};
-        Orbit(const Omm &omm);
-        Orbit(char *atle1, char *atle2);
+        Orbit(const Omm &omm) : Orbit(omm, wgs84) {};
+        Orbit(const Omm &omm, gravconsttype whichconst);
+        Orbit(char *atle1, char *atle2) : Orbit(atle1, atle2, wgs84) {};
+        Orbit(char *atle1, char *atle2, gravconsttype whichconst);
     };
 }
 

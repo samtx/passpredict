@@ -7,14 +7,13 @@ namespace passpredict
 {
     class Satellite
     {
-    private:
-        double m_rteme[3] = {0, 0, 0}; // TEME position vector at time jd
-        double m_vteme[3] = {0, 0, 0}; // TEME velocity vector at time jd
-        double m_jd;                   // julian date
-        double m_tsince;               // minutes since epoch
-        double m_epoch;                // epoch, julian date
-        int teme2ecef();
     public:
+        double rteme[3] = {0, 0, 0}; // TEME position vector at time jd
+        double vteme[3] = {0, 0, 0}; // TEME velocity vector at time jd
+        double jd;                   // julian date
+        double tsince;               // minutes since epoch
+        double epoch;                // epoch, julian date
+
         Orbit orbit;      // orbit data, OMM/TLE
         std::string name; // satellite name
         int satid;        // NORAD satellite ID number
@@ -23,11 +22,14 @@ namespace passpredict
 
         Satellite(){};
         Satellite(Orbit);
+        int teme2ecef();
+        void sgp4();
         void propagate_tsince(double t_tsince);
         void propagate_jd(double t_jd);
         void print();
         void print_oneline();
     };
+
 }
 
 #endif

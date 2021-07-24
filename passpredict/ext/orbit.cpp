@@ -1,10 +1,13 @@
 
+#include "SGP4.h"
 #include "orbit.h"
 #include "passpredict.h"
 
 namespace passpredict
 {
-    Orbit::Orbit(const Omm &omm)
+
+    Orbit::Orbit(const Omm &omm, gravconsttype whichconst)
+        : whichconst(whichconst)
     {
         bool err;
         double ndot, nddot; // These aren't used in sgp4 so they are dummy variables
@@ -21,17 +24,17 @@ namespace passpredict
         satrec.no_kozai = omm.no_kozai / xpdotp;
         satrec.nodeo = omm.nodeo * deg2rad;
         satrec.revnum = omm.revnum;
-
         err = SGP4Funcs::sgp4init(
-            m_whichconst, 'i', satrec.satnum, satrec.jdsatepoch + satrec.jdsatepochF - 2433281.5,
+            whichconst, 'i', satrec.satnum, satrec.jdsatepoch + satrec.jdsatepochF - 2433281.5,
             satrec.bstar, ndot, nddot, satrec.ecco, satrec.argpo, satrec.inclo, satrec.mo,
             satrec.no_kozai, satrec.nodeo, satrec);
     };
 
-    Orbit::Orbit(char *atle1, char *atle2)
+    Orbit::Orbit(char *atle1, char *atle2, gravconsttype whichconst)
+        : whichconst(whichconst)
     {
         double dummy;
         SGP4Funcs::twoline2rv(
-            atle1, atle2, ' ', ' ', 'i', m_whichconst, dummy, dummy, dummy, satrec);
+            atle1, atle2, ' ', ' ', 'i', whichconst, dummy, dummy, dummy, satrec);
     };
 }
