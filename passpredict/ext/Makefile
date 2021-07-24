@@ -32,7 +32,7 @@ OBJECT_FILES = 	observer.o \
 				anpm.o
 
 build:
-	g++ -I. -Isgp4 -Isofa -O2 -c main.cpp $(SOURCE_FILES)
+	g++ -I. -Isgp4 -Isofa -O2 -std=c++11 -c main.cpp $(SOURCE_FILES)
 	g++ main.o $(OBJECT_FILES) -lm -o main
 	chmod +x main
 
@@ -43,7 +43,7 @@ debug:
 	gdb ./main
 
 test:
-	g++ -I. -Isgp4 -Isofa -Itests -w -c tests/*.cpp
+	g++ -I. -Isgp4 -Isofa -Itests -w -std=c++11 -c tests/*.cpp
 	g++ test_*.o $(OBJECT_FILES) -lm -o test_passpredict
 	./test_passpredict
 
