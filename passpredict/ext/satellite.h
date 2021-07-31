@@ -3,33 +3,32 @@
 
 #include "orbit.h"
 
-namespace passpredict
-{
-    class Satellite
-    {
+namespace passpredict {
+    
+class Satellite {
     public:
-        double rteme[3] = {0, 0, 0}; // TEME position vector at time jd
-        double vteme[3] = {0, 0, 0}; // TEME velocity vector at time jd
-        double jd;                   // julian date
-        double tsince;               // minutes since epoch
-        double epoch;                // epoch, julian date
+        double rteme_[3] = {0, 0, 0}; // TEME position vector at time jd
+        double vteme_[3] = {0, 0, 0}; // TEME velocity vector at time jd
+        double jd_;                   // julian date
+        double tsince_;               // minutes since epoch
+        double epoch_;                // epoch, julian date
 
-        Orbit orbit;      // orbit data, OMM/TLE
-        std::string name; // satellite name
-        int satid;        // NORAD satellite ID number
-        double recef[3];  // ECEF position vector at time jd
-        double vecef[3];  // ECEF velocity vector at time jd
+        Orbit orbit_;      // orbit data, OMM/TLE
+        std::string name_; // satellite name
+        int satid_;        // NORAD satellite ID number
+        double recef_[3];  // ECEF position vector at time jd
+        double vecef_[3];  // ECEF velocity vector at time jd
 
         Satellite(){};
         Satellite(Orbit);
-        int teme2ecef();
-        void sgp4();
-        void propagate_tsince(double t_tsince);
-        void propagate_jd(double t_jd);
-        void print();
-        void print_oneline();
-    };
+        int Teme2Ecef();
+        void Sgp4();
+        void PropagateTSince(double t_tsince);
+        void PropagateJd(double t_jd);
+        void Print();
+        void PrintOneline();
+};
 
-}
+} // namespace passpredict
 
 #endif

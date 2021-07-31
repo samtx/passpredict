@@ -66,12 +66,12 @@ TEST_CASE( "Satellite SGP4 Propagation, satid 5", "[satellite][sgp4]" ) {
     passpredict::Orbit orbit (tle1, tle2, wgs72);
     passpredict::Satellite satellite (orbit);
     int i = GENERATE(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-    satellite.tsince = tsince[i];
-    satellite.sgp4();
-    REQUIRE( satellite.rteme[0] == Approx(r[i][0]) );
-    REQUIRE( satellite.rteme[1] == Approx(r[i][1]) );
-    REQUIRE( satellite.rteme[2] == Approx(r[i][2]) );
-    REQUIRE( satellite.vteme[0] == Approx(v[i][0]) );
-    REQUIRE( satellite.vteme[1] == Approx(v[i][1]) );
-    REQUIRE( satellite.vteme[2] == Approx(v[i][2]) );
+    satellite.tsince_ = tsince[i];
+    satellite.Sgp4();
+    REQUIRE( satellite.rteme_[0] == Approx(r[i][0]) );
+    REQUIRE( satellite.rteme_[1] == Approx(r[i][1]) );
+    REQUIRE( satellite.rteme_[2] == Approx(r[i][2]) );
+    REQUIRE( satellite.vteme_[0] == Approx(v[i][0]) );
+    REQUIRE( satellite.vteme_[1] == Approx(v[i][1]) );
+    REQUIRE( satellite.vteme_[2] == Approx(v[i][2]) );
 }

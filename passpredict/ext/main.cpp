@@ -40,16 +40,15 @@ int main()
     passpredict::Location location(lat, lon, h);
     {
         using namespace std;
-        cout << "Lat: " << location.lat << "\n";
-        cout << "Lon: " << location.lon << "\n";
-        cout << "H: " << location.h << "\n";
+        cout << "Lat: " << location.lat_ << "\n";
+        cout << "Lon: " << location.lon_ << "\n";
+        cout << "H: " << location.h_ << "\n";
         // Find location ecef position
-        location.site_ecef();
         cout << "recef: ";
         cout << fixed;
         for (i = 0; i < 3; i++)
         {
-            cout << location.recef[i] << ", ";
+            cout << location.recef_[i] << ", ";
         }
         cout << endl;
     }
@@ -127,8 +126,8 @@ int main()
         passpredict::Satellite satellite (orbit);
         for (i=0; i<13; i++) {
             tsince = i * 360.0;
-            satellite.propagate_tsince(tsince);
-            satellite.print_oneline();
+            satellite.PropagateTSince(tsince);
+            satellite.PrintOneline();
             std::cout << std::endl;
         }
 
