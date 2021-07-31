@@ -10,16 +10,22 @@ namespace passpredict
     class Observer
     {
     public:
-        Location location;
-        Satellite satellite;
-        double r[3] = {0, 0, 0}; // position in ECI coordinates (km)
-        double v[3] = {0, 0, 0}; // velocity in ECI coordinates (km/s)
-        double jd;               // julian date for time
-        double el;               // elevation (degrees)
-        double az;               // azimuth   (degrees)
-        double range;            // range (km)
+        Location location_;
+        Satellite satellite_;
+        double r_[3] = {0, 0, 0}; // position in ECI coordinates (km)
+        double v_[3] = {0, 0, 0}; // velocity in ECI coordinates (km/s)
+        double jd_;               // julian date for time
+        double el_;               // elevation (degrees)
+        double az_;               // azimuth   (degrees)
+        double range_;            // range (km)
 
         Observer(Location location, Satellite satellite);
+        double ComputeElevationAngle();
+        void Ecef2Sez(double rho[3], double rsez[3]);
+        void Sez2Razel(double rsez[3]);
+        // void FindAos(double t0, double tmax);
+        // void FindLos(double t0, double tmax);
+
     };
 }
 #endif
