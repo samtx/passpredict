@@ -12,34 +12,34 @@ namespace passpredict {
 
 Satellite::Satellite(Orbit orbit) : orbit_(orbit)
 {
-    epoch_ = orbit_.satrec.jdsatepoch + orbit_.satrec.jdsatepochF;
+    epoch_ = orbit_.satrec_.jdsatepoch + orbit_.satrec_.jdsatepochF;
 };
 
 void Satellite::Sgp4() {
-    SGP4Funcs::sgp4(orbit_.satrec, tsince_, rteme_, vteme_);
+    SGP4Funcs::sgp4(orbit_.satrec_, tsince_, rteme_, vteme_);
 };
 
-void Satellite::PropagateTSince(double t_tsince)
+void Satellite::PropagateTSince(double tsince)
 {
     /*
         inputs:
             t_tsince    time since epoch in minutes
         */
     // find time since julian date in minutes
-    tsince_ = t_tsince;
-    jd_ = epoch_ + (t_tsince / 1440.0);
+    tsince_ = tsince;
+    jd_ = epoch_ + (tsince_ / 1440.0);
     Satellite::Sgp4();
     Satellite::Teme2Ecef();
 };
 
-void Satellite::PropagateJd(double t_jd)
+void Satellite::PropagateJd(double jd)
 {
     /*
         inputs:
             t_jd    julian date
         */
     // find time of julian date since epoch in minutes
-    jd_ = t_jd;
+    jd_ = jd;
     tsince_ = (epoch_ - jd_) / 1440.0;
     Satellite::Sgp4();
     Satellite::Teme2Ecef();
@@ -110,6 +110,7 @@ int Satellite::Teme2Ecef()
             recef_[i] += rotz[i][j] * rteme_[j];
         }
     }
+    return 0;
 }
 
 void Satellite::Print()

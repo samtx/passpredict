@@ -7,34 +7,34 @@ namespace passpredict
 {
 
     Orbit::Orbit(const Omm &omm, gravconsttype whichconst)
-        : whichconst(whichconst)
+        : whichconst_(whichconst)
     {
         bool err;
         double ndot, nddot; // These aren't used in sgp4 so they are dummy variables
         const double deg2rad = PASSPREDICT_DEG2RAD;
         const double xpdotp = 1440.0 / PASSPREDICT_2PI;
-        strcpy(satrec.satnum, omm.satnum);
-        satrec.jdsatepoch = omm.jdsatepoch;
-        satrec.jdsatepochF = omm.jdsatepochF;
-        satrec.bstar = omm.bstar;
-        satrec.ecco = omm.ecco;
-        satrec.argpo = omm.argpo * deg2rad;
-        satrec.inclo = omm.inclo * deg2rad,
-        satrec.mo = omm.mo * deg2rad;
-        satrec.no_kozai = omm.no_kozai / xpdotp;
-        satrec.nodeo = omm.nodeo * deg2rad;
-        satrec.revnum = omm.revnum;
+        strcpy(satrec_.satnum, omm.satnum);
+        satrec_.jdsatepoch = omm.jdsatepoch;
+        satrec_.jdsatepochF = omm.jdsatepochF;
+        satrec_.bstar = omm.bstar;
+        satrec_.ecco = omm.ecco;
+        satrec_.argpo = omm.argpo * deg2rad;
+        satrec_.inclo = omm.inclo * deg2rad,
+        satrec_.mo = omm.mo * deg2rad;
+        satrec_.no_kozai = omm.no_kozai / xpdotp;
+        satrec_.nodeo = omm.nodeo * deg2rad;
+        satrec_.revnum = omm.revnum;
         err = SGP4Funcs::sgp4init(
-            whichconst, 'i', satrec.satnum, satrec.jdsatepoch + satrec.jdsatepochF - 2433281.5,
-            satrec.bstar, ndot, nddot, satrec.ecco, satrec.argpo, satrec.inclo, satrec.mo,
-            satrec.no_kozai, satrec.nodeo, satrec);
+            whichconst_, 'i', satrec_.satnum, satrec_.jdsatepoch + satrec_.jdsatepochF - 2433281.5,
+            satrec_.bstar, ndot, nddot, satrec_.ecco, satrec_.argpo, satrec_.inclo, satrec_.mo,
+            satrec_.no_kozai, satrec_.nodeo, satrec_);
     };
 
-    Orbit::Orbit(char *atle1, char *atle2, gravconsttype whichconst)
-        : whichconst(whichconst)
+    Orbit::Orbit(char *tle1, char *tle2, gravconsttype whichconst)
+        : whichconst_(whichconst)
     {
         double dummy;
         SGP4Funcs::twoline2rv(
-            atle1, atle2, ' ', ' ', 'i', whichconst, dummy, dummy, dummy, satrec);
+            tle1, tle2, ' ', ' ', 'i', whichconst_, dummy, dummy, dummy, satrec_);
     };
 }

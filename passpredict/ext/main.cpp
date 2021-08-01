@@ -63,21 +63,21 @@ int main()
     const double deg2rad = PASSPREDICT_DEG2RAD;
 	const double xpdotp = 1440.0 / PASSPREDICT_2PI;
 
-    // Print satrec
+    // Print satrec_
     {
         using namespace std;
-        cout << endl << "satrec from TLE strings" << endl;
-        cout << "satrec.jdsatepoch = " << sat.satrec.jdsatepoch << endl;
-        cout << "satrec.jdsatepochF = " << sat.satrec.jdsatepochF << endl;
-        cout << "sgp4init epoch = " << (sat.satrec.jdsatepoch + sat.satrec.jdsatepochF) - 2433281.5 << endl;
-        cout << "satrec.bstar = " << sat.satrec.bstar << endl;
-        cout << "satrec.inclo = " << sat.satrec.inclo / deg2rad << endl;
-        cout << "satrec.nodeo = " << sat.satrec.nodeo / deg2rad << endl;
-        cout << "satrec.ecco = " << sat.satrec.ecco << endl;
-        cout << "satrec.argpo = " << sat.satrec.argpo / deg2rad << endl;
-        cout << "satrec.mo = " << sat.satrec.mo / deg2rad << endl;
-        cout << "satrec.no_kozai = " << sat.satrec.no_kozai * xpdotp << endl;
-        cout << "satrec.revnum = " << sat.satrec.revnum << endl;
+        cout << endl << "satrec_ from TLE strings" << endl;
+        cout << "satrec_.jdsatepoch = " << sat.satrec_.jdsatepoch << endl;
+        cout << "satrec_.jdsatepochF = " << sat.satrec_.jdsatepochF << endl;
+        cout << "sgp4init epoch = " << (sat.satrec_.jdsatepoch + sat.satrec_.jdsatepochF) - 2433281.5 << endl;
+        cout << "satrec_.bstar = " << sat.satrec_.bstar << endl;
+        cout << "satrec_.inclo = " << sat.satrec_.inclo / deg2rad << endl;
+        cout << "satrec_.nodeo = " << sat.satrec_.nodeo / deg2rad << endl;
+        cout << "satrec_.ecco = " << sat.satrec_.ecco << endl;
+        cout << "satrec_.argpo = " << sat.satrec_.argpo / deg2rad << endl;
+        cout << "satrec_.mo = " << sat.satrec_.mo / deg2rad << endl;
+        cout << "satrec_.no_kozai = " << sat.satrec_.no_kozai * xpdotp << endl;
+        cout << "satrec_.revnum = " << sat.satrec_.revnum << endl;
     };
 
     // Use Omm
@@ -100,21 +100,21 @@ int main()
     omm.ephtype = 0;               // ephtype
 
     passpredict::Orbit sat2 (omm);
-    // Print satrec
+    // Print satrec_
     {
         using namespace std;
-        cout << endl << "satrec from Omm" << endl;
-        cout << "satrec.jdsatepoch = " << sat2.satrec.jdsatepoch << endl;
-        cout << "satrec.jdsatepochF = " << sat2.satrec.jdsatepochF << endl;
-        cout << "sgp4init epoch = " << (sat2.satrec.jdsatepoch + sat2.satrec.jdsatepochF) - 2433281.5 << endl;
-        cout << "satrec.bstar = " << sat2.satrec.bstar << endl;
-        cout << "satrec.inclo = " << sat2.satrec.inclo / deg2rad << endl;
-        cout << "satrec.nodeo = " << sat2.satrec.nodeo / deg2rad << endl;
-        cout << "satrec.ecco = " << sat2.satrec.ecco << endl;
-        cout << "satrec.argpo = " << sat2.satrec.argpo / deg2rad << endl;
-        cout << "satrec.mo = " << sat2.satrec.mo / deg2rad << endl;
-        cout << "satrec.no_kozai = " << sat2.satrec.no_kozai * xpdotp << endl;
-        cout << "satrec.revnum = " << sat2.satrec.revnum << endl;
+        cout << endl << "satrec_ from Omm" << endl;
+        cout << "satrec_.jdsatepoch = " << sat2.satrec_.jdsatepoch << endl;
+        cout << "satrec_.jdsatepochF = " << sat2.satrec_.jdsatepochF << endl;
+        cout << "sgp4init epoch = " << (sat2.satrec_.jdsatepoch + sat2.satrec_.jdsatepochF) - 2433281.5 << endl;
+        cout << "satrec_.bstar = " << sat2.satrec_.bstar << endl;
+        cout << "satrec_.inclo = " << sat2.satrec_.inclo / deg2rad << endl;
+        cout << "satrec_.nodeo = " << sat2.satrec_.nodeo / deg2rad << endl;
+        cout << "satrec_.ecco = " << sat2.satrec_.ecco << endl;
+        cout << "satrec_.argpo = " << sat2.satrec_.argpo / deg2rad << endl;
+        cout << "satrec_.mo = " << sat2.satrec_.mo / deg2rad << endl;
+        cout << "satrec_.no_kozai = " << sat2.satrec_.no_kozai * xpdotp << endl;
+        cout << "satrec_.revnum = " << sat2.satrec_.revnum << endl;
     };
 
     // Propagate satellite
