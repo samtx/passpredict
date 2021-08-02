@@ -25,8 +25,8 @@ TEST_CASE( "Observer Ecef2Sez", "[observer]" ) {
     for (i=0; i<3; i++)
         rho[i] = rsat[i] - location.recef_[i];
     observer.Ecef2Sez(rho, rsez);
-    CHECK( rsez[2] == Approx(328.8145) );
     CHECK( rsez[0] == Approx(-773.8654) );
     CHECK( rsez[1] == Approx(-581.4980) );
+    CHECK( rsez[2] == Approx(328.8145) );
 }
 
