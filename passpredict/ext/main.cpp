@@ -59,7 +59,6 @@ int main()
     char tle2[] = "2 25544  51.6426 178.1369 0001717 174.7410 330.7918 15.48826828293750";
     passpredict::Orbit sat (tle1, tle2);
 
-    const double pi = 3.14159265358979323846;
     const double deg2rad = PASSPREDICT_DEG2RAD;
 	const double xpdotp = 1440.0 / PASSPREDICT_2PI;
 

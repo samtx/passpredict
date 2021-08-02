@@ -51,10 +51,11 @@ int Satellite::Teme2Ecef()
     Rotate rteme and vteme to respective ecef vectors
     */
     int i, j, err;
-    double gmst, dpsi, deps, dp80, de80, epsa;
+    double gmst, epsa, dp80, de80;
+    // double dpsi, , deps;
     double ddp80 = 0.0, dde80 = 0.0;
     double ee, gst, w;
-    double jd_tt, tai_1, tai_2, tt_1, tt_2;
+    double tai_1, tai_2, tt_1, tt_2;
     double rotz[3][3], cosw, sinw, tmp[3] = {0, 0, 0};
 
     // find GMST
@@ -72,8 +73,8 @@ int Satellite::Teme2Ecef()
     iauNut80(tt_1, tt_2, &dp80, &de80);
 
     // Add adjustments, in this case assume zero
-    dpsi = dp80 + ddp80;
-    deps = de80 + dde80;
+    // dpsi = dp80 + ddp80;
+    // deps = de80 + dde80;
 
     // Mean obliquity
     epsa = iauObl80(tt_1, tt_2);
