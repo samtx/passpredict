@@ -114,6 +114,35 @@ int Satellite::Teme2Ecef()
     return 0;
 }
 
+Subpoint Satellite::ComputeSubpoint() {
+    // Compute latitude, longitude, and altitude of satellite
+    // Vallado, Alg 12, p 172
+    double rdelta_sat, delta, tan_delta, C, lmbda, alpha;
+    double phi0, phi, sin_phi0;
+    double tol = 1E-6;
+    int i = 0;
+    Subpoint subpoint;
+    using namespace std;
+    rdelta_sat = sqrt(recef_[0]*recef_[0] + recef_[1]*recef_[1]);
+    alpha = asin(recef_[1] / rdelta_sat);
+    subpoint.lon = alpha * PASSPREDICT_RAD2DEG;
+    delta = atan2(recef_[2], rdelta_sat);
+    phi = delta; // longitude
+    do {
+        phi0 = phi;
+        sin_phi0 = sin(phi0);
+        C = PASSPREDICT_R_EARTH / sqrt(1 - PASSPREDICT_e2_EARTH*sin_phi0*sin_phi0);
+        phi = atan2(recef_[2] + C*PASSPREDICT_e2_EARTH*sin_phi0, rdelta_sat);
+        cout << "i=" << i << "  phi0=" << phi0 * PASSPREDICT_RAD2DEG << "  C=" << C << endl;
+        i++;
+    } while (fabs(phi - phi0) >= tol && i < 100);
+    subpoint.lat = phi * PASSPREDICT_RAD2DEG; // latitude
+    subpoint.alt = rdelta_sat / cos(phi) - C;
+    return subpoint;
+};
+
+
+
 void Satellite::Print()
 {
     int i;

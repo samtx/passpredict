@@ -29,9 +29,26 @@ double Observer::ComputeElevationAngle(){
 
 };
 
-// void Observer::FindAos(double t0, double tmax) {
-//     // find r,az,el at t0
-// };
+double Observer::FindAos(double t0, double tmax) {
+    // find time of acquiring of signal
+    double t = t0;
+    Subpoint subpoint;
+
+    // if (el_ > 0) {
+    //     t = Observer::FindLos(t, tmax);
+    // }
+
+    if (tmax > 0.0) {
+
+        // coarse time steps
+        while ((el_ < -1.0) && (t <= tmax)) {
+            subpoint = satellite_.ComputeSubpoint();
+            t -= 0.00035 * (el_ * ((subpoint.alt / 8400.0) + 0.46) - 2.0);
+        }
+    }
+    return 0.0;
+
+};
 
 // void Observer::FindLos() {};
 

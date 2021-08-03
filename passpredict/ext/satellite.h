@@ -4,7 +4,13 @@
 #include "orbit.h"
 
 namespace passpredict {
-    
+
+typedef struct Subpoint {
+    double lat;
+    double lon;
+    double alt;
+} Subpoint;
+
 class Satellite {
     public:
         double rteme_[3] = {0, 0, 0}; // TEME position vector at time jd
@@ -12,6 +18,7 @@ class Satellite {
         double jd_;                   // julian date
         double tsince_;               // minutes since epoch
         double epoch_;                // epoch, julian date
+        double alt_;                  // altitude [km]
 
         Orbit orbit_;      // orbit data, OMM/TLE
         std::string name_; // satellite name
@@ -25,6 +32,7 @@ class Satellite {
         void Sgp4();
         void PropagateTSince(double t_tsince);
         void PropagateJd(double t_jd);
+        Subpoint ComputeSubpoint();
         void Print();
         void PrintOneline();
 };
