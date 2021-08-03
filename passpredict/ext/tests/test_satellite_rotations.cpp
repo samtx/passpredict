@@ -18,5 +18,18 @@ TEST_CASE("Satellite teme2ecef(), skyfield test case", "[satellite][rotations]")
     CHECK(recef[0] == Approx(satellite.recef_[0]));
     CHECK(recef[1] == Approx(satellite.recef_[1]));
     CHECK(recef[2] == Approx(satellite.recef_[2]));
+}
 
+TEST_CASE("Satellite ComputeSubpoint()", "[satellite]")
+{
+    // Vallado, Eg 3-3, p 173
+    passpredict::Satellite satellite;
+    passpredict::Subpoint subpoint;
+    satellite.recef_[0] = 6524.834;
+    satellite.recef_[1] = 6862.875;
+    satellite.recef_[2] = 6448.296;
+    subpoint = satellite.ComputeSubpoint();
+    CHECK(subpoint.lat == Approx(34.352496));
+    CHECK(subpoint.lon == Approx(46.4464));
+    CHECK(subpoint.alt == Approx(5085.22));
 }

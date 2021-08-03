@@ -23,6 +23,8 @@ namespace passpredict
         double ComputeElevationAngle();
         void Ecef2Sez(double rho[3], double rsez[3]);
         void Sez2Razel(double rsez[3]);
+        double FindLos(double, double);
+        double FindAos(double, double);
         // void FindAos(double t0, double tmax);
         // void FindLos(double t0, double tmax);
 
