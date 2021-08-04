@@ -33,6 +33,8 @@ class Satellite {
         void PropagateTSince(double t_tsince);
         void PropagateJd(double t_jd);
         Subpoint ComputeSubpoint();
+        void ComputeAltitude();
+
         void Print();
         void PrintOneline();
 };

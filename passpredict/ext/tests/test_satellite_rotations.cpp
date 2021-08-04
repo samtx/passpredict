@@ -33,3 +33,14 @@ TEST_CASE("Satellite ComputeSubpoint()", "[satellite]")
     CHECK(subpoint.lon == Approx(46.4464));
     CHECK(subpoint.alt == Approx(5085.22));
 }
+
+TEST_CASE("Satellite ComputeAltitude()", "[satellite]")
+{
+    // Vallado, Eg 3-3, p 173
+    passpredict::Satellite satellite;
+    satellite.recef_[0] = 6524.834;
+    satellite.recef_[1] = 6862.875;
+    satellite.recef_[2] = 6448.296;
+    satellite.ComputeAltitude();
+    REQUIRE(satellite.alt_ == Approx(5085.22));
+}
