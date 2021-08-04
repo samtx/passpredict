@@ -20,6 +20,7 @@ namespace passpredict
         double range_;            // range (km)
 
         Observer(Location location, Satellite satellite);
+        void UpdateToJd(double);
         double ComputeElevationAngle();
         void Ecef2Sez(double rho[3], double rsez[3]);
         void Sez2Razel(double rsez[3]);

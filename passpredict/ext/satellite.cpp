@@ -114,6 +114,26 @@ int Satellite::Teme2Ecef()
     return 0;
 }
 
+void Satellite::ComputeAltitude() {
+    // Compute latitude, longitude, and altitude of satellite
+    // Vallado, Alg 12, p 172
+    double rdelta_sat, C;
+    double phi0, phi, sin_phi0;
+    double tol = 1E-6;
+    u_int i;
+    using namespace std;
+    rdelta_sat = sqrt(recef_[0]*recef_[0] + recef_[1]*recef_[1]);
+    phi = atan2(recef_[2], rdelta_sat);
+    do {
+        phi0 = phi;
+        sin_phi0 = sin(phi0);
+        C = PASSPREDICT_R_EARTH / sqrt(1 - PASSPREDICT_e2_EARTH*sin_phi0*sin_phi0);
+        phi = atan2(recef_[2] + C*PASSPREDICT_e2_EARTH*sin_phi0, rdelta_sat);
+        i++;
+    } while (fabs(phi - phi0) >= tol && i < 100);
+    alt_ = rdelta_sat / cos(phi0) - C;
+}
+
 Subpoint Satellite::ComputeSubpoint() {
     // Compute latitude, longitude, and altitude of satellite
     // Vallado, Alg 12, p 172
@@ -133,14 +153,14 @@ Subpoint Satellite::ComputeSubpoint() {
         sin_phi0 = sin(phi0);
         C = PASSPREDICT_R_EARTH / sqrt(1 - PASSPREDICT_e2_EARTH*sin_phi0*sin_phi0);
         phi = atan2(recef_[2] + C*PASSPREDICT_e2_EARTH*sin_phi0, rdelta_sat);
-        cout << "i=" << i << "  phi0=" << phi0 * PASSPREDICT_RAD2DEG << "  C=" << C << endl;
+        // cout << "i=" << i << "  phi0=" << phi0 * PASSPREDICT_RAD2DEG << "  C=" << C << endl;
         i++;
     } while (fabs(phi - phi0) >= tol && i < 100);
-    subpoint.lat = phi * PASSPREDICT_RAD2DEG; // latitude
-    subpoint.alt = rdelta_sat / cos(phi) - C;
+    subpoint.lat = phi0 * PASSPREDICT_RAD2DEG; // latitude
+    alt_ = rdelta_sat / cos(phi0) - C;
+    subpoint.alt = alt_;
     return subpoint;
 };
-
 
 
 void Satellite::Print()
