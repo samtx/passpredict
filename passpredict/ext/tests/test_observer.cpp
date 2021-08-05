@@ -1,3 +1,5 @@
+#include <array>
+
 #include "catch.hpp"
 #include "passpredict.h"
 
@@ -16,8 +18,8 @@
 
 
 TEST_CASE( "Observer Ecef2Sez", "[observer]" ) {
-    double rsat[3] = {885.7296, -4389.3856, 5070.1765}; // ecef
-    double rsez[3], rho[3];
+    std::array<double, 3> rsat = {885.7296, -4389.3856, 5070.1765}; // ecef
+    std::array<double, 3> rsez, rho;
     int i;
     passpredict::Location location(42.38, -71.13, 24);
     passpredict::Satellite satellite;
