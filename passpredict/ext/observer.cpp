@@ -43,7 +43,6 @@ double Observer::FindAos(double t0, double tmax) {
     double t = t0;
     double aos_time = 0.0;
     double dt, told;
-    Subpoint subpoint;
 
     Observer::UpdateToJd(t0);
 
@@ -92,7 +91,6 @@ double Observer::FindLos(double t0, double tmax) {
     double los_time = 0.0;
     double el_tmp;
     double t;
-    Subpoint subpoint;
 
     Observer::UpdateToJd(t0);
 
@@ -166,6 +164,10 @@ void Observer::Sez2Razel(std::array<double, 3> rsez) {
     az_ = std::atan2(rsez[0], rsez[1]) + PASSPREDICT_RAD2DEG;
     if (rsez[0] < 0 && rsez[1] < 0)
         az_ = std::fmod(az_, 360.0);
+};
+
+std::forward_list<std::shared_ptr<Overpass>> GetOverpasses(double t0, double tmax) {
+    // Return a singly-linked list of pointers to overpass structs
 };
 
 
