@@ -36,6 +36,7 @@ struct Overpass {
     double duration_vis;  // visible duration of overpass in seconds
     Point aos_vis;
     Point los_vis;
+    // Overpass(Point a_aos, Point a_los, Point a_max,  ) : aos(Point) {}
 };
 
 class Observer
@@ -50,7 +51,6 @@ public:
     double el_;               // elevation (degrees)
     double az_;               // azimuth   (degrees)
     double range_;            // range (km)
-    std::forward_list<std::shared_ptr<Overpass>> overpasses_;
 
     Observer(Location location, Satellite satellite);
     void UpdateToJd(double);
@@ -61,6 +61,9 @@ public:
     double FindAos(double, double);
     std::shared_ptr<Location> GetLocationPtr();
     std::shared_ptr<Satellite> GetSatellitePtr();
+    std::forward_list<std::shared_ptr<Overpass>> GetOverpasses(double, double);
+
+
     // void FindAos(double t0, double tmax);
     // void FindLos(double t0, double tmax);
 
