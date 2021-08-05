@@ -61,6 +61,7 @@ public:
     double FindAos(double, double);
     std::shared_ptr<Location> GetLocationPtr();
     std::shared_ptr<Satellite> GetSatellitePtr();
+    std::shared_ptr<Overpass> GetNextOverpass(double, double);
     std::forward_list<std::shared_ptr<Overpass>> GetOverpasses(double, double);
 
 
