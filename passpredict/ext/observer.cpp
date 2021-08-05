@@ -166,8 +166,43 @@ void Observer::Sez2Razel(std::array<double, 3> rsez) {
         az_ = std::fmod(az_, 360.0);
 };
 
-std::forward_list<std::shared_ptr<Overpass>> GetOverpasses(double t0, double tmax) {
+std::shared_ptr<Overpass> Observer::GetNextOverpass(double t0, double tmax) {
+    // Find next overpass from time t0
+
+    double t_aos, t_los, t_max;
+    auto overpass = std::make_shared<Overpass>();
+    Point point_aos, point_los;
+    t_aos = Observer::FindAos(t0, tmax);
+    t_los = Observer::FindLos(t_aos + 1.0/86400.0, tmax);
+    point_aos.jd = t_aos;
+    point_los.jd = t_los;
+    overpass->aos = point_aos;
+    overpass->los = point_los;
+    return overpass;
+};
+
+std::forward_list<std::shared_ptr<Overpass>> Observer::GetOverpasses(double t0, double tmax) {
     // Return a singly-linked list of pointers to overpass structs
+
+    double t;
+    int k;
+    std::shared_ptr<Overpass> overpass_ptr;
+    std::forward_list<std::shared_ptr<Overpass>> overpasses;
+
+    // update observer and satellite to time t0
+    Observer::UpdateToJd(t0);
+    t = t0;
+    while ((t < tmax) && (k < 100)) {
+        overpass_ptr = Observer::GetNextOverpass(t, tmax);
+        overpasses.push_front(overpass_ptr);
+        t = overpass_ptr->los.jd  + 10.0/1440.0; // last LOS time plus 10 minutes
+        ++k;
+    }
+
+    // reverse the list to have earliest overpass start first
+    overpasses.reverse();
+
+    return overpasses;
 };
 
 
