@@ -1,34 +1,70 @@
 #ifndef OBSERVER_H
 #define OBSERVER_H
 
+#include <forward_list>
+#include <memory>
+#include <array>
+
 #include "location.h"
 #include "satellite.h"
 #include "passpredict.h"
 
-namespace passpredict
+namespace passpredict {
+
+enum class PassType {
+    visible = 0,
+    unlit,
+    daylight,
+};
+
+struct Point {
+    double az;  // azimuth [degrees]
+    double el;  // elevation [degrees]
+    double range; // range [km]
+    double jd;  // time in jd
+};
+
+
+struct Overpass {
+    Point aos;  // time of acquisition of signal in jd
+    Point los;  // time of loss of signal in jd
+    Point max;  // time of max elevation in jd
+    PassType pass_type;  // visible, unlit, daylight
+    double brightness;  // brightness magnitude
+    double altitude;  // altitude at max elevation in km
+    double duration;  // duration of overpass in seconds
+    double duration_vis;  // visible duration of overpass in seconds
+    Point aos_vis;
+    Point los_vis;
+};
+
+class Observer
 {
-    class Observer
-    {
-    public:
-        Location location_;
-        Satellite satellite_;
-        double r_[3] = {0, 0, 0}; // position in ECI coordinates (km)
-        double v_[3] = {0, 0, 0}; // velocity in ECI coordinates (km/s)
-        double jd_;               // julian date for time
-        double el_;               // elevation (degrees)
-        double az_;               // azimuth   (degrees)
-        double range_;            // range (km)
+private:
+    std::shared_ptr<Location> loc_ptr_;
+    std::shared_ptr<Satellite> sat_ptr_;
+public:
+    std::array<double, 3> r_; // position in ECI coordinates (km)
+    std::array<double, 3> v_; // velocity in ECI coordinates (km/s)
+    double jd_;               // julian date for time
+    double el_;               // elevation (degrees)
+    double az_;               // azimuth   (degrees)
+    double range_;            // range (km)
+    std::forward_list<std::shared_ptr<Overpass>> overpasses_;
 
-        Observer(Location location, Satellite satellite);
-        void UpdateToJd(double);
-        double ComputeElevationAngle();
-        void Ecef2Sez(double rho[3], double rsez[3]);
-        void Sez2Razel(double rsez[3]);
-        double FindLos(double, double);
-        double FindAos(double, double);
-        // void FindAos(double t0, double tmax);
-        // void FindLos(double t0, double tmax);
+    Observer(Location location, Satellite satellite);
+    void UpdateToJd(double);
+    double ComputeElevationAngle();
+    void Ecef2Sez(std::array<double, 3>, std::array<double, 3>&);
+    void Sez2Razel(std::array<double, 3>);
+    double FindLos(double, double);
+    double FindAos(double, double);
+    std::shared_ptr<Location> GetLocationPtr();
+    std::shared_ptr<Satellite> GetSatellitePtr();
+    // void FindAos(double t0, double tmax);
+    // void FindLos(double t0, double tmax);
 
-    };
-}
+};
+
+} // passpredict
 #endif

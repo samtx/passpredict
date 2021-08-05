@@ -1,25 +1,32 @@
 #include <stdio.h>
 #include <fstream>
 #include <math.h>
+#include <forward_list>
+#include <memory>
+#include <array>
+
 #include "observer.h"
 #include "passpredict.h"
 
 namespace passpredict {
 
-Observer::Observer(Location location, Satellite satellite)
-    : location_(location), satellite_(satellite) {};
+Observer::Observer(Location location, Satellite satellite){
+    loc_ptr_ = std::make_shared<Location>(location);
+    sat_ptr_ = std::make_shared<Satellite>(satellite);
+};
 
 double Observer::ComputeElevationAngle(){
     // Compute observation elevation angle at time jd_
     int i;
-    double rho[3], rsez[3];
+    std::array<double, 3> rho;
+    std::array<double, 3> rsez;
 
     // Propagate satellite to time jd_
-    satellite_.PropagateJd(jd_);
+    sat_ptr_->PropagateJd(jd_);
 
     // get vector rho from location to satellite
     for (i=0; i<3; i++)
-        rho[i] = satellite_.recef_[i] - location_.recef_[i];
+        rho[i] = sat_ptr_->recef_[i] - loc_ptr_->recef_[i];
 
     // Rotate rho ECEF vector to topographic SEZ vector
     Observer::Ecef2Sez(rho, rsez);
@@ -50,11 +57,11 @@ double Observer::FindAos(double t0, double tmax) {
         // coarse time steps
         while ((el_ < -1.0) && (t <= tmax)) {
             told = t;
-            t -= 0.00035 * (el_ * ((satellite_.alt_ / 8400.0) + 0.46) - 2.0);
+            t -= 0.00035 * (el_ * ((sat_ptr_->alt_ / 8400.0) + 0.46) - 2.0);
             Observer::UpdateToJd(t);
             // print iterations
             dt = (t - told) * 86400;
-            std::cout << "i=" << i << "  dt=" << dt << "  t=" << t << "  el=" << el_ << "  alt=" << satellite_.alt_<< std::endl;
+            std::cout << "i=" << i << "  dt=" << dt << "  t=" << t << "  el=" << el_ << "  alt=" << sat_ptr_->alt_<< std::endl;
             i++;
         }
 
@@ -66,12 +73,12 @@ double Observer::FindAos(double t0, double tmax) {
                 aos_time = t;
             }
             else {
-                t -= el_ * std::sqrt(satellite_.alt_) / (5300.0 * 5);
+                t -= el_ * std::sqrt(sat_ptr_->alt_) / (5300.0 * 5);
                 Observer::UpdateToJd(t);
             }
             // print iterations
             dt = (t - told) * 86400;
-            std::cout << "j=" << j << "  dt=" << dt <<  "  t=" << t << "  el=" << el_ << "  alt=" << satellite_.alt_<< std::endl;
+            std::cout << "j=" << j << "  dt=" << dt <<  "  t=" << t << "  el=" << el_ << "  alt=" << sat_ptr_->alt_<< std::endl;
             j++;
             if (j > 100) break;
         }
@@ -102,13 +109,13 @@ double Observer::FindLos(double t0, double tmax) {
 
         // coarse time steps
         while ((el_ >= 1.0) && (t <= tmax)) {
-            t += std::cos((el_ - 1.0) * PASSPREDICT_DEG2RAD) * std::sqrt(satellite_.alt_) / 25000.0;
+            t += std::cos((el_ - 1.0) * PASSPREDICT_DEG2RAD) * std::sqrt(sat_ptr_->alt_) / 25000.0;
             Observer::UpdateToJd(t);
         }
 
         // fine time steps
         while ((los_time == 0.0) && (t < tmax)) {
-            t += el_ * std::sqrt(satellite_.alt_) / 502500.0;
+            t += el_ * std::sqrt(sat_ptr_->alt_) / 502500.0;
             Observer::UpdateToJd(t);
 
             if (std::fabs(el_) < 0.005) {
@@ -128,19 +135,19 @@ double Observer::FindLos(double t0, double tmax) {
 
 
 void Observer::UpdateToJd(double jd) {
-    satellite_.PropagateJd(jd);
-    satellite_.ComputeAltitude();
+    sat_ptr_->PropagateJd(jd);
+    sat_ptr_->ComputeAltitude();
     Observer::ComputeElevationAngle();
 }
 
 
-void Observer::Ecef2Sez(double recef[3], double rsez[3]) {
+void Observer::Ecef2Sez(std::array<double, 3> recef, std::array<double, 3>& rsez) {
     // Rotate vector from ECEF to SEZ frame based on
     // location geodetic coordinates
     double lmda_rad, ang1, cosang1, sinang1;
     double cosang2, sinang2;
-    lmda_rad = location_.lon_ * PASSPREDICT_DEG2RAD;
-    ang1 = (90 - location_.lat_) * PASSPREDICT_DEG2RAD;
+    lmda_rad = loc_ptr_->lon_ * PASSPREDICT_DEG2RAD;
+    ang1 = (90 - loc_ptr_->lat_) * PASSPREDICT_DEG2RAD;
     cosang1 = std::cos(ang1);
     sinang1 = std::sin(ang1);
     cosang2 = std::cos(lmda_rad);
@@ -150,7 +157,7 @@ void Observer::Ecef2Sez(double recef[3], double rsez[3]) {
     rsez[2] = sinang1*cosang2*recef[0] + sinang1*sinang2*recef[1] + cosang1*recef[2];
 };
 
-void Observer::Sez2Razel(double rsez[3]) {
+void Observer::Sez2Razel(std::array<double, 3> rsez) {
     // Get Range, Elevation, and Azimuth from SEZ vector
     range_ = std::sqrt(
         rsez[0]*rsez[0] + rsez[1]*rsez[1] + rsez[2]*rsez[2]
