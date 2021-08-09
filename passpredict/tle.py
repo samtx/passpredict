@@ -24,7 +24,7 @@ class Tle():
     def __init__(self, tle1: str, tle2: str):
         self.tle1 = tle1
         self.tle2 = tle2
-        
+
     @cached_property
     def epoch(self) -> datetime:
         return epoch_from_tle(self.tle1)
@@ -38,7 +38,7 @@ class Tle():
             tle1=self.tle1,
             tle2=self.tle2,
             epoch=self.epoch,
-            satid=self.satid    
+            satid=self.satid
         )
 
 
@@ -58,7 +58,7 @@ def epoch_from_tle_datetime(epoch_string: str) -> datetime:
         timedelta(days=int(epoch_day-1)) + \
         timedelta(microseconds=int(epoch_microseconds)
     )
-    
+
 
 def epoch_from_tle(tle1: str) -> datetime:
     """
@@ -95,7 +95,7 @@ def epoch_to_jd(tle1: str) -> float:
     # print([jd1, jd2, jd3, jd4, jd5, jd6])
     return jd
 
-    
+
 
 def satid_from_tle(tle1: str) -> int:
     """
@@ -125,7 +125,7 @@ def get_orbit_data_from_celestrak(satellite_id):
 
     https://celestrak.com/NORAD/elements/supplemental/starlink.txt
     https://celestrak.com/NORAD/elements/supplemental/iss.txt
-    
+
     """
     query = {
         'CATNR': satellite_id,
@@ -139,7 +139,7 @@ def get_orbit_data_from_celestrak(satellite_id):
 def parse_tles_from_celestrak(satellite_id=None):
     """
     Download current TLEs from Celestrak and save them to a JSON file
-    
+
     """
     if satellite_id is None:
         url = 'https://celestrak.com/NORAD/elements/stations.txt'
@@ -169,7 +169,7 @@ def get_TLE(satid: int, tle_data=None):
     tle1 = tle_data[satid]['tle1']
     tle2 = tle_data[satid]['tle2']
     return Tle(tle1=tle1, tle2=tle2)
-    
+
 
 def save_TLE_data(url=None):
     tle_data = parse_tles_from_celestrak(url)
@@ -196,11 +196,52 @@ class OMM(NamedTuple):
     classification: str = 'U'
     ephtype: int = 0    # element set type
 
+    @classmethod
+    def from_tle(cls, tle1, tle2):
+        return tle_to_omm(tle1, tle2)
+
 
 def tle_to_omm(tle1: str, tle2: str) -> OMM:
     """
-    Convert TLE strings to OMM data 
+    Convert TLE strings to OMM data
     """
+    satnum = tle1[2:7]
+    classification = tle1[8]
+    epoch_year = int(tle1[18:20])
+    epoch_days = float(tle1[20:32])
+    jdsatepoch, jdsatepochF = epoch_to_jd(epoch_year, epoch_days)
+    # ndot = float(tle1[34:44])
+    # nddot = float(tle1[45:52])
+    bstar = float(tle1[54:62])
+    ephtype = tle1[63]
+    elnum = int(tle1[65:69])
+
+    inclo = float(tle2[9:17])  # inclination
+    nodeo = float(tle2[18:26])  # right ascension of ascending node
+    ecco = float(tle2[27:34]) / 1e7  # eccentricity
+    argpo = float(tle2[35:43])
+    mo = float(tle2[44:52])    # mean anomaly
+    no_kozai = float(tle2[53:64])   # mean motion
+    revnum = int(tle2[64:69])
+
+    omm = OMM(
+        satnum=satnum,
+        jdsatepoch=jdsatepoch,
+        jdsatepochF=jdsatepochF,
+        bstar=bstar,
+        inclo=inclo,
+        nodeo=nodeo,
+        ecco=ecco,
+        argpo=argpo,
+        mo=mo,
+        no_kozai=no_kozai,
+        revnum=revnum,
+        elnum=elnum,
+        classification=classification,
+        ephtype=ephtype
+    )
+
+    return omm
 
 
 #     // sgp4fix demonstrate method of running SGP4 directly from orbital element values

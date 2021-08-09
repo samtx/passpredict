@@ -1,4 +1,5 @@
 # cython: boundscheck=False, wraparound=False
+# cython: language_level=3
 
 cimport cython
 
@@ -6,7 +7,7 @@ cdef extern from "SGP4.h" namespace "SGP4Funcs":
     cdef void days2mdhms_SGP4(int year, double days, int& mon, int& day, int& hr, int& minute, double& sec)
     cdef void jday_SGP4(int year, int mon, int day, int hr, int minute, double sec, double& jd, double& jdFrac)
 
-def epoch_to_jd(epoch_year, epoch_days):
+def epoch_to_jd(int epoch_year, double epoch_days):
     """
     Convert TLE epoch value to julian date
     """
@@ -19,6 +20,16 @@ def epoch_to_jd(epoch_year, epoch_days):
     days2mdhms_SGP4(year, epoch_days, mon, day, hr, minute, sec)
     jday_SGP4(year, mon, day, hr, minute, sec, jd, jdfr)
     return (jd, jdfr)
+
+def julian_date(int year, int mon, int day, int hr, int minute, double sec):
+    """
+    Convert date to julian date
+    """
+    cdef double jd
+    jd = jday_SGP4(year, mon, day, hr, minute, sec, jd, jdfr)
+    return jd
+
+
 
 
 
