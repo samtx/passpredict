@@ -4,7 +4,11 @@
 namespace passpredict{
     struct Omm
     {
+        char classification;
         char satnum[9];
+        int revnum;
+        int elnum;
+        int ephtype;
         double jdsatepoch;
         double jdsatepochF;
         double bstar;
@@ -14,10 +18,6 @@ namespace passpredict{
         double argpo; // deg
         double mo;    // deg
         double no_kozai;
-        int revnum;
-        int elnum;
-        char classification;
-        int ephtype;
     };
 };
 
