@@ -2,10 +2,11 @@ import datetime
 
 import click
 
-from .schemas import Satellite, Location, PassType
+from .schemas import Satellite, Location, PassType, Orbit
 from .caches import JsonCache
 from .tle import get_TLE
 from .predict import predict
+from .timefn import julian_date
 
 @click.command()
 @click.option('-s', '--satellite-id', type=int)  # satellite id
@@ -32,10 +33,9 @@ def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, al
     satellite = Satellite(
         id=satellite_id,
     )
-    date_start = datetime.date.today()
-    date_end = date_start + datetime.timedelta(days=days)
+    today = datetime.date.today()
     min_elevation = 10.01 # degrees
-    
+
     if no_cache:
         tle = get_TLE(satellite.id)
     else:
@@ -46,9 +46,12 @@ def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, al
                 tle = res
             else:
                 tle = get_TLE(satellite.id)
-                cache.set(sat_key, tle, ttl=86400)    
-            
-    overpasses = predict(location, tle, date_start=date_start, date_end=date_end, min_elevation=min_elevation)
+                cache.set(sat_key, tle, ttl=86400)
+
+    orbit = Orbit.from_tle(tle.tle1, tle.tle2)
+    jd0 = julian_date(today.year, today.month, today.day, 0, 0, 0.0)
+    jd_end = jd0 + days
+    overpasses = predict(location, orbit, jd0, jd_end, min_elevation=min_elevation)
     overpass_table(overpasses, location, tle, tz, twelvehour=twelve, quiet=quiet)
     return 0
 
@@ -118,7 +121,7 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, quiet=F
         fg = 'green' if overpass.type.value == PassType.visible else None
         click.secho(table_data, fg=fg)
 
-    
+
 def echo(*a, **kw):
     if 'end' in kw:
         kw.pop('end')

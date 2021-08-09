@@ -7,19 +7,30 @@ import numpy
 source_files = glob.glob("passpredict/*.pyx")
 source_files += glob.glob("passpredict/ext/*.cpp")
 source_files += glob.glob("passpredict/ext/sgp4/*.cpp")
-source_files += glob.glob("passpredict/ext/sofa/*.c")
+source_files += [
+    'passpredict/ext/sofa/gmst82.c',
+    'passpredict/ext/sofa/utctai.c',
+    'passpredict/ext/sofa/taitt.c',
+    'passpredict/ext/sofa/obl80.c',
+    'passpredict/ext/sofa/nut80.c',
+    'passpredict/ext/sofa/eqeq94.c',
+    'passpredict/ext/sofa/anp.c',
+    'passpredict/ext/sofa/jd2cal.c',
+    'passpredict/ext/sofa/dat.c',
+    'passpredict/ext/sofa/cal2jd.c',
+    'passpredict/ext/sofa/anpm.c',
+]
 
 include_dirs = [
     'passpredict/ext',
     'passpredict/ext/sgp4',
     'passpredict/ext/sofa',
-    numpy.get_include(),
 ]
 
 extensions = [
     Extension("passpredict.timefn", source_files,
         include_dirs=include_dirs,
-        language="c++"
+        language="c++",
     ),
 ]
 

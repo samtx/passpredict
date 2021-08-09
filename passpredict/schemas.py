@@ -7,7 +7,7 @@ from functools import cached_property
 import numpy as np
 from pydantic import BaseModel, Field
 
-from .timefn import jday2datetime
+from .timefn import jday2datetime, epoch_to_jd
 from .tle import TleSchema as Tle
 
 COORDINATES = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N']
@@ -29,7 +29,7 @@ class Point(BaseModel):
         start = 0 - mod/2
         n = np.floor((azm-start)/mod).astype(int)
         return COORDINATES[n]
-    
+
     @classmethod
     def from_rho(cls, rho, idx):
         """Create a Point object directly from the rho vector and index without validation"""
@@ -55,6 +55,87 @@ class Location(BaseModel):
     h: float = 0.0   # elevation [m]
     name: str = None
     # tz: Timezone = None  # timezone object
+
+
+class Orbit(BaseModel):
+    satnum: str
+    jdsatepoch: float
+    jdsatepochF: float
+    bstar: float
+    ecco: float
+    inclo: float
+    nodeo: float
+    argpo: float
+    mo: float
+    no_kozai: float
+    revnum: int
+    elnum: int
+    classification: str
+    ephtype: int
+
+    @classmethod
+    def from_tle(cls, tle1, tle2):
+        """
+        Convert TLE strings to Orbit object
+        """
+        satnum = tle1[2:7]
+        classification = tle1[8]
+        epoch_year = int(tle1[18:20])
+        epoch_days = float(tle1[20:32])
+        jdsatepoch, jdsatepochF = epoch_to_jd(epoch_year, epoch_days)
+        # ndot = float(tle1[34:44])
+        # nddot = float(tle1[45:52])
+        bstar = float(tle1[54:62])
+        ephtype = tle1[63]
+        elnum = int(tle1[65:69])
+        inclo = float(tle2[9:17])  # inclination
+        nodeo = float(tle2[18:26])  # right ascension of ascending node
+        ecco = float(tle2[27:34]) / 1e7  # eccentricity
+        argpo = float(tle2[35:43])
+        mo = float(tle2[44:52])    # mean anomaly
+        no_kozai = float(tle2[53:64])   # mean motion
+        revnum = int(tle2[64:69])
+        orbit = cls(
+            satnum=satnum,
+            jdsatepoch=jdsatepoch,
+            jdsatepochF=jdsatepochF,
+            bstar=bstar,
+            inclo=inclo,
+            nodeo=nodeo,
+            ecco=ecco,
+            argpo=argpo,
+            mo=mo,
+            no_kozai=no_kozai,
+            revnum=revnum,
+            elnum=elnum,
+            classification=classification,
+            ephtype=ephtype
+        )
+        return orbit
+
+    @classmethod
+    def from_omm(cls, omm):
+        """
+        Convert OMM object to Orbit object
+        """
+        orbit = cls(
+            satnum=omm.satnum,
+            jdsatepoch=omm.jdsatepoch,
+            jdsatepochF=omm.jdsatepochF,
+            bstar=omm.bstar,
+            inclo=omm.inclo,
+            nodeo=omm.nodeo,
+            ecco=omm.ecco,
+            argpo=omm.argpo,
+            mo=omm.mo,
+            no_kozai=omm.no_kozai,
+            revnum=omm.revnum,
+            elnum=omm.elnum,
+            classification=omm.classification,
+            ephtype=omm.ephtype
+        )
+        return orbit
+
 
 
 class Satellite(BaseModel):
@@ -102,7 +183,7 @@ class Overpass(BaseModel):
     vis_start_pt: Point = None
     vis_end_pt: Point = None
     brightness: float = None
-    
+
 
 class OverpassResultBase(BaseModel):
     location: Location
