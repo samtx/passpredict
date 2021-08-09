@@ -37,7 +37,7 @@ build:
 	chmod +x main
 
 debug:
-	g++ -g -O0 -I. -Isgp4 -Isofa -c main.cpp $(SOURCE_FILES)
+	g++ -g3 -O0 -I. -Isgp4 -Isofa -c main.cpp $(SOURCE_FILES)
 	g++ main.o $(OBJECT_FILES) -lm -o main
 	# chmod +x main
 	# gdb ./main

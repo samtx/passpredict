@@ -1,7 +1,8 @@
-#include <stdio.h>
+#include <iostream>
+#include <iomanip>
 #include <fstream>
-#include <math.h>
-#include <forward_list>
+#include <cmath>
+#include <list>
 #include <memory>
 #include <array>
 
@@ -42,7 +43,9 @@ double Observer::FindAos(double t0, double tmax) {
     // find time of acquiring of signal
     double t = t0;
     double aos_time = 0.0;
-    double dt, told;
+    double dt, told, t_step;
+
+    std::cout << "t0 = " << std::fixed << std::setprecision(8) << t0 << std::endl;
 
     Observer::UpdateToJd(t0);
 
@@ -56,11 +59,12 @@ double Observer::FindAos(double t0, double tmax) {
         // coarse time steps
         while ((el_ < -1.0) && (t <= tmax)) {
             told = t;
-            t -= 0.00035 * (el_ * ((sat_ptr_->alt_ / 8400.0) + 0.46) - 2.0);
+            t_step = 0.00035 * (el_ * ((sat_ptr_->alt_ / 8400.0) + 0.46) - 2.0);
+            t = t - t_step;
             Observer::UpdateToJd(t);
             // print iterations
             dt = (t - told) * 86400;
-            std::cout << "i=" << i << "  dt=" << dt << "  t=" << t << "  el=" << el_ << "  alt=" << sat_ptr_->alt_<< std::endl;
+            // std::cout << "i=" << i << "  dt=" << dt << "  t=" << t << "  el=" << el_ << "  alt=" << sat_ptr_->alt_<< std::endl;
             i++;
         }
 
@@ -77,7 +81,7 @@ double Observer::FindAos(double t0, double tmax) {
             }
             // print iterations
             dt = (t - told) * 86400;
-            std::cout << "j=" << j << "  dt=" << dt <<  "  t=" << t << "  el=" << el_ << "  alt=" << sat_ptr_->alt_<< std::endl;
+            // std::cout << "j=" << j << "  dt=" << dt <<  "  t=" << t << "  el=" << el_ << "  alt=" << sat_ptr_->alt_<< std::endl;
             j++;
             if (j > 100) break;
         }
@@ -161,7 +165,7 @@ void Observer::Sez2Razel(std::array<double, 3> rsez) {
         rsez[0]*rsez[0] + rsez[1]*rsez[1] + rsez[2]*rsez[2]
     );
     el_ = std::asin(rsez[2] / range_) * PASSPREDICT_RAD2DEG;
-    az_ = std::atan2(rsez[0], rsez[1]) + PASSPREDICT_RAD2DEG;
+    az_ = std::atan2(rsez[0], rsez[1]) * PASSPREDICT_RAD2DEG;
     if (rsez[0] < 0 && rsez[1] < 0)
         az_ = std::fmod(az_, 360.0);
 };
@@ -181,29 +185,50 @@ std::shared_ptr<Overpass> Observer::GetNextOverpass(double t0, double tmax) {
     return overpass;
 };
 
-std::forward_list<std::shared_ptr<Overpass>> Observer::GetOverpasses(double t0, double tmax) {
+std::list<std::shared_ptr<Overpass>> Observer::GetOverpasses(double t0, double tmax) {
     // Return a singly-linked list of pointers to overpass structs
 
     double t;
     int k;
-    std::shared_ptr<Overpass> overpass_ptr;
-    std::forward_list<std::shared_ptr<Overpass>> overpasses;
+    // std::shared_ptr<Overpass> overpass_ptr;
+    std::list<std::shared_ptr<Overpass>> overpasses;
 
     // update observer and satellite to time t0
     Observer::UpdateToJd(t0);
     t = t0;
-    while ((t < tmax) && (k < 100)) {
+    while ((t < tmax) && (k < 25)) {
+        auto overpass_ptr = std::make_shared<Overpass>();
         overpass_ptr = Observer::GetNextOverpass(t, tmax);
-        overpasses.push_front(overpass_ptr);
+        overpasses.push_back(overpass_ptr);
         t = overpass_ptr->los.jd  + 10.0/1440.0; // last LOS time plus 10 minutes
         ++k;
     }
 
     // reverse the list to have earliest overpass start first
-    overpasses.reverse();
+    // overpasses.reverse();
 
     return overpasses;
 };
+
+Observer MakeObserver(Location location, Satellite satellite) {
+    Observer observer = Observer(location, satellite);
+    return observer;
+};
+
+std::list<std::shared_ptr<Overpass>> Predict(Location location, Satellite satellite, double t0, double tmax) {
+    Observer observer = Observer(location, satellite);
+    std::list<std::shared_ptr<Overpass>> overpasses;
+    overpasses = observer.GetOverpasses(t0, tmax);
+    return overpasses;
+};
+
+
+void Overpass::PrintLn() {
+    using namespace std;
+    cout << fixed;
+    cout << setprecision(6) << aos.jd << setw(6) << aos.el << endl;
+};
+
 
 
 }; // namespace passpredict
