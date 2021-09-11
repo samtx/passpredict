@@ -1,6 +1,8 @@
 #ifndef SATELLITE_H
 #define SATELLITE_H
 
+#include <vector>
+
 #include "orbit.h"
 
 namespace passpredict {
@@ -38,6 +40,9 @@ class Satellite {
         void Print();
         void PrintOneline();
 };
+
+std::vector<double> PropagateSatelliteJd(double, Satellite);
+int ComputeTeme2Ecef(double, double[3], double[3]);
 
 } // namespace passpredict
 

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <math.h>
+#include <vector>
 
 #include "SGP4.h"
 #include "orbit.h"
@@ -45,74 +46,14 @@ void Satellite::PropagateJd(double jd)
     Satellite::Teme2Ecef();
 };
 
+
 int Satellite::Teme2Ecef()
 {
-    /*
-    Rotate rteme and vteme to respective ecef vectors
-    */
-    int i, j, err;
-    double gmst, epsa, dp80, de80;
-    // double dpsi, , deps;
-    double ddp80 = 0.0, dde80 = 0.0;
-    double ee, gst, w;
-    double tai_1, tai_2, tt_1, tt_2;
-    double rotz[3][3], cosw, sinw, tmp[3] = {0, 0, 0};
-
-    // find GMST
-    gmst = iauGmst82(jd_, 0.0);
-
-    // Find terrestial time
-    // Convert UTC to TAI
-    err = iauUtctai(jd_, 0.0, &tai_1, &tai_2);
-    if (err) return 1;
-    // Convert TAI to TT
-    err = iauTaitt(tai_1, tai_2, &tt_1, &tt_2);
-    if (err) return 1;
-
-    // Find omega from nutation 1980 theory
-    iauNut80(tt_1, tt_2, &dp80, &de80);
-
-    // Add adjustments, in this case assume zero
-    // dpsi = dp80 + ddp80;
-    // deps = de80 + dde80;
-
-    // Mean obliquity
-    epsa = iauObl80(tt_1, tt_2);
-
-    // Equation of equinoxes
-    ee = iauEqeq94(tt_1, tt_2) + ddp80 * std::cos(epsa);
-
-    // find GAST with kinematic terms
-    gst = gmst + ee;
-
-    // normalize to between 0 and 2pi
-    w = fmod(gst, PASSPREDICT_2PI);
-    if (w < 0) w += PASSPREDICT_2PI;
-
-    // Rotate around z axis
-    // Create z-rotation matrix and transpose it
-    cosw = std::cos(w);
-    sinw = std::sin(w);
-    rotz[0][0] = cosw;
-    rotz[0][1] = sinw;
-    rotz[0][2] = 0;
-    rotz[1][0] = -sinw;
-    rotz[1][1] = cosw;
-    rotz[1][2] = 0;
-    rotz[2][0] = 0;
-    rotz[2][1] = 0;
-    rotz[2][2] = 1;
-
-    // rotate position vector
-    // recef = rotz * rteme
-    for (i=0; i<3; i++) {
-        recef_[i] = 0.0;
-        for (j=0; j<3; j++) {
-            recef_[i] += rotz[i][j] * rteme_[j];
-        }
-    }
-    return 0;
+    int err;
+    err = ComputeTeme2Ecef(jd_, rteme_, recef_);
+    return err;
 }
+
 
 void Satellite::ComputeAltitude() {
     // Compute latitude, longitude, and altitude of satellite
@@ -193,5 +134,97 @@ void Satellite::PrintOneline()
     for (i = 0; i < 3; i++)
         cout << "   " << setw(12) << vteme_[i];
 }
+
+
+std::vector<double> PropagateSatelliteJd(double jd, Satellite satellite){
+    // Function to return ECEF vector of Satellite at time jd
+    double tsince;
+    std::vector<double> recef(3, 0.0);
+    double rteme[3], vteme[3], recef_ary[3];
+    int i, err;
+
+    // Propagate satellite using SGP4
+    tsince = (satellite.epoch_ - jd) / 1440.0;
+    SGP4Funcs::sgp4(satellite.orbit_.satrec_, tsince, rteme, vteme);
+
+    // Rotate TEME vector to ECEF
+    err = ComputeTeme2Ecef(jd, rteme, recef_ary);
+
+    // populate vector object and return
+    for (i = 0; i < 3; i++)
+        recef[i] = recef_ary[i];
+
+    return recef;
+};
+
+
+int ComputeTeme2Ecef(double jd, double rteme[3], double recef[3]){
+    /*
+    Rotate rteme and vteme to respective ecef vectors
+    */
+    int i, j, err;
+    double gmst, epsa, dp80, de80;
+    // double dpsi, , deps;
+    double ddp80 = 0.0, dde80 = 0.0;
+    double ee, gst, w;
+    double tai_1, tai_2, tt_1, tt_2;
+    double rotz[3][3], cosw, sinw, tmp[3] = {0, 0, 0};
+
+    // find GMST
+    gmst = iauGmst82(jd, 0.0);
+
+    // Find terrestial time
+    // Convert UTC to TAI
+    err = iauUtctai(jd, 0.0, &tai_1, &tai_2);
+    if (err) return 1;
+    // Convert TAI to TT
+    err = iauTaitt(tai_1, tai_2, &tt_1, &tt_2);
+    if (err) return 1;
+
+    // Find omega from nutation 1980 theory
+    iauNut80(tt_1, tt_2, &dp80, &de80);
+
+    // Add adjustments, in this case assume zero
+    // dpsi = dp80 + ddp80;
+    // deps = de80 + dde80;
+
+    // Mean obliquity
+    epsa = iauObl80(tt_1, tt_2);
+
+    // Equation of equinoxes
+    ee = iauEqeq94(tt_1, tt_2) + ddp80 * std::cos(epsa);
+
+    // find GAST with kinematic terms
+    gst = gmst + ee;
+
+    // normalize to between 0 and 2pi
+    w = fmod(gst, PASSPREDICT_2PI);
+    if (w < 0) w += PASSPREDICT_2PI;
+
+    // Rotate around z axis
+    // Create z-rotation matrix and transpose it
+    cosw = std::cos(w);
+    sinw = std::sin(w);
+    rotz[0][0] = cosw;
+    rotz[0][1] = sinw;
+    rotz[0][2] = 0;
+    rotz[1][0] = -sinw;
+    rotz[1][1] = cosw;
+    rotz[1][2] = 0;
+    rotz[2][0] = 0;
+    rotz[2][1] = 0;
+    rotz[2][2] = 1;
+
+    // rotate position vector
+    // recef = rotz * rteme
+    for (i=0; i<3; i++) {
+        recef[i] = 0.0;
+        for (j=0; j<3; j++) {
+            recef[i] += rotz[i][j] * rteme[j];
+        }
+    }
+    return 0;
+}
+
 
 } // namespace passpredict

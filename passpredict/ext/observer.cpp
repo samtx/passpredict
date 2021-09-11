@@ -16,8 +16,9 @@ Observer::Observer(Location location, Satellite satellite){
     sat_ptr_ = std::make_shared<Satellite>(satellite);
 };
 
-double Observer::ComputeElevationAngle(){
-    // Compute observation elevation angle at time jd_
+
+void Observer::ComputeRazel(){
+    // Compute observation angle, azimuth, and range
     int i;
     std::array<double, 3> rho;
     std::array<double, 3> rsez;
@@ -34,10 +35,30 @@ double Observer::ComputeElevationAngle(){
 
     // Compute elevation angle, range, and azimuth
     Observer::Sez2Razel(rsez);
+}
 
-    return el_;
+// double Observer::ComputeElevationAngle(double jd, Satellite sat){
+//     // Compute observation elevation angle at time jd
+//     int i;
+//     std::array<double, 3> rho;
+//     std::array<double, 3> rsez;
 
-};
+//     // Propagate satellite to time jd_
+//     sat_ptr_->PropagateJd(jd);
+
+//     // get vector rho from location to satellite
+//     for (i=0; i<3; i++)
+//         rho[i] = sat_ptr_->recef_[i] - loc_ptr_->recef_[i];
+
+//     // Rotate rho ECEF vector to topographic SEZ vector
+//     Observer::Ecef2Sez(rho, rsez);
+
+//     // Compute elevation angle, range, and azimuth
+//     Observer::Sez2Razel(rsez);
+
+//     return el_;
+
+// };
 
 double Observer::FindAos(double t0, double tmax) {
     // find time of acquiring of signal
@@ -59,12 +80,13 @@ double Observer::FindAos(double t0, double tmax) {
         // coarse time steps
         while ((el_ < -1.0) && (t <= tmax)) {
             told = t;
-            t_step = 0.00035 * (el_ * ((sat_ptr_->alt_ / 8400.0) + 0.46) - 2.0);
-            t = t - t_step;
+            // t_step = 0.00035 * (el_ * ((sat_ptr_->alt_ / 8400.0) + 0.46) - 2.0);
+            t_step = 20. / 86400.0;  // add 20 seconds
+            t = t + t_step;
             Observer::UpdateToJd(t);
             // print iterations
             dt = (t - told) * 86400;
-            // std::cout << "i=" << i << "  dt=" << dt << "  t=" << t << "  el=" << el_ << "  alt=" << sat_ptr_->alt_<< std::endl;
+            std::cout << "i=" << i << "  dt=" << dt << "  t=" << t << "  el=" << el_ << "  alt=" << sat_ptr_->alt_<< std::endl;
             i++;
         }
 
@@ -76,12 +98,13 @@ double Observer::FindAos(double t0, double tmax) {
                 aos_time = t;
             }
             else {
-                t -= el_ * std::sqrt(sat_ptr_->alt_) / (5300.0 * 5);
+                // t -= el_ * std::sqrt(sat_ptr_->alt_) / (5300.0 * 5);
+                t += 1.0 / 86400.0;  // add 1 second
                 Observer::UpdateToJd(t);
             }
             // print iterations
             dt = (t - told) * 86400;
-            // std::cout << "j=" << j << "  dt=" << dt <<  "  t=" << t << "  el=" << el_ << "  alt=" << sat_ptr_->alt_<< std::endl;
+            std::cout << "j=" << j << "  dt=" << dt <<  "  t=" << t << "  el=" << el_ << "  alt=" << sat_ptr_->alt_<< std::endl;
             j++;
             if (j > 100) break;
         }
@@ -110,17 +133,19 @@ double Observer::FindLos(double t0, double tmax) {
     if (tmax > 0.0) {
 
         // coarse time steps
-        while ((el_ >= 1.0) && (t <= tmax)) {
-            t += std::cos((el_ - 1.0) * PASSPREDICT_DEG2RAD) * std::sqrt(sat_ptr_->alt_) / 25000.0;
+        while ((el_ >= 5.0) && (t <= tmax)) {
+            // t += std::cos((el_ - 1.0) * PASSPREDICT_DEG2RAD) * std::sqrt(sat_ptr_->alt_) / 25000.0;
+            t += 5.0 / 86400.0;  // add 5 seconds
             Observer::UpdateToJd(t);
         }
 
         // fine time steps
         while ((los_time == 0.0) && (t < tmax)) {
-            t += el_ * std::sqrt(sat_ptr_->alt_) / 502500.0;
+            // t += el_ * std::sqrt(sat_ptr_->alt_) / 502500.0;
+            t += 0.25 / 86400.0;  // add 0.25 seconds
             Observer::UpdateToJd(t);
 
-            if (std::fabs(el_) < 0.005) {
+            if (std::fabs(el_) < 0.1) {
                 el_tmp = el_;
                 // check elevation 1 second earlier
                 Observer::UpdateToJd(t - 1.0/86400.0);
@@ -139,7 +164,7 @@ double Observer::FindLos(double t0, double tmax) {
 void Observer::UpdateToJd(double jd) {
     sat_ptr_->PropagateJd(jd);
     sat_ptr_->ComputeAltitude();
-    Observer::ComputeElevationAngle();
+    Observer::ComputeRazel();
 }
 
 

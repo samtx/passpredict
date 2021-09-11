@@ -57,7 +57,8 @@ public:
 
     Observer(Location location, Satellite satellite);
     void UpdateToJd(double);
-    double ComputeElevationAngle();
+    // double ComputeElevationAngle(double);
+    void ComputeRazel();
     void Ecef2Sez(std::array<double, 3>, std::array<double, 3>&);
     void Sez2Razel(std::array<double, 3>);
     double FindLos(double, double);
