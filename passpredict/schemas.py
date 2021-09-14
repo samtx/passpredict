@@ -7,8 +7,9 @@ from functools import cached_property
 import numpy as np
 from pydantic import BaseModel, Field
 
-from .timefn import jday2datetime, epoch_to_jd
-from .tle import TleSchema as Tle
+from passpredict.timefn import jday2datetime, epoch_to_jd
+from passpredict.tle import TleSchema as Tle
+from passpredict import Location
 
 COORDINATES = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N']
 
@@ -46,15 +47,6 @@ class Point(BaseModel):
     #     s = "{}UTC el={:.1f}d, az={:.1f}d, rng={:.1f}km".format(
     #         dtstr, self.elevation, self.azimuth, self.range)
     #     return s
-
-
-class Location(BaseModel):
-    # __slots__ = ['lat', 'lon', 'h', 'name', 'tz']
-    lat: float       # latitude, decimal degrees, positive is North
-    lon: float       # longitude, decimal degrees, positive is East
-    h: float = 0.0   # elevation [m]
-    name: str = None
-    # tz: Timezone = None  # timezone object
 
 
 class Orbit(BaseModel):
