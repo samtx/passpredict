@@ -254,6 +254,22 @@ void Overpass::PrintLn() {
     cout << setprecision(6) << aos.jd << setw(6) << aos.el << endl;
 };
 
-
+std::vector<double> ComputeEcef2Sez(std::vector<double> recef, double lon, double lat) {
+    // Rotate vector from ECEF to SEZ frame based on
+    // location geodetic coordinates
+    double lmda_rad, ang1, cosang1, sinang1;
+    double cosang2, sinang2;
+    std::vector<double> rsez(3, 0.0);
+    lmda_rad = lon * PASSPREDICT_DEG2RAD;
+    ang1 = (90 - lat) * PASSPREDICT_DEG2RAD;
+    cosang1 = std::cos(ang1);
+    sinang1 = std::sin(ang1);
+    cosang2 = std::cos(lmda_rad);
+    sinang2 = std::sin(lmda_rad);
+    rsez[0] = cosang1*cosang2*recef[0] + cosang1*sinang2*recef[1] - sinang1*recef[2];
+    rsez[1] = -sinang2*recef[0] + cosang2*recef[1] + 0;
+    rsez[2] = sinang1*cosang2*recef[0] + sinang1*sinang2*recef[1] + cosang1*recef[2];
+    return rsez;
+};
 
 }; // namespace passpredict

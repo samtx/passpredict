@@ -77,9 +77,8 @@ int main()
     SGP4Funcs::jday_SGP4(year, mon, day, hr, minute, sec, jd, jdFrac);
     tmax = jd + 10;
     std::cout << "jd=" << jd << "  tmax=" << tmax << std::endl;
-    aos = observer.FindAos(jd, tmax);
+    aos = passpredict::FindAOS(jd, tmax, location, satellite);
     std::cout << "AOS = " << aos << std::endl;
-
     std::cout << "... Predict ... " << std::endl;
 
     std::list<std::shared_ptr<passpredict::Overpass>> overpasses;

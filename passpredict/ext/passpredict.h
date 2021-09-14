@@ -20,7 +20,12 @@ extern "C"
 #include "location.h"
 #include "observer.h"
 
+namespace passpredict {
 
+double ComputeElevationAngle(double, Location, Satellite);
+double FindAOS(double, double, Location, Satellite);
+
+} // passpredict
 
 
 #endif
