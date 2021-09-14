@@ -17,6 +17,7 @@ SOURCE_FILES = 	*.cpp \
 OBJECT_FILES = 	observer.o \
 				location.o \
 				satellite.o \
+				passpredict.o \
 				orbit.o \
 				SGP4.o \
 				gmst82.o \
