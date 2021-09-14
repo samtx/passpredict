@@ -26,8 +26,9 @@ def julian_date(int year, int mon, int day, int hr, int minute, double sec):
     Convert date to julian date
     """
     cdef double jd
-    jd = jday_SGP4(year, mon, day, hr, minute, sec, jd, jdfr)
-    return jd
+    cdef double jdfr
+    jday_SGP4(year, mon, day, hr, minute, sec, jd, jdfr)
+    return (jd, jdfr)
 
 
 
