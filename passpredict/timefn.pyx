@@ -28,6 +28,7 @@ def epoch_to_jd(int epoch_year, double epoch_days):
     jday_SGP4(year, mon, day, hr, minute, sec, jd, jdfr)
     return (jd, jdfr)
 
+
 def julian_date(int year, int mon, int day, int hr, int minute, double sec):
     """
     Convert date to julian date
@@ -36,6 +37,7 @@ def julian_date(int year, int mon, int day, int hr, int minute, double sec):
     cdef double jdfr
     jday_SGP4(year, mon, day, hr, minute, sec, jd, jdfr)
     return (jd, jdfr)
+
 
 def jday2datetime(double jd):
     """
