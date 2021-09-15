@@ -33,10 +33,6 @@ def test_location_cython_object_init(lat, lon, h, name):
             '1 25544U 98067A   20166.98401036  .00000505  00000-0  17092-4 0  9999',
             '2 25544  51.6466 359.3724 0002481  58.1246  97.0831 15.49444148231675',
         ),
-        (
-            '1 25544U 98067A   20166.98401036  .00000505  00000-0  17092-4 0  9999',
-            '2 25544  51.6466 359.3724 0002481  58.1246  97.0831 15.49444148231675',
-        ),
     )
 )
 def test_satellite_cython_object_init_using_tle(tle1, tle2):
@@ -45,7 +41,17 @@ def test_satellite_cython_object_init_using_tle(tle1, tle2):
     """
     omm = OMM.from_tle(tle1, tle2)
     satellite = Satellite(omm)
-    assert True
+    assert satellite.inclo == omm.inclo
+    assert satellite.ecco == omm.ecco
+    assert satellite.nodeo == omm.nodeo
+    assert satellite.argpo == omm.argpo
+    assert satellite.mo == omm.mo
+    assert satellite.bstar == omm.bstar
+    assert satellite.jdsatepoch == omm.jdsatepoch
+    assert satellite.jdsatepochF == omm.jdsatepochF
+    assert satellite.no_kozai == omm.no_kozai
+    assert satellite.elnum == omm.elnum
+
 
 
 # @pytest.mark.parametrize(

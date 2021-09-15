@@ -92,6 +92,46 @@ cdef class Satellite:
         self._orbit = Orbit_cpp(self._omm)
         self._satellite = Satellite_cpp(self._orbit)
 
+    @property
+    def inclo(self):
+        return self._omm.inclo
+
+    @property
+    def ecco(self):
+        return self._omm.ecco
+
+    @property
+    def jdsatepoch(self):
+        return self._omm.jdsatepoch
+
+    @property
+    def jdsatepochF(self):
+        return self._omm.jdsatepochF
+
+    @property
+    def nodeo(self):
+        return self._omm.nodeo
+
+    @property
+    def bstar(self):
+        return self._omm.bstar
+
+    @property
+    def mo(self):
+        return self._omm.mo
+
+    @property
+    def argpo(self):
+        return self._omm.argpo
+
+    @property
+    def no_kozai(self):
+        return self._omm.no_kozai
+
+    @property
+    def elnum(self):
+        return self._omm.elnum
+
     # def __init__(self, omm, *, double brightness):
     #     if brightness is not None:
     #         self.brightness = brightness
