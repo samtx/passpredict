@@ -1,7 +1,8 @@
 import pytest
 
-from passpredict import Location, Satellite
-from passpredict.tle import OMM
+from passpredict import Location, Satellite, OMM
+from passpredict import predict
+from passpredict import timefn
 
 
 @pytest.mark.parametrize(
@@ -52,6 +53,21 @@ def test_satellite_cython_object_init_using_tle(tle1, tle2):
     assert satellite.no_kozai == omm.no_kozai
     assert satellite.elnum == omm.elnum
 
+
+def test_compute_elevation_angle():
+    """
+    Test cython function works properly. Don't test for accuracy
+    """
+    tle1 = '1 25544U 98067A   20166.98401036  .00000505  00000-0  17092-4 0  9999'
+    tle2 = '2 25544  51.6466 359.3724 0002481  58.1246  97.0831 15.49444148231675'
+    omm = OMM.from_tle(tle1, tle2)
+    satellite = Satellite(omm)
+    location = Location(32.1, -97.5, 20)
+    jd = 2458871.5
+    el = predict.compute_elevation_angle(jd, location, satellite)
+    assert el >= -90
+    assert el <= 90
+    assert isinstance(el, float)
 
 
 # @pytest.mark.parametrize(

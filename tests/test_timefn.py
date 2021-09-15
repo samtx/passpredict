@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-import passpredict.timefn as timefn
+from passpredict import timefn
 
 
 @pytest.mark.parametrize(

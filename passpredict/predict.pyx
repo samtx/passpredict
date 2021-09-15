@@ -21,9 +21,8 @@ from passpredict.timefn import epoch_to_jd
 from passpredict import OMM
 
 
-# cdef extern from "ext/passpredict.h" namespace "passpredict":
-#     # cdef Observer_cpp MakeObserver(Location_cpp, Satellite_cpp)
-#     cdef double ComputeElevationAngle(double, double, Location_cpp, Satellite_cpp)
+cdef extern from "ext/passpredict.h" namespace "passpredict":
+    cdef double ComputeElevationAngle(double, Location_cpp, Satellite_cpp)
 
 
 # class to hold azimuth, elevation, and range results
@@ -151,8 +150,13 @@ cdef class Satellite:
     #     del self._orbit
 
 
-
-
+def compute_elevation_angle(double jd, Location location not None, Satellite satellite not None) -> float:
+    """
+    Compute the elevation angle from the horizon for an observer
+    """
+    cdef double el
+    el = ComputeElevationAngle(jd, location._location, satellite._satellite)
+    return el
 
 # cdef class Point:
 #     cdef Point_cpp _point
@@ -286,11 +290,7 @@ cdef class Satellite:
 
 # Call the predict() c++ function
 
-# def compute_elevation_angle(jd, location, satellite):
-#     """
-#     Compute the elevation angle from the horizon for an observer
-#     """
-#     if location.
+
 
 # cdef class Orbit:
 #     cdef char classification
