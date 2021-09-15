@@ -69,36 +69,6 @@ def epoch_from_tle(tle1: str) -> datetime:
     return epoch_from_tle_datetime(epoch_string)
 
 
-# def epoch_to_jd(tle1: str) -> float:
-#     """
-#     Convert TLE epoch to julian date
-#     """
-#     epoch_string = tle1[18:32]
-#     yr = int(epoch_string[0:2])
-#     if yr < 57:
-#         yr += 2000
-#     else:
-#         yr += 1900
-#     dy = float(epoch_string[2:])
-#     dy, fr = divmod(dy, 1)
-#     us = fr * 24 * 60 * 60 * 1e6
-#     # def julian_date(yr, mo=None, dy=None, hr=None, mn=None, sec=None, us=0.0):
-#     yr, mo, dy = dt.year, dt.month, dt.day
-#     hr, mn, sec = dt.hour, dt.minute, dt.second
-#     sec += dt.microsecond * (10 ** -6)
-#     sec += us * 10e-6
-#     jd1 = 367 * yr
-#     jd2 = 7 * (yr + (mo + 9) // 12) // 4
-#     jd3 = (275 * mo) // 9
-#     jd4 = dy
-#     jd5 = 1721013.5
-#     jd6 = ((sec / 60 + mn) / 60 + hr) / 24
-#     jd = jd1 - jd2 + jd3 + jd4 + jd5 + jd6
-#     # print([jd1, jd2, jd3, jd4, jd5, jd6])
-#     return jd
-
-
-
 def satid_from_tle(tle1: str) -> int:
     """
     Extract satellite NORAD ID as int from tle line 1
@@ -201,6 +171,13 @@ class OMM(NamedTuple):
     @classmethod
     def from_tle(cls, tle1, tle2):
         return tle_to_omm(tle1, tle2)
+
+    @property
+    def epoch(self):
+        """
+        Return julian date epoch
+        """
+        return self.jdsatepoch + self.jdsatepochF
 
 
 def tle_to_omm(tle1: str, tle2: str) -> OMM:
