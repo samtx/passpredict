@@ -8,6 +8,7 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 from .utils import grouper
+from passpredict.timefn import epoch_to_jd
 
 
 class TleSchema(BaseModel):
@@ -67,33 +68,34 @@ def epoch_from_tle(tle1: str) -> datetime:
     epoch_string = tle1[18:32]
     return epoch_from_tle_datetime(epoch_string)
 
-def epoch_to_jd(tle1: str) -> float:
-    """
-    Convert TLE epoch to julian date
-    """
-    epoch_string = tle1[18:32]
-    yr = int(epoch_string[0:2])
-    if yr < 57:
-        yr += 2000
-    else:
-        yr += 1900
-    dy = float(epoch_string[2:])
-    dy, fr = divmod(dy, 1)
-    us = fr * 24 * 60 * 60 * 1e6
-    # def julian_date(yr, mo=None, dy=None, hr=None, mn=None, sec=None, us=0.0):
-    yr, mo, dy = dt.year, dt.month, dt.day
-    hr, mn, sec = dt.hour, dt.minute, dt.second
-    sec += dt.microsecond * (10 ** -6)
-    sec += us * 10e-6
-    jd1 = 367 * yr
-    jd2 = 7 * (yr + (mo + 9) // 12) // 4
-    jd3 = (275 * mo) // 9
-    jd4 = dy
-    jd5 = 1721013.5
-    jd6 = ((sec / 60 + mn) / 60 + hr) / 24
-    jd = jd1 - jd2 + jd3 + jd4 + jd5 + jd6
-    # print([jd1, jd2, jd3, jd4, jd5, jd6])
-    return jd
+
+# def epoch_to_jd(tle1: str) -> float:
+#     """
+#     Convert TLE epoch to julian date
+#     """
+#     epoch_string = tle1[18:32]
+#     yr = int(epoch_string[0:2])
+#     if yr < 57:
+#         yr += 2000
+#     else:
+#         yr += 1900
+#     dy = float(epoch_string[2:])
+#     dy, fr = divmod(dy, 1)
+#     us = fr * 24 * 60 * 60 * 1e6
+#     # def julian_date(yr, mo=None, dy=None, hr=None, mn=None, sec=None, us=0.0):
+#     yr, mo, dy = dt.year, dt.month, dt.day
+#     hr, mn, sec = dt.hour, dt.minute, dt.second
+#     sec += dt.microsecond * (10 ** -6)
+#     sec += us * 10e-6
+#     jd1 = 367 * yr
+#     jd2 = 7 * (yr + (mo + 9) // 12) // 4
+#     jd3 = (275 * mo) // 9
+#     jd4 = dy
+#     jd5 = 1721013.5
+#     jd6 = ((sec / 60 + mn) / 60 + hr) / 24
+#     jd = jd1 - jd2 + jd3 + jd4 + jd5 + jd6
+#     # print([jd1, jd2, jd3, jd4, jd5, jd6])
+#     return jd
 
 
 
@@ -188,9 +190,9 @@ class OMM(NamedTuple):
     nodeo: float        # right ascension of ascending node [deg], line 2, ch 18-25
     argpo: float        # argument of perigee [deg] line 2, ch 35-42
     mo: float           # mean anomolay, line 2, ch 44-51
-    nddot: float        # second derivative of mean motion, line 1
+    # nddot: float        # second derivative of mean motion, line 1
     bstar: float        # B star drag term, line 1
-    ndot: float         # first derivative of mean motion, line 1
+    # ndot: float         # first derivative of mean motion, line 1
     elnum: int          # element number, line 1
     revnum: int         # revolution number at epoch
     classification: str = 'U'
@@ -212,7 +214,7 @@ def tle_to_omm(tle1: str, tle2: str) -> OMM:
     jdsatepoch, jdsatepochF = epoch_to_jd(epoch_year, epoch_days)
     # ndot = float(tle1[34:44])
     # nddot = float(tle1[45:52])
-    bstar = float(tle1[54:62])
+    bstar = float(tle1[54:59]) * (10 ** float(tle1[59:61]))
     ephtype = tle1[63]
     elnum = int(tle1[65:69])
 
@@ -225,7 +227,6 @@ def tle_to_omm(tle1: str, tle2: str) -> OMM:
     revnum = int(tle2[64:69])
 
     omm = OMM(
-        satnum=satnum,
         jdsatepoch=jdsatepoch,
         jdsatepochF=jdsatepochF,
         bstar=bstar,
