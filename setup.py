@@ -4,8 +4,7 @@ from setuptools import Extension, setup
 from Cython.Build import cythonize
 import numpy
 
-source_files = []
-source_files += [
+sofa_files = [
     'passpredict/ext/sofa/gmst82.c',
     'passpredict/ext/sofa/utctai.c',
     'passpredict/ext/sofa/taitt.c',
@@ -18,19 +17,25 @@ source_files += [
     'passpredict/ext/sofa/cal2jd.c',
     'passpredict/ext/sofa/anpm.c',
 ]
-source_files += glob.glob("passpredict/ext/sgp4/*.cpp")
-source_files += glob.glob("passpredict/ext/*.cpp")
-source_files = glob.glob("passpredict/*.pyx")
+sgp4_files = glob.glob('passpredict/ext/sgp4/*.cpp')
+passpredict_cpp_files = glob.glob("passpredict/ext/*.cpp")
 
 include_dirs = [
     numpy.get_include(),
+    'passpredict',
     'passpredict/ext',
     'passpredict/ext/sgp4',
     'passpredict/ext/sofa',
 ]
 
 extensions = [
-    Extension("passpredict.timefn", source_files,
+    Extension("passpredict.timefn",
+        sgp4_files + ['passpredict/timefn.pyx'],
+        include_dirs=include_dirs,
+        language="c++",
+    ),
+    Extension("passpredict.predict",
+        sofa_files + sgp4_files + passpredict_cpp_files + ['passpredict/predict.pyx'],
         include_dirs=include_dirs,
         language="c++",
     ),

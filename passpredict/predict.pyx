@@ -6,15 +6,18 @@
 cimport cython
 from libcpp.list cimport list as stdlist
 from libcpp.memory cimport shared_ptr
+from libc.string cimport strcpy
 
 import numpy as np
 cimport numpy as np
 
 from collections import namedtuple
 
-from passpredict.predictcpp cimport (
-    Location as Location_cpp,
-)
+from .predictcpp cimport Location as Location_cpp
+from .predictcpp cimport Omm as Omm_cpp
+from .predictcpp cimport Orbit as Orbit_cpp
+from .predictcpp cimport Satellite as Satellite_cpp
+from passpredict.timefn import epoch_to_jd
 from passpredict import OMM
 
 
@@ -23,18 +26,20 @@ from passpredict import OMM
 #     cdef double ComputeElevationAngle(double, double, Location_cpp, Satellite_cpp)
 
 
+# class to hold azimuth, elevation, and range results
+AzElRng = namedtuple('AzElRng', 'az el rng')
+
+
 cdef class Location:
     """
     Python wrapper for passpredict::Location cpp class
     """
-    cdef Location_cpp* _location
+    cdef Location_cpp _location
+    cdef str name
 
-    def __cinit__(self, double lat, double lon, double h, str name=""):
-        self._location = new Location_cpp(lat, lon, h)
+    def __cinit__(self, double lat, double lon, double h, name = None):
+        self._location = Location_cpp(lat, lon, h)
         self.name = name
-
-    def __dealloc__(self):
-        del self._location
 
     @property
     def lat(self):
@@ -48,22 +53,49 @@ cdef class Location:
     def h(self):
         return self._location.h_
 
+    @property
+    def name(self):
+        return self.name
+
+    @property
+    def recef(self):
+        return self._location.recef_
+
+
 
 cdef class Satellite:
     """
     Python wrapper for passpredict::Satellite cpp class
     """
-    cdef Satellite_cpp* _satellite
+    cdef Satellite_cpp _satellite
+    cdef Orbit_cpp _orbit
+    cdef Omm_cpp _omm
 
-    def __cinit__(self, ):
+    def __cinit__(self, omm, brightness = None):
+        # create cpp orbit object, then use that to create cpp satellite object
+        self._omm.jdsatepoch = omm.jdsatepoch
+        self._omm.jdsatepochF = omm.jdsatepochF
+        self._omm.no_kozai = omm.no_kozai
+        self._omm.ecco = omm.ecco
+        self._omm.inclo = omm.inclo
+        self._omm.nodeo = omm.nodeo
+        self._omm.argpo = omm.argpo
+        self._omm.mo = omm.mo
+        self._omm.nddot = omm.nddot
+        self._omm.bstar = omm.bstar
+        self._omm.ndot = omm.ndot
+        self._omm.elnum = omm.elnum
+        self._omm.revnum = omm.revnum
+        self._omm.classification = omm.classification
+        self._omm.ephtype = omm.ephtype
+        self._orbit = Orbit_cpp(self._omm)
+        self._satellite = Satellite_cpp(self._orbit)
         self.brightness = None
 
-    def __dealloc__(self):
-        pass
+    # def __dealloc__(self):
+    #     del self._satellite
+    #     del self._orbit
 
-    @classmethod
-    def from_tle(cls, str tle1, str tle2, brightness = None):
-        cdef Satellite satellite = Satellite.__new__(self)
 
 
 
@@ -105,9 +137,6 @@ cdef class Satellite:
 # ctypedef fused array:
 #     double
 
-
-# class to hold azimuth, elevation, and range results
-AzElRng = namedtuple('AzElRng', 'az el rng')
 
 # cdef class Observer:
 #     cdef Observer_cpp* _observer
@@ -208,3 +237,81 @@ AzElRng = namedtuple('AzElRng', 'az el rng')
 #     Compute the elevation angle from the horizon for an observer
 #     """
 #     if location.
+
+# cdef class Orbit:
+#     cdef char classification
+#     cdef char[9] satnum
+#     cdef double jdsatepoch
+#     cdef int revnum
+#     cdef int elnum
+#     cdef int ephtype
+#     cdef double jdsatepochF
+#     cdef double bstar
+#     cdef double ecco
+#     cdef double inclo
+#     cdef double nodeo
+#     cdef double argpo
+#     cdef double mo
+#     cdef double no_kozai
+
+#     @staticmethod
+#     cdef Orbit from_tle(unsigned char[:] tle1, unsigned char[:] tle2):
+#         """
+#         Convert TLE strings to Orbit object
+#         """
+#         satnum = tle1[2:7]
+#         classification = tle1[8]
+#         epoch_year = int(tle1[18:20])
+#         epoch_days = float(tle1[20:32])
+#         jdsatepoch, jdsatepochF = epoch_to_jd(epoch_year, epoch_days)
+#         # ndot = float(tle1[34:44])
+#         # nddot = float(tle1[45:52])
+#         bstar = float(tle1[54:62])
+#         ephtype = tle1[63]
+#         elnum = int(tle1[65:69])
+#         inclo = float(tle2[9:17])  # inclination
+#         nodeo = float(tle2[18:26])  # right ascension of ascending node
+#         ecco = float(tle2[27:34]) / 1e7  # eccentricity
+#         argpo = float(tle2[35:43])
+#         mo = float(tle2[44:52])    # mean anomaly
+#         no_kozai = float(tle2[53:64])   # mean motion
+#         revnum = int(tle2[64:69])
+#         cdef Orbit orbit = cls(
+#             satnum=satnum,
+#             jdsatepoch=jdsatepoch,
+#             jdsatepochF=jdsatepochF,
+#             bstar=bstar,
+#             inclo=inclo,
+#             nodeo=nodeo,
+#             ecco=ecco,
+#             argpo=argpo,
+#             mo=mo,
+#             no_kozai=no_kozai,
+#             revnum=revnum,
+#             elnum=elnum,
+#             classification=classification,
+#             ephtype=ephtype
+#         )
+#         return orbit
+
+#     @staticmethod
+#     cdef Orbit from_omm(omm):
+#         """
+#         Convert OMM object to Orbit object
+#         """
+#         cdef Orbit orbit
+#         strcpy(omm.satnum, orbit.satnum)
+#         orbit.jdsatepoch = omm.jdsatepoch
+#         orbit.jdsatepochF = omm.jdsatepochF
+#         orbit.bstar = omm.bstar
+#         orbit.inclo = omm.inclo
+#         orbit.nodeo = omm.nodeo
+#         orbit.ecco = omm.ecco
+#         orbit.argpo = omm.argpo
+#         orbit.mo = omm.mo
+#         orbit.no_kozai = omm.no_kozai
+#         orbit.revnum = omm.revnum
+#         orbit.elnum = omm.elnum
+#         strcpy(omm.classification, orbit.classification)
+#         strcpy(omm.ephtype, orbit.ephtype)
+#         return orbit

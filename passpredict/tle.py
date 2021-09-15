@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from functools import cached_property
 import json
-from typing import NamedTuple, Float
+from typing import NamedTuple
 
 import requests
 import numpy as np
