@@ -70,8 +70,9 @@ cdef class Satellite:
     cdef Satellite_cpp _satellite
     cdef Orbit_cpp _orbit
     cdef Omm_cpp _omm
+    # cdef double *brightness
 
-    def __cinit__(self, omm, brightness = None):
+    def __cinit__(self, omm, *args, **kwargs):
         # create cpp orbit object, then use that to create cpp satellite object
         self._omm.jdsatepoch = omm.jdsatepoch
         self._omm.jdsatepochF = omm.jdsatepochF
@@ -81,16 +82,29 @@ cdef class Satellite:
         self._omm.nodeo = omm.nodeo
         self._omm.argpo = omm.argpo
         self._omm.mo = omm.mo
-        self._omm.nddot = omm.nddot
+        # self._omm.nddot = omm.nddot
         self._omm.bstar = omm.bstar
-        self._omm.ndot = omm.ndot
+        # self._omm.ndot = omm.ndot
         self._omm.elnum = omm.elnum
         self._omm.revnum = omm.revnum
-        self._omm.classification = omm.classification
-        self._omm.ephtype = omm.ephtype
+        self._omm.classification = ord(omm.classification)
+        self._omm.ephtype = ord(omm.ephtype)
         self._orbit = Orbit_cpp(self._omm)
         self._satellite = Satellite_cpp(self._orbit)
-        self.brightness = None
+
+    # def __init__(self, omm, *, double brightness):
+    #     if brightness is not None:
+    #         self.brightness = brightness
+    #         self.brightness_set = True
+
+    # @property
+    # def brightness(self):
+    #     return self.brightness
+
+    # @brightness.setter
+    # def brightness(self, brightness):
+    #     self.brightness = brightness
+
 
     # def __dealloc__(self):
     #     del self._satellite
