@@ -1,12 +1,14 @@
 from datetime import datetime, timedelta, timezone
 from functools import cached_property
 import json
+from typing import NamedTuple
 
 import requests
 import numpy as np
 from pydantic import BaseModel, Field
 
 from .utils import grouper
+from passpredict.timefn import epoch_to_jd
 
 
 class TleSchema(BaseModel):
@@ -23,7 +25,7 @@ class Tle():
     def __init__(self, tle1: str, tle2: str):
         self.tle1 = tle1
         self.tle2 = tle2
-        
+
     @cached_property
     def epoch(self) -> datetime:
         return epoch_from_tle(self.tle1)
@@ -37,7 +39,7 @@ class Tle():
             tle1=self.tle1,
             tle2=self.tle2,
             epoch=self.epoch,
-            satid=self.satid    
+            satid=self.satid
         )
 
 
@@ -57,7 +59,7 @@ def epoch_from_tle_datetime(epoch_string: str) -> datetime:
         timedelta(days=int(epoch_day-1)) + \
         timedelta(microseconds=int(epoch_microseconds)
     )
-    
+
 
 def epoch_from_tle(tle1: str) -> datetime:
     """
@@ -65,7 +67,7 @@ def epoch_from_tle(tle1: str) -> datetime:
     """
     epoch_string = tle1[18:32]
     return epoch_from_tle_datetime(epoch_string)
-    
+
 
 def satid_from_tle(tle1: str) -> int:
     """
@@ -95,7 +97,7 @@ def get_orbit_data_from_celestrak(satellite_id):
 
     https://celestrak.com/NORAD/elements/supplemental/starlink.txt
     https://celestrak.com/NORAD/elements/supplemental/iss.txt
-    
+
     """
     query = {
         'CATNR': satellite_id,
@@ -109,7 +111,7 @@ def get_orbit_data_from_celestrak(satellite_id):
 def parse_tles_from_celestrak(satellite_id=None):
     """
     Download current TLEs from Celestrak and save them to a JSON file
-    
+
     """
     if satellite_id is None:
         url = 'https://celestrak.com/NORAD/elements/stations.txt'
@@ -139,9 +141,133 @@ def get_TLE(satid: int, tle_data=None):
     tle1 = tle_data[satid]['tle1']
     tle2 = tle_data[satid]['tle2']
     return Tle(tle1=tle1, tle2=tle2)
-    
+
 
 def save_TLE_data(url=None):
     tle_data = parse_tles_from_celestrak(url)
     with open('tle_data.json', 'w') as file:
         json.dump(tle_data, file)
+
+class OMM(NamedTuple):
+    """
+    Data structure for holding orbital elements
+    """
+    jdsatepoch: float   # julian date
+    jdsatepochF: float  # julian date fraction
+    no_kozai: float     # kozai mean motion [rev/day], line 2, ch 53-63
+    ecco: float         # eccentricity, line 2, ch 27-33
+    inclo: float        # inclination [deg], line 2, ch 9-16
+    nodeo: float        # right ascension of ascending node [deg], line 2, ch 18-25
+    argpo: float        # argument of perigee [deg] line 2, ch 35-42
+    mo: float           # mean anomolay, line 2, ch 44-51
+    # nddot: float        # second derivative of mean motion, line 1
+    bstar: float        # B star drag term, line 1
+    # ndot: float         # first derivative of mean motion, line 1
+    elnum: int          # element number, line 1
+    revnum: int         # revolution number at epoch
+    classification: str = 'U'
+    ephtype: int = 0    # element set type
+
+    @classmethod
+    def from_tle(cls, tle1, tle2):
+        return tle_to_omm(tle1, tle2)
+
+    @property
+    def epoch(self):
+        """
+        Return julian date epoch
+        """
+        return self.jdsatepoch + self.jdsatepochF
+
+
+def tle_to_omm(tle1: str, tle2: str) -> OMM:
+    """
+    Convert TLE strings to OMM data
+    """
+    satnum = tle1[2:7]
+    classification = tle1[8]
+    epoch_year = int(tle1[18:20])
+    epoch_days = float(tle1[20:32])
+    jdsatepoch, jdsatepochF = epoch_to_jd(epoch_year, epoch_days)
+    # ndot = float(tle1[34:44])
+    # nddot = float(tle1[45:52])
+    bstar = float(tle1[54:59]) * (10 ** float(tle1[59:61]))
+    ephtype = tle1[63]
+    elnum = int(tle1[65:69])
+
+    inclo = float(tle2[9:17])  # inclination
+    nodeo = float(tle2[18:26])  # right ascension of ascending node
+    ecco = float(tle2[27:34]) / 1e7  # eccentricity
+    argpo = float(tle2[35:43])
+    mo = float(tle2[44:52])    # mean anomaly
+    no_kozai = float(tle2[53:64])   # mean motion
+    revnum = int(tle2[64:69])
+
+    omm = OMM(
+        jdsatepoch=jdsatepoch,
+        jdsatepochF=jdsatepochF,
+        bstar=bstar,
+        inclo=inclo,
+        nodeo=nodeo,
+        ecco=ecco,
+        argpo=argpo,
+        mo=mo,
+        no_kozai=no_kozai,
+        revnum=revnum,
+        elnum=elnum,
+        classification=classification,
+        ephtype=ephtype
+    )
+
+    return omm
+
+
+#     // sgp4fix demonstrate method of running SGP4 directly from orbital element values
+# 	//1 08195U 75081A   06176.33215444  .00000099  00000-0  11873-3 0   813
+# 	//2 08195  64.1586 279.0717 6877146 264.7651  20.2257  2.00491383225656
+# 	const double deg2rad = pi / 180.0;         //   0.0174532925199433
+# 	const double xpdotp = 1440.0 / (2.0 *pi);  // 229.1831180523293
+
+# 	whichconst = wgs72;
+# 	opsmode = 'a';
+# 	// new alpha5 or 9-digit number
+# #ifdef _MSC_VER
+# 	strcpy_s(satrec.satnum, sizeof(satrec.satnum), "8195");
+# #else
+# 	strcpy(satrec.satnum, "8195");
+# #endif
+
+# 	satrec.jdsatepoch = 2453911.0;
+# 	satrec.jdsatepochF = 0.8321544402;
+# 	satrec.no_kozai = 2.00491383;
+# 	satrec.ecco = 0.6877146;
+# 	satrec.inclo = 64.1586;
+# 	satrec.nodeo = 279.0717;
+# 	satrec.argpo = 264.7651;
+# 	satrec.mo = 20.2257;
+# 	satrec.nddot = 0.00000e0;
+# 	satrec.bstar = 0.11873e-3;
+# 	satrec.ndot = 0.00000099;
+# 	satrec.elnum = 813;
+# 	satrec.revnum = 22565;
+# 	satrec.classification = 'U';
+# 	strncpy_s(satrec.intldesg, "          ", 11 * sizeof(char));
+# 	satrec.ephtype = 0;
+
+# 	// convert units and initialize
+# 	satrec.no_kozai = satrec.no_kozai / xpdotp; //* rad/min
+# 	satrec.ndot = satrec.ndot / (xpdotp*1440.0);  //* ? * minperday
+# 	satrec.nddot = satrec.nddot / (xpdotp*1440.0 * 1440);
+# 	satrec.inclo = satrec.inclo  * deg2rad;
+# 	satrec.nodeo = satrec.nodeo  * deg2rad;
+# 	satrec.argpo = satrec.argpo  * deg2rad;
+# 	satrec.mo = satrec.mo     * deg2rad;
+
+# 	// set start/stop times for propagation
+# 	startmfe = 0.0;
+# 	stopmfe = 2880.0;
+# 	deltamin = 120.0;
+
+# 	SGP4Funcs::sgp4init(whichconst, opsmode, satrec.satnum, satrec.jdsatepoch + satrec.jdsatepochF - 2433281.5, satrec.bstar,
+# 		satrec.ndot, satrec.nddot, satrec.ecco, satrec.argpo, satrec.inclo, satrec.mo, satrec.no_kozai,
+# 		satrec.nodeo, satrec);

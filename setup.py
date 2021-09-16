@@ -1,23 +1,58 @@
-from setuptools import setup
+import glob
 
-ext = []
-# from Cython.Build import cythonize
-# ext.append(cythonize(['passpredict/timefn_ext.pyx']))
+from setuptools import Extension, setup
+from Cython.Build import cythonize
+import numpy
+
+sofa_files = [
+    'passpredict/ext/sofa/gmst82.c',
+    'passpredict/ext/sofa/utctai.c',
+    'passpredict/ext/sofa/taitt.c',
+    'passpredict/ext/sofa/obl80.c',
+    'passpredict/ext/sofa/nut80.c',
+    'passpredict/ext/sofa/eqeq94.c',
+    'passpredict/ext/sofa/anp.c',
+    'passpredict/ext/sofa/jd2cal.c',
+    'passpredict/ext/sofa/dat.c',
+    'passpredict/ext/sofa/cal2jd.c',
+    'passpredict/ext/sofa/anpm.c',
+]
+sgp4_files = glob.glob('passpredict/ext/sgp4/*.cpp')
+passpredict_cpp_files = glob.glob("passpredict/ext/*.cpp")
+
+include_dirs = [
+    numpy.get_include(),
+    'passpredict',
+    'passpredict/ext',
+    'passpredict/ext/sgp4',
+    'passpredict/ext/sofa',
+]
+
+extensions = [
+    Extension("passpredict.timefn",
+        sgp4_files + ['passpredict/timefn.pyx'],
+        include_dirs=include_dirs,
+        language="c++",
+    ),
+    Extension("passpredict.predict",
+        sofa_files + sgp4_files + passpredict_cpp_files + ['passpredict/predict.pyx'],
+        include_dirs=include_dirs,
+        language="c++",
+    ),
+]
 
 with open("README.md") as f:
     long_description = f.read()
 
 setup(
     name="passpredict",
-    version="0.0.11",
+    version="0.0.12",
     packages=['passpredict'],
     python_requires=">=3.8",
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     install_requires=[
         "numpy",
-        "sgp4 >= 2.8",
-        "astropy >= 4.1rc1",  # for the TEME coordinate frame
         "requests",
         "pydantic",
         "click",
@@ -53,5 +88,5 @@ setup(
             'passpredict = passpredict.cli:main'
         ]
     },
-    ext_modules = ext,
+    ext_modules = cythonize(extensions),
 )

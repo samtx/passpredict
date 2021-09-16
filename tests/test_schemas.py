@@ -67,17 +67,6 @@ def test_Overpass():
     assert overpass.max_pt == max_pt
 
 
-def test_Location():
-    lat = 30.2672
-    lon = -97.7431
-    h = 88
-    name = 'Austin, Texas'
-    austin = schemas.Location(lat=lat, lon=lon, h=h, name=name)
-    assert austin.lat == lat
-    assert austin.lon == lon
-    assert austin.h == h
-    assert austin.name == name
-
 
 if __name__ == "__main__":
     pytest.main(['-v', __file__])

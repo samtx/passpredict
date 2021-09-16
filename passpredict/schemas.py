@@ -2,13 +2,11 @@
 import datetime
 from typing import List
 from enum import Enum
-from functools import cached_property
 
 import numpy as np
 from pydantic import BaseModel, Field
 
-from .timefn import jday2datetime
-from .tle import TleSchema as Tle
+from passpredict.timefn import jday2datetime
 
 COORDINATES = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N']
 
@@ -29,7 +27,7 @@ class Point(BaseModel):
         start = 0 - mod/2
         n = np.floor((azm-start)/mod).astype(int)
         return COORDINATES[n]
-    
+
     @classmethod
     def from_rho(cls, rho, idx):
         """Create a Point object directly from the rho vector and index without validation"""
@@ -40,21 +38,11 @@ class Point(BaseModel):
             range=rho.rng[idx]
         )
 
-
     # def __repr__(self):
     #     dtstr = self.datetime.strftime("%b %d %Y, %H:%M:%S")
     #     s = "{}UTC el={:.1f}d, az={:.1f}d, rng={:.1f}km".format(
     #         dtstr, self.elevation, self.azimuth, self.range)
     #     return s
-
-
-class Location(BaseModel):
-    # __slots__ = ['lat', 'lon', 'h', 'name', 'tz']
-    lat: float       # latitude, decimal degrees, positive is North
-    lon: float       # longitude, decimal degrees, positive is East
-    h: float = 0.0   # elevation [m]
-    name: str = None
-    # tz: Timezone = None  # timezone object
 
 
 class Satellite(BaseModel):
@@ -102,17 +90,16 @@ class Overpass(BaseModel):
     vis_start_pt: Point = None
     vis_end_pt: Point = None
     brightness: float = None
-    
-
-class OverpassResultBase(BaseModel):
-    location: Location
 
 
-class SingleSatOverpassResult(OverpassResultBase):
-    satellite: Satellite
-    overpasses: List[Overpass]
+# class OverpassResultBase(BaseModel):
+#     location: Location
 
 
-class MultiSatOverpassResult(OverpassResultBase):
-    overpasses: List[Overpass]
+# class SingleSatOverpassResult(OverpassResultBase):
+#     satellite: Satellite
+#     overpasses: List[Overpass]
 
+
+# class MultiSatOverpassResult(OverpassResultBase):
+#     overpasses: List[Overpass]
