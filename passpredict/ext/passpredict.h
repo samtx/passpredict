@@ -1,21 +1,31 @@
 #ifndef PASSPREDICT_H
 #define PASSPREDICT_H
 
+extern "C"
+{
 #include "sofa.h"
+}
+#include "SGP4.h"
 
-#define D_R_EARTH 6378.137  //  Earth mean equatorial radius [km]
+#define PASSPREDICT_DEG2RAD 1.745329251994329576923691e-2 // sofam.m DD2R
+#define PASSPREDICT_RAD2DEG 57.29577951308232087679815 // sofam.h DR2D
+#define PASSPREDICT_PI 3.141592653589793238462643 // sofam.h DPI
+#define PASSPREDICT_2PI 6.283185307179586476925287        // sofam.m D2PI
+#define PASSPREDICT_R_EARTH 6378.137                      //  Earth mean equatorial radius [km]
+#define PASSPREDICT_e2_EARTH 0.006694385000               // Earth eccentricity squared
 
-/*  crotations.c  */
-void c_mod2ecef(double *jd, double *r, int n);
-void c_teme2ecef(double *jd, double *r, int n);
-void c_ecef2sez(double *r, double phi, double lmda, int n);
+#include "omm.h"
+#include "orbit.h"
+#include "satellite.h"
+#include "location.h"
+#include "observer.h"
 
-/*  csolar.c  */
-void c_sun_pos_ecef(double *jd, double *r, int n);
-void c_sun_pos(double *jd, double *r, int n);
-void c_sun_sat_illumination_distance(double *rsat, double *rsun, double *illum_dist, int n);
+namespace passpredict {
 
-/*  coverpass.c  */
-void c_sez2rngel(double *r_view, double *rng_view, double *el_view, int n);
+double ComputeElevationAngle(double, Location, Satellite);
+double FindAOS(double, double, Location, Satellite);
+
+} // passpredict
+
 
 #endif
