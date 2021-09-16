@@ -2,6 +2,9 @@
 
 SOURCE_FILES = 	*.cpp \
 				sgp4/SGP4.cpp \
+				sofa/dtf2d.c \
+				sofa/d2dtf.c \
+				sofa/d2tf.c \
 				sofa/gmst82.c \
 				sofa/utctai.c \
 				sofa/taitt.c \
@@ -20,6 +23,9 @@ OBJECT_FILES = 	observer.o \
 				passpredict.o \
 				orbit.o \
 				SGP4.o \
+				dtf2d.o \
+				d2dtf.o \
+				d2tf.o \
 				gmst82.o \
 				utctai.o \
 				taitt.o \

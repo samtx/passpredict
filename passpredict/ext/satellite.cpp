@@ -157,59 +157,38 @@ std::vector<double> PropagateSatelliteJd(double jd, Satellite satellite){
     return recef;
 };
 
+int Utc2tt(double jd1, double jd2, double &tt1, double &tt2){
+    // Julian date UTC to IAU terrestial time
+    int j;
+    double tai1, tai2;
+    j = iauUtctai(jd1, jd2, &tai1, &tai2);
+    if ( j ) return 1;
+    j = iauTaitt(tai1, tai2, &tt1, &tt2);
+    if ( j ) return 1;
+};
+
 
 int ComputeTeme2Ecef(double jd, double rteme[3], double recef[3]){
     /*
     Rotate rteme and vteme to respective ecef vectors
     */
     int i, j, err;
-    double gmst, epsa, dp80, de80;
-    // double dpsi, , deps;
-    double ddp80 = 0.0, dde80 = 0.0;
-    double ee, gst, w;
-    double tai_1, tai_2, tt_1, tt_2;
-    double rotz[3][3], cosw, sinw, tmp[3] = {0, 0, 0};
+    double gmst;
+    double rotz[3][3];
+    double costheta, sintheta;
 
     // find GMST
     gmst = iauGmst82(jd, 0.0);
 
-    // Find terrestial time
-    // Convert UTC to TAI
-    err = iauUtctai(jd, 0.0, &tai_1, &tai_2);
-    if (err) return 1;
-    // Convert TAI to TT
-    err = iauTaitt(tai_1, tai_2, &tt_1, &tt_2);
-    if (err) return 1;
-
-    // Find omega from nutation 1980 theory
-    iauNut80(tt_1, tt_2, &dp80, &de80);
-
-    // Add adjustments, in this case assume zero
-    // dpsi = dp80 + ddp80;
-    // deps = de80 + dde80;
-
-    // Mean obliquity
-    epsa = iauObl80(tt_1, tt_2);
-
-    // Equation of equinoxes
-    ee = iauEqeq94(tt_1, tt_2) + ddp80 * std::cos(epsa);
-
-    // find GAST with kinematic terms
-    gst = gmst + ee;
-
-    // normalize to between 0 and 2pi
-    w = fmod(gst, PASSPREDICT_2PI);
-    if (w < 0) w += PASSPREDICT_2PI;
-
     // Rotate around z axis
     // Create z-rotation matrix and transpose it
-    cosw = std::cos(w);
-    sinw = std::sin(w);
-    rotz[0][0] = cosw;
-    rotz[0][1] = sinw;
+    costheta = std::cos(gmst);
+    sintheta = std::sin(gmst);
+    rotz[0][0] = costheta;
+    rotz[0][1] = sintheta;
     rotz[0][2] = 0;
-    rotz[1][0] = -sinw;
-    rotz[1][1] = cosw;
+    rotz[1][0] = -sintheta;
+    rotz[1][1] = costheta;
     rotz[1][2] = 0;
     rotz[2][0] = 0;
     rotz[2][1] = 0;

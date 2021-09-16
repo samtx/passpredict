@@ -33,6 +33,14 @@ int main()
     //     r_ECEF = topocentric.site_ECEF(phi_gd, lmda, alt)
     //     r_ECEFtrue = np.array([-1275.1219, -4797.9890, 3994.2975])
     //     for i in [0, 1, 2]:
+    int j;
+    double u1, u2, tt1, tt2;
+    j = iauDtf2d ( "UTC", 2010, 7, 24, 11, 18, 7.318, &u1, &u2 );
+    j = passpredict::Utc2tt(u1, u2, tt1, tt2);
+
+    std::cout << std::fixed << std::setprecision(4) << "u1 = " << u1 << "   u2 = " << std::setprecision(12)  << u2 << std::endl;
+    std::cout << std::fixed << std::setprecision(4) << "tt1 = " << tt1 << "   tt2 = " << std::setprecision(12)  << tt2 << std::endl;
+
 
     lat = 30.1990;
     lon = -97.8616;
@@ -81,15 +89,15 @@ int main()
     std::cout << "AOS = " << aos << std::endl;
     std::cout << "... Predict ... " << std::endl;
 
-    std::list<std::shared_ptr<passpredict::Overpass>> overpasses;
-    std::shared_ptr<passpredict::Overpass> overpass;
-    overpasses = passpredict::Predict(location, satellite, jd, tmax);
-    int n_overpasses = overpasses.size();
+    // std::list<std::shared_ptr<passpredict::Overpass>> overpasses;
+    // std::shared_ptr<passpredict::Overpass> overpass;
+    // overpasses = passpredict::Predict(location, satellite, jd, tmax);
+    // int n_overpasses = overpasses.size();
 
-    std::cout << "Found " << n_overpasses << " overpasses" << std::endl;
-    for (auto const& overpass : overpasses) {
-        overpass->PrintLn();
-    }
+    // std::cout << "Found " << n_overpasses << " overpasses" << std::endl;
+    // for (auto const& overpass : overpasses) {
+    //     overpass->PrintLn();
+    // }
 
 
     return 0;
