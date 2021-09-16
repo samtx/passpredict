@@ -5,6 +5,7 @@
 
 cimport cython
 from libcpp.list cimport list as stdlist
+from libcpp.vector cimport vector
 from libcpp.memory cimport shared_ptr
 from libc.string cimport strcpy
 
@@ -23,6 +24,7 @@ from passpredict import OMM
 
 cdef extern from "ext/passpredict.h" namespace "passpredict":
     cdef double ComputeElevationAngle(double, Location_cpp, Satellite_cpp)
+    cdef vector[double] PropagateSatelliteJd(double jd, Satellite_cpp satellite)
 
 
 # class to hold azimuth, elevation, and range results
@@ -90,6 +92,14 @@ cdef class Satellite:
         self._omm.ephtype = ord(omm.ephtype)
         self._orbit = Orbit_cpp(self._omm)
         self._satellite = Satellite_cpp(self._orbit)
+
+    def propagate(self, double jd):
+        """
+        Propagate satellite to time jd and return position in ECEF coordinates [km]
+        """
+        cdef vector[double] r
+        r = PropagateSatelliteJd(jd, self._satellite)
+        return r
 
     @property
     def inclo(self):
