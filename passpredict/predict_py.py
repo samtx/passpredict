@@ -97,12 +97,12 @@ class Observer:
         return jd
 
 
-def predict(jd0, jdf, location, satellite):
+def predict(location, satellite, jd0=None, jdmax=None):
     """
     Main prediction algorithm for finding overpasses
     """
     observer = Observer(location=location, satellite=satellite)
-    res = observer.predict_overpasses()
-    return [jday2datetime(jd)]
+    res = observer.predict_overpasses(jd0, jdmax)
+    return res
 
 
