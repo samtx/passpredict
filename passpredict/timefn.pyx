@@ -50,9 +50,3 @@ def jday2datetime(double jd):
     if i_sec == 60:
         return datetime.datetime(year, mon, day, hr, minute, 59, tzinfo=tz_utc) + datetime.timedelta(seconds=1)
     return datetime.datetime(year, mon, day, hr, minute, i_sec, tzinfo=tz_utc)
-
-
-
-
-
-

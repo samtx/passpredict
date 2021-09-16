@@ -131,6 +131,10 @@ cdef class Satellite:
     def elnum(self):
         return self._omm.elnum
 
+    @property
+    def epoch(self):
+        return self._omm.jdsatepoch + self._omm.jdsatepochF
+
     # def __init__(self, omm, *, double brightness):
     #     if brightness is not None:
     #         self.brightness = brightness
