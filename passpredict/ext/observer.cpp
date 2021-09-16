@@ -186,13 +186,11 @@ void Observer::Ecef2Sez(std::array<double, 3> recef, std::array<double, 3>& rsez
 
 void Observer::Sez2Razel(std::array<double, 3> rsez) {
     // Get Range, Elevation, and Azimuth from SEZ vector
-    range_ = std::sqrt(
-        rsez[0]*rsez[0] + rsez[1]*rsez[1] + rsez[2]*rsez[2]
-    );
-    el_ = std::asin(rsez[2] / range_) * PASSPREDICT_RAD2DEG;
-    az_ = std::atan2(rsez[0], rsez[1]) * PASSPREDICT_RAD2DEG;
-    if (rsez[0] < 0 && rsez[1] < 0)
-        az_ = std::fmod(az_, 360.0);
+    std::vector<double> rsez_vector(3, 0.0);
+    int i;
+    for (i=0; i<3; i++)
+        rsez_vector[i] = rsez[i];
+    ComputeSez2Razel(rsez_vector, range_, az_, el_);
 };
 
 std::shared_ptr<Overpass> Observer::GetNextOverpass(double t0, double tmax) {
@@ -275,13 +273,46 @@ std::vector<double> ComputeEcef2Sez(std::vector<double> recef, double lon, doubl
 
 void ComputeSez2Razel(std::vector<double> rsez, double &range, double &az, double &el) {
     // Get Range, Elevation, and Azimuth from SEZ vector
-    range = std::sqrt(
-        rsez[0]*rsez[0] + rsez[1]*rsez[1] + rsez[2]*rsez[2]
-    );
+    // sez vector oriented {i,j,k} => {south, east, zenith}
+
+    range = std::sqrt(rsez[0]*rsez[0] + rsez[1]*rsez[1] + rsez[2]*rsez[2]);
     el = std::asin(rsez[2] / range) * PASSPREDICT_RAD2DEG;
-    az = std::atan2(rsez[0], rsez[1]) * PASSPREDICT_RAD2DEG;
-    if (rsez[0] < 0 && rsez[1] < 0)
-        az = std::fmod(az, 360.0);
-}
+
+    // compute azimuth
+    az = ComputeAzimuth(rsez[0], rsez[1]);
+};
+
+double ComputeAzimuth(double rS, double rE){
+    // compute azimuth in degrees from north
+    double tmp, az;
+
+    tmp = std::sqrt(rS*rS + rE*rE);
+    if (tmp < 0.00001) {
+        // do something about this later
+        az = 0.001;
+        return az;
+    }
+    if ((rE > 0) && (rS < 0)) {
+        // northeast quadrant
+        az = std::asin(rE / tmp) * PASSPREDICT_RAD2DEG;
+    }
+    else if ((rS >= 0) && (rE > 0)) {
+        // southeast quadrant
+        az = std::asin(rS / tmp) * PASSPREDICT_RAD2DEG + 90.0;
+    }
+    else if ((rS > 0) && (rE <= 0)) {
+        // southwest quandrant
+        az = std::asin(-rE / tmp) * PASSPREDICT_RAD2DEG + 180.0;
+    }
+    else if ((rS <= 0) && (rE < 0)) {
+        // northwest quandrant
+        az = std::asin(-rS / tmp) * PASSPREDICT_RAD2DEG + 270.0;
+    }
+    else if ((rS < 0) && (rE < 0.00001)){
+        // direct north
+        az = 0.0;
+    };
+    return az;
+};
 
 }; // namespace passpredict

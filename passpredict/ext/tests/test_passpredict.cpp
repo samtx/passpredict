@@ -17,7 +17,8 @@ TEST_CASE( "FindAOS", "[passpredict]" ) {
     double jdmax = jd0 + 14;
     double aos;
     aos = passpredict::FindAOS(jd0, jdmax, location, satellite);
-    CHECK( (aos > jd0) );
-    CHECK( (aos < jdmax) );
+    REQUIRE( aos > 0 );
+    CHECK( aos > jd0 );
+    CHECK( aos < jdmax );
 }
 
