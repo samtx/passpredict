@@ -25,6 +25,7 @@ from passpredict import OMM
 cdef extern from "ext/passpredict.h" namespace "passpredict":
     cdef double ComputeElevationAngle(double, Location_cpp, Satellite_cpp)
     cdef vector[double] PropagateSatelliteJd(double jd, Satellite_cpp satellite)
+    cdef void ComputeSez2Razel(vector[double] rsez, double &range, double &az, double &el)
 
 
 # class to hold azimuth, elevation, and range results

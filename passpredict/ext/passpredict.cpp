@@ -34,6 +34,32 @@ double ComputeElevationAngle(double jd, Location location, Satellite satellite){
 }
 
 
+// struct Point ComputePoint(double jd, Location location, Satellite satellite){
+//     // Compute elevation angle from location to satellite at time jd
+//     double el, range;
+//     int i;
+//     struct Point point;
+
+//     std::vector<double> rho(3, 0.0), rsez(3, 0.0), recef(3, 0.0);
+
+//     // Propagate satellite to time jd_
+//     recef = PropagateSatelliteJd(jd, satellite);
+
+//     // get vector rho from location to satellite
+//     for (i=0; i<3; i++)
+//         rho[i] = recef[i] - location.recef_[i];
+
+//     // Rotate rho ECEF vector to topographic SEZ vector
+//     rsez = ComputeEcef2Sez(rho, location.lon_, location.lat_);
+
+//     // Compute elevation angle from SEZ vector
+//     range = std::sqrt(rsez[0]*rsez[0] + rsez[1]*rsez[1] + rsez[2]*rsez[2]);
+//     el = std::asin(rsez[2] / range) * PASSPREDICT_RAD2DEG;
+
+//     return el;
+// }
+
+
 double FindAOS(double jd0, double jdmax, Location location, Satellite satellite){
     // find next AOS time
     double jd, jdstep, el, elold, jdold, el1, el2, jd1, jd2, tmp;

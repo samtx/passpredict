@@ -272,4 +272,16 @@ std::vector<double> ComputeEcef2Sez(std::vector<double> recef, double lon, doubl
     return rsez;
 };
 
+
+void ComputeSez2Razel(std::vector<double> rsez, double &range, double &az, double &el) {
+    // Get Range, Elevation, and Azimuth from SEZ vector
+    range = std::sqrt(
+        rsez[0]*rsez[0] + rsez[1]*rsez[1] + rsez[2]*rsez[2]
+    );
+    el = std::asin(rsez[2] / range) * PASSPREDICT_RAD2DEG;
+    az = std::atan2(rsez[0], rsez[1]) * PASSPREDICT_RAD2DEG;
+    if (rsez[0] < 0 && rsez[1] < 0)
+        az = std::fmod(az, 360.0);
+}
+
 }; // namespace passpredict

@@ -43,6 +43,7 @@ class Satellite {
 
 std::vector<double> PropagateSatelliteJd(double, Satellite);
 int ComputeTeme2Ecef(double, double[3], double[3]);
+int Utc2tt(double jd1, double jd2, double &tt1, double &tt2);
 
 } // namespace passpredict
 
