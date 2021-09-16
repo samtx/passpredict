@@ -54,5 +54,9 @@ test:
 	g++ test_*.o $(OBJECT_FILES) -lm -o test_passpredict
 	./test_passpredict
 
+debugtest:
+	g++ -g3 -O0 -I. -Isgp4 -Isofa -Itests -w -Wall -std=c++11 -c tests/*.cpp
+	g++ test_*.o $(OBJECT_FILES) -lm -o test_passpredict
+
 clean:
 	rm -r *.o

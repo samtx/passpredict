@@ -73,6 +73,8 @@ Observer MakeObserver(Location, Satellite);
 std::list<std::shared_ptr<Overpass>> Predict(Location, Satellite, double, double);
 std::vector<double> ComputeEcef2Sez(std::vector<double> recef, double lon, double lat);
 void ComputeSez2Razel(std::vector<double> rsez, double &range, double &az, double &el);
+double ComputeAzimuth(double rS, double rE);
+
 
 } // passpredict
 #endif
