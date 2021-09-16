@@ -1,3 +1,6 @@
+*.json
+*.db
+
 .vscode/
 
 .passpredict_cache/
