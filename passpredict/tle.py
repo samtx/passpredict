@@ -1,3 +1,4 @@
+import math
 from datetime import datetime, timedelta, timezone
 from functools import cached_property
 import json
@@ -160,9 +161,11 @@ class OMM(NamedTuple):
     nodeo: float        # right ascension of ascending node [deg], line 2, ch 18-25
     argpo: float        # argument of perigee [deg] line 2, ch 35-42
     mo: float           # mean anomolay, line 2, ch 44-51
-    # nddot: float        # second derivative of mean motion, line 1
+    ndot: float         # first derivative of mean motion, line 1 [rad/s]
+    nddot: float        # second derivative of mean motion, line 1  [rad/s^2]
+    ndot_raw: float     # first derivative of mean motion divided by 2, line 1 [rev/day^2]
+    nddot_raw: float    # second derivative of mean motion divided by 6, line 1  [rev/day^3]
     bstar: float        # B star drag term, line 1
-    # ndot: float         # first derivative of mean motion, line 1
     elnum: int          # element number, line 1
     revnum: int         # revolution number at epoch
     classification: str = 'U'
@@ -189,8 +192,11 @@ def tle_to_omm(tle1: str, tle2: str) -> OMM:
     epoch_year = int(tle1[18:20])
     epoch_days = float(tle1[20:32])
     jdsatepoch, jdsatepochF = epoch_to_jd(epoch_year, epoch_days)
-    # ndot = float(tle1[34:44])
-    # nddot = float(tle1[45:52])
+    # convert derivative of motion from rev/day to rad/s
+    ndot_raw = float(tle1[33:44])
+    nddot_raw = float(tle1[45:50]) * (10 ** float(tle1[50:52]))
+    ndot = ndot_raw * 2* (2*math.pi/(86400.0**2))
+    nddot = nddot_raw * 6 * (2*math.pi/(86400.0**3))
     bstar = float(tle1[54:59]) * (10 ** float(tle1[59:61]))
     ephtype = tle1[63]
     elnum = int(tle1[65:69])
@@ -199,13 +205,17 @@ def tle_to_omm(tle1: str, tle2: str) -> OMM:
     nodeo = float(tle2[18:26])  # right ascension of ascending node
     ecco = float(tle2[27:34]) / 1e7  # eccentricity
     argpo = float(tle2[35:43])
-    mo = float(tle2[44:52])    # mean anomaly
+    mo = float(tle2[43:52])    # mean anomaly
     no_kozai = float(tle2[53:64])   # mean motion
     revnum = int(tle2[64:69])
 
     omm = OMM(
         jdsatepoch=jdsatepoch,
         jdsatepochF=jdsatepochF,
+        ndot_raw=ndot_raw,
+        nddot_raw=nddot_raw,
+        ndot=ndot,
+        nddot=nddot,
         bstar=bstar,
         inclo=inclo,
         nodeo=nodeo,

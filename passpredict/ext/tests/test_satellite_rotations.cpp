@@ -215,7 +215,7 @@ TEST_CASE("ComputeAzimuth() 179.9427 deg southeast", "[satellite][rotations]"){
 TEST_CASE("Satellite ComputeSubpoint()", "[satellite]")
 {
     // Vallado, Eg 3-3, p 173
-    passpredict::Satellite satellite;
+    passpredict::Satellite satellite = passpredict::Satellite() ;
     passpredict::Subpoint subpoint;
     satellite.recef_[0] = 6524.834;
     satellite.recef_[1] = 6862.875;
@@ -229,7 +229,7 @@ TEST_CASE("Satellite ComputeSubpoint()", "[satellite]")
 TEST_CASE("Satellite ComputeAltitude()", "[satellite]")
 {
     // Vallado, Eg 3-3, p 173
-    passpredict::Satellite satellite;
+    passpredict::Satellite satellite = passpredict::Satellite() ;
     satellite.recef_[0] = 6524.834;
     satellite.recef_[1] = 6862.875;
     satellite.recef_[2] = 6448.296;

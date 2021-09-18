@@ -10,6 +10,7 @@ extern "C"
 
 #include "SGP4.h"
 #include "passpredict.h"
+#include "ast2Body.h"
 
 
 
@@ -73,21 +74,38 @@ int main()
     // Find AOS
 
 
-    char tle1[] = "1 25544U 98067A   21215.85360061  .00001804  00000-0  41053-4 0  9990";
-    char tle2[] = "2 25544  51.6430 107.0086 0001317 252.4656 228.3182 15.48870648295985";
+    // char tle1[] = "1 25544U 98067A   21215.85360061  .00001804  00000-0  41053-4 0  9990";
+    // char tle2[] = "2 25544  51.6430 107.0086 0001317 252.4656 228.3182 15.48870648295985";
+    // passpredict::Orbit orbit (tle1, tle2);
+    // passpredict::Satellite satellite (orbit);
+    // passpredict::Observer observer(location, satellite);
+    // int year = 2021, mon = 8, day = 3, hr = 0, minute = 0;
+    // double sec = 0.0;
+    // double jd, jdFrac, aos;
+    // double tmax;
+    // SGP4Funcs::jday_SGP4(year, mon, day, hr, minute, sec, jd, jdFrac);
+    // tmax = jd + 10;
+    // std::cout << "jd=" << jd << "  tmax=" << tmax << std::endl;
+    // std::vector[double] recef(3, 0.0);
+    // recef = passpredict::PropagateSatelliteJd(jd, satellite);
+    // // aos = passpredict::FindAOS(jd, tmax, location, satellite);
+    // std::cout << "AOS = " << aos << std::endl;
+    // std::cout << "... Predict ... " << std::endl;
+
+    char tle1[] = "1 25544U 98067A   20154.57277630  .00016717  00000-0  10270-3 0  9118";
+    char tle2[] = "2 25544  51.6443  60.8122 0001995  12.6931 347.4269 15.49438452 29742";
     passpredict::Orbit orbit (tle1, tle2);
     passpredict::Satellite satellite (orbit);
-    passpredict::Observer observer(location, satellite);
-    int year = 2021, mon = 8, day = 3, hr = 0, minute = 0;
-    double sec = 0.0;
-    double jd, jdFrac, aos;
-    double tmax;
-    SGP4Funcs::jday_SGP4(year, mon, day, hr, minute, sec, jd, jdFrac);
-    tmax = jd + 10;
-    std::cout << "jd=" << jd << "  tmax=" << tmax << std::endl;
-    aos = passpredict::FindAOS(jd, tmax, location, satellite);
-    std::cout << "AOS = " << aos << std::endl;
-    std::cout << "... Predict ... " << std::endl;
+    double jd = satellite.epoch_;
+    std::vector<double> recef(3, 0.0);
+    recef = passpredict::PropagateSatelliteJd(jd, satellite);
+    std::cout << "recef = ";
+    for (int i=0; i<3; i++)
+        std::cout << recef[i] << ", ";
+    std::cout << std::endl;
+
+
+
 
     // std::list<std::shared_ptr<passpredict::Overpass>> overpasses;
     // std::shared_ptr<passpredict::Overpass> overpass;

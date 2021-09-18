@@ -8,6 +8,8 @@ from libcpp.list cimport list as stdlist
 from libcpp.vector cimport vector
 from libcpp.memory cimport shared_ptr
 from libc.string cimport strcpy
+from libc.math cimport fmod as c_fmod
+
 
 import numpy as np
 cimport numpy as np
@@ -84,9 +86,9 @@ cdef class Satellite:
         self._omm.nodeo = omm.nodeo
         self._omm.argpo = omm.argpo
         self._omm.mo = omm.mo
-        # self._omm.nddot = omm.nddot
+        self._omm.nddot = omm.nddot
         self._omm.bstar = omm.bstar
-        # self._omm.ndot = omm.ndot
+        self._omm.ndot = omm.ndot
         self._omm.elnum = omm.elnum
         self._omm.revnum = omm.revnum
         self._omm.classification = ord(omm.classification)
@@ -119,6 +121,14 @@ cdef class Satellite:
         return self._omm.jdsatepochF
 
     @property
+    def ndot(self):
+        return self._omm.ndot
+
+    @property
+    def nddot(self):
+        return self._omm.nddot
+
+    @property
     def nodeo(self):
         return self._omm.nodeo
 
@@ -145,6 +155,30 @@ cdef class Satellite:
     @property
     def epoch(self):
         return self._omm.jdsatepoch + self._omm.jdsatepochF
+
+    @staticmethod
+    def from_tle(tle1, tle2):
+        """
+        Create Satellite object from tle strings
+        """
+        cdef Satellite satellite
+        # Use python object to parse tle strings
+        omm_py = OMM.from_tle(tle1, tle2)
+        satellite = Satellite(omm_py)
+        return satellite
+
+    def set_epoch(self, double new_epoch_jd):
+        """
+        Manually set new epoch julian date
+        """
+        cdef double jd, jdfr
+        jd = c_fmod(new_epoch_jd, 1.0)
+        jdfr = new_epoch_jd - jd
+        self._omm.jdsatepoch = jd
+        self._omm.jdsatepochF = jdfr
+        self._satellite.epoch_ = new_epoch_jd
+
+
 
     # def __init__(self, omm, *, double brightness):
     #     if brightness is not None:

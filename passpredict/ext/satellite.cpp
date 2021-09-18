@@ -61,7 +61,7 @@ void Satellite::ComputeAltitude() {
     double rdelta_sat, C;
     double phi0, phi, sin_phi0;
     double tol = 1E-6;
-    u_int i;
+    u_int i = 0;
     using namespace std;
     rdelta_sat = sqrt(recef_[0]*recef_[0] + recef_[1]*recef_[1]);
     phi = atan2(recef_[2], rdelta_sat);

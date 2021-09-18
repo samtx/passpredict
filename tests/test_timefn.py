@@ -10,6 +10,7 @@ from passpredict import timefn
     (
         (2020, 1, 23, 3, 9, 45.4687, 2458871.5, 0.13177625810185184),
         (2020, 1, 23, 3, 9, 45, 2458871.5, 0.13177083333333334),
+        (1997, 4,  2, 1, 8,  0, 2450540.5, 0.047222222),
     )
 )
 def test_julian_date(year, month, day, hr, minute, sec, jd_expected, jdfrac_expected):

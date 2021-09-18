@@ -18,9 +18,9 @@ class Satellite {
         double rteme_[3] = {0, 0, 0}; // TEME position vector at time jd
         double vteme_[3] = {0, 0, 0}; // TEME velocity vector at time jd
         double jd_;                   // julian date
-        double tsince_;               // minutes since epoch
-        double epoch_;                // epoch, julian date
-        double alt_;                  // altitude [km]
+        double tsince_ = 0;               // minutes since epoch
+        double epoch_ = 0;                // epoch, julian date
+        double alt_ = 0;                  // altitude [km]
 
         Orbit orbit_;      // orbit data, OMM/TLE
         std::string name_; // satellite name

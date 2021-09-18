@@ -28,6 +28,8 @@ cdef extern from "ext/passpredict.h" namespace "passpredict":
         int ephtype
         double jdsatepoch
         double jdsatepochF
+        double ndot   # rad/s
+        double nddot  # rad/s^2
         double bstar
         double inclo  # deg
         double nodeo  # deg
@@ -53,3 +55,4 @@ cdef extern from "ext/passpredict.h" namespace "passpredict":
         Satellite()
         Satellite(Orbit)
         Orbit orbit_
+        double epoch_

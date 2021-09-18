@@ -16,8 +16,12 @@ sofa_files = [
     'passpredict/ext/sofa/dat.c',
     'passpredict/ext/sofa/cal2jd.c',
     'passpredict/ext/sofa/anpm.c',
+    'passpredict/ext/sofa/dtf2d.c',
+    'passpredict/ext/sofa/d2dtf.c',
+    'passpredict/ext/sofa/d2tf.c',
 ]
 sgp4_files = glob.glob('passpredict/ext/sgp4/*.cpp')
+ast2body_files = glob.glob('passpredict/ext/ast2body/*.cpp')
 passpredict_cpp_files = glob.glob("passpredict/ext/*.cpp")
 
 include_dirs = [
@@ -26,6 +30,7 @@ include_dirs = [
     'passpredict/ext',
     'passpredict/ext/sgp4',
     'passpredict/ext/sofa',
+    'passpredict/ext/ast2body',
 ]
 
 extensions = [
@@ -36,6 +41,11 @@ extensions = [
     ),
     Extension("passpredict.predict",
         sofa_files + sgp4_files + passpredict_cpp_files + ['passpredict/predict.pyx'],
+        include_dirs=include_dirs,
+        language="c++",
+    ),
+    Extension("passpredict.propagate",
+        ast2body_files + ['passpredict/propagate.pyx'],
         include_dirs=include_dirs,
         language="c++",
     ),
