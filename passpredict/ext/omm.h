@@ -11,6 +11,8 @@ namespace passpredict{
         int ephtype;
         double jdsatepoch;
         double jdsatepochF;
+        double ndot;  // rad/s
+        double nddot;  // rad/s^2
         double bstar;
         double inclo; // deg
         double nodeo; // deg

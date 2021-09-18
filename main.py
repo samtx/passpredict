@@ -6,6 +6,8 @@ import numpy as np
 from passpredict import Location, Satellite, OMM
 from passpredict.predict import compute_elevation_angle
 from passpredict import predict_py
+from passpredict.timefn import jday2datetime, julian_date
+from passpredict.propagate import pkepler
 
 # class CentralTime(datetime.tzinfo):
 #     def __init__(self):
@@ -55,8 +57,7 @@ def propagate_satellite():
     """
     tle1 = '1 25544U 98067A   21258.74288194 -.00052450  00000-0 -97172-3 0  9998'
     tle2 = '2 25544  51.6428 254.9623 0002916  17.0077 340.1623 15.48363749302621'
-    omm = OMM.from_tle(tle1, tle2)
-    satellite = Satellite(omm)
+    satellite = Satellite.from_tle(tle1, tle2)
     jd0 = satellite.epoch
     jd = np.linspace(jd0, jd0 + 2, 1440 * 2)
     r = np.zeros((jd.size, 3))
@@ -66,13 +67,30 @@ def propagate_satellite():
     t2 = time.perf_counter()
     print(f'Time: {(t2-t1)*1000:f} ms')
 
-    # plot the results
-    # offset = datetime.timedelta(hours=-5)
-    # datetime_local = [d.replace(tzinfo=None) + offset for d in res]
-    # from pprint import pprint
-    # pprint(datetime_local)
+
+def predict_example_11_6():
+    """
+    Using orbital elements for MIR space station, p. 106 Vallado
+    """
+    tle1 = "1 16609U 86017A   93352.53502934  .00007889  00000-0  10529-3 0   34"
+    tle2 = "2 16609  51.6190  13.3340 0005770 102.5680 257.5950 15.5911407044786"
+    satellite = Satellite.from_tle(tle1, tle2)
+    r0 = np.array([6585.038266, 1568.184321, 9.116355])
+    v0 = np.array([-1.1157766, 4.6316816, 6.0149576])
+    epoch = 2450540.4
+    satellite.set_epoch(epoch)
+    jd = 2450540.5472
+    dt_sec = (jd - epoch) * 86400
+    r, v = pkepler(r0, v0, dt_sec, ndot=satellite.ndot, nddot=satellite.nddot)
+    print(r)
+    print(v)
+    r, v = pkepler(r0, v0, dt_sec)
+    print(r)
+    print(v)
+    print(satellite)
 
 if __name__ == "__main__":
     # predict_algorithm()
-    propagate_satellite()
+    # propagate_satellite()
     # benchmark_compute_elevation_angle()
+    predict_example_11_6()
