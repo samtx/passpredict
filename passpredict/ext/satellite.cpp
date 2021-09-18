@@ -159,12 +159,13 @@ std::vector<double> PropagateSatelliteJd(double jd, Satellite satellite){
 
 int Utc2tt(double jd1, double jd2, double &tt1, double &tt2){
     // Julian date UTC to IAU terrestial time
-    int j;
+    int j = 0;
     double tai1, tai2;
     j = iauUtctai(jd1, jd2, &tai1, &tai2);
     if ( j ) return 1;
     j = iauTaitt(tai1, tai2, &tt1, &tt2);
     if ( j ) return 1;
+    return 0;
 };
 
 
