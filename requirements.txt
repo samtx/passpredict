@@ -1,6 +1,7 @@
-numpy        
-sgp4 >= 2.8
-astropy >= 4.1rc1
+sgp4>=2.12
+Cython
+numpy>=1.20
+orbit-predictor
 requests
 pydantic
 click

@@ -1,0 +1,16 @@
+-133.7230, 68.3607
+24.9384, 60.1699
+116.193034, -31.048576
+
+
+#     Kiev, Ukraine (50.45)
+#     New York, NY, USA (40.7128, -74.0060)
+#     Austin, Texas, USA (30.2672, -97.7431)
+#     Mexico City, Mexico (~20)
+#     Bissau, Guinea Bissau (~10)
+#     Quito, Ecuador (~0)
+#     Johannesburg, South Africa (-26)
+#     Sydney, Australia (-33)
+#     Christchurch, New Zealand (-43)
+#     Punta Arenas, Chile (-53)
+#     McMurdo Station, Antarctica (-77)
