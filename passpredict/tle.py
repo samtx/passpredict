@@ -9,7 +9,7 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 from .utils import grouper
-from passpredict.timefn import epoch_to_jd
+from passpredict._time import epoch_to_jd
 
 
 class TleSchema(BaseModel):

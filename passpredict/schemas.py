@@ -6,7 +6,7 @@ from enum import Enum
 import numpy as np
 from pydantic import BaseModel, Field
 
-from passpredict.timefn import jday2datetime
+from passpredict._time import jday2datetime
 
 COORDINATES = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N']
 

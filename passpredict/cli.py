@@ -5,8 +5,8 @@ import click
 from .schemas import Satellite, Location, PassType, Orbit
 from .caches import JsonCache
 from .tle import get_TLE
-from .predict import predict
-from .timefn import julian_date
+from .core import predict_single_satellite_overpasses
+from ._time import julian_date
 
 @click.command()
 @click.option('-s', '--satellite-id', type=int)  # satellite id
@@ -34,7 +34,7 @@ def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, al
         id=satellite_id,
     )
     today = datetime.date.today()
-    min_elevation = 10.01 # degrees
+    min_elevation = 10.0 # degrees
 
     if no_cache:
         tle = get_TLE(satellite.id)
@@ -51,7 +51,7 @@ def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, al
     orbit = Orbit.from_tle(tle.tle1, tle.tle2)
     jd0 = julian_date(today.year, today.month, today.day, 0, 0, 0.0)
     jd_end = jd0 + days
-    overpasses = predict(location, orbit, jd0, jd_end, min_elevation=min_elevation)
+    overpasses = predict_single_satellite_overpasses(location, orbit, jd0, jd_end, min_elevation=min_elevation)
     overpass_table(overpasses, location, tle, tz, twelvehour=twelve, quiet=quiet)
     return 0
 

@@ -2,52 +2,32 @@ import glob
 
 from setuptools import Extension, setup
 from Cython.Build import cythonize
-import numpy
+import numpy as np
 
-sofa_files = [
-    'passpredict/ext/sofa/gmst82.c',
-    'passpredict/ext/sofa/utctai.c',
-    'passpredict/ext/sofa/taitt.c',
-    'passpredict/ext/sofa/obl80.c',
-    'passpredict/ext/sofa/nut80.c',
-    'passpredict/ext/sofa/eqeq94.c',
-    'passpredict/ext/sofa/anp.c',
-    'passpredict/ext/sofa/jd2cal.c',
-    'passpredict/ext/sofa/dat.c',
-    'passpredict/ext/sofa/cal2jd.c',
-    'passpredict/ext/sofa/anpm.c',
-    'passpredict/ext/sofa/dtf2d.c',
-    'passpredict/ext/sofa/d2dtf.c',
-    'passpredict/ext/sofa/d2tf.c',
-]
-sgp4_files = glob.glob('passpredict/ext/sgp4/*.cpp')
-ast2body_files = glob.glob('passpredict/ext/ast2body/*.cpp')
-passpredict_cpp_files = glob.glob("passpredict/ext/*.cpp")
 
-include_dirs = [
-    numpy.get_include(),
-    'passpredict',
-    'passpredict/ext',
-    'passpredict/ext/sgp4',
-    'passpredict/ext/sofa',
-    'passpredict/ext/ast2body',
-]
+common_kw = {
+    'extra_link_args': ['--verbose'],
+    'include_dirs': [
+        'passpredict',
+        'passpredict/sgp4',
+        np.get_include()
+    ],
+    'extra_compile_args': ['-O3'],
+    'language': 'c++'
+    # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+}
+
+source_files = []
+source_files += glob.glob('passpredict/sgp4/*.cpp')
 
 extensions = [
-    Extension("passpredict.timefn",
-        sgp4_files + ['passpredict/timefn.pyx'],
-        include_dirs=include_dirs,
-        language="c++",
+    Extension("passpredict._time",
+        ['passpredict/_time.pyx'] + source_files,
+        **common_kw,
     ),
-    Extension("passpredict.predict",
-        sofa_files + sgp4_files + passpredict_cpp_files + ['passpredict/predict.pyx'],
-        include_dirs=include_dirs,
-        language="c++",
-    ),
-    Extension("passpredict.propagate",
-        ast2body_files + ['passpredict/propagate.pyx'],
-        include_dirs=include_dirs,
-        language="c++",
+    Extension("passpredict._rotations",
+        ['passpredict/_rotations.pyx'],
+        **common_kw,
     ),
 ]
 
@@ -56,17 +36,9 @@ with open("README.md") as f:
 
 setup(
     name="passpredict",
-    version="0.0.12",
+    version="0.1.0",
     packages=['passpredict'],
-    python_requires=">=3.8",
-    # Project uses reStructuredText, so ensure that the docutils get
-    # installed or upgraded on the target machine
-    install_requires=[
-        "numpy",
-        "requests",
-        "pydantic",
-        "click",
-    ],
+    python_requires=">=3.9",
     extras_require={
         'dev': [
             'Cython',
