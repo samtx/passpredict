@@ -2,11 +2,16 @@ import datetime
 
 import click
 
-from .schemas import Satellite, Location, PassType, Orbit
+from .schemas import Satellite, PassType
 from .caches import JsonCache
-from .tle import get_TLE
+from .tle import get_TLE, Tle
 from .core import predict_single_satellite_overpasses
 from ._time import julian_date
+from .predictors import SatellitePredictor
+from .locations import Location
+from .sources import TLE
+from .utils import datetime_now_utc
+
 
 @click.command()
 @click.option('-s', '--satellite-id', type=int)  # satellite id
@@ -26,14 +31,15 @@ def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, al
     """
     tz = datetime.timezone(datetime.timedelta(hours=utc_offset))
     location = Location(
-        lat=latitude,
-        lon=longitude,
-        h=height,
+        latitude_deg=latitude,
+        longitude_deg=longitude,
+        elevation_m=height,
+        name=""
     )
     satellite = Satellite(
         id=satellite_id,
     )
-    today = datetime.date.today()
+    date_start = datetime_now_utc()
     min_elevation = 10.0 # degrees
 
     if no_cache:
@@ -43,15 +49,13 @@ def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, al
             sat_key = f'sat:{satellite.id}'
             res = cache.get(sat_key)
             if res:
-                tle = res
+                tle = Tle(tle1=res['tle1'], tle2=res['tle2'])
             else:
                 tle = get_TLE(satellite.id)
-                cache.set(sat_key, tle, ttl=86400)
+                cache.set(sat_key, tle.dict(), ttl=86400)
 
-    orbit = Orbit.from_tle(tle.tle1, tle.tle2)
-    jd0 = julian_date(today.year, today.month, today.day, 0, 0, 0.0)
-    jd_end = jd0 + days
-    overpasses = predict_single_satellite_overpasses(location, orbit, jd0, jd_end, min_elevation=min_elevation)
+    predictor = SatellitePredictor.from_tle(tle)
+    overpasses = predict_single_satellite_overpasses(predictor, location, date_start, days, min_elevation=min_elevation)
     overpass_table(overpasses, location, tle, tz, twelvehour=twelve, quiet=quiet)
     return 0
 
@@ -89,36 +93,40 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, quiet=F
         point_header = "  Time   El  Az "
         point_header_underline = "-------- --- ---"
     table_header +=  f"            {'Start':^17s}   {'Maximum':^17s}   {'End':^17s}\n"
-    table_header +=  "  Date    Mag   {0}   {0}   {0}      Type\n".format(point_header)
-    table_header += "--------  ----  "
+    # table_header +=  "  Date    Mag   {0}   {0}   {0}      Type\n".format(point_header)
+    table_header +=  "  Date    {0}   {0}   {0}\n".format(point_header)
+    table_header += "--------  "
     table_header += point_header_underline + " "*3
     table_header += point_header_underline + " "*3
     table_header += point_header_underline + " "*3
-    table_header += "-"*10
+    # table_header += "-"*10   # for 'Type' underline
     click.echo(table_header)
 
     def point_string(point):
-        time = point.datetime.astimezone(tz)
+        time = point.dt.astimezone(tz)
         if twelvehour:
             point_line = time.strftime("%I:%M:%S") + time.strftime("%p")[0].lower()
         else:
             point_line = time.strftime("%H:%M:%S")
         point_line += " " + "{:>2}\u00B0".format(int(point.elevation))
-        point_line += " " + "{:3}".format(point.direction_from_azimuth())
+        point_line += " " + "{:3}".format(point.direction)
         return point_line
 
     for overpass in overpasses:
-        table_data = "{}".format(overpass.start_pt.datetime.astimezone(tz).strftime("%m/%d/%y"))
-        if overpass.brightness is not None:
-            brightness_str = f"{overpass.brightness:4.1f}"
+        table_data = "{}".format(overpass.aos.dt.astimezone(tz).strftime("%m/%d/%y"))
+        # if overpass.brightness is not None:
+        #     brightness_str = f"{overpass.brightness:4.1f}"
+        # else:
+        #     brightness_str = " "*4
+        # table_data += " "*2 + brightness_str
+        table_data += " "*2 + point_string(overpass.aos) + ' |'
+        table_data += " " + point_string(overpass.tca) + ' |'
+        table_data += " " + point_string(overpass.los)
+        if overpass.type:
+            table_data += " "*4 + f'{overpass.type.value:^9}'# + '\n'
+            fg = 'green' if overpass.type.value == PassType.visible else None
         else:
-            brightness_str = " "*4
-        table_data += " "*2 + brightness_str
-        table_data += " "*2 + point_string(overpass.start_pt) + ' |'
-        table_data += " " + point_string(overpass.max_pt) + ' |'
-        table_data += " " + point_string(overpass.end_pt)
-        table_data += " "*4 + f'{overpass.type.value:^9}'# + '\n'
-        fg = 'green' if overpass.type.value == PassType.visible else None
+            fg = None
         click.secho(table_data, fg=fg)
 
 

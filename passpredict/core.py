@@ -1,3 +1,4 @@
+from __future__ import annotations
 import datetime
 
 from .predictors import SatellitePredictor
@@ -39,7 +40,7 @@ def predict_single_satellite_overpasses(
 
 
 def predict_next_overpass(
-    predictor: SatellitePredictor,
+    predictor: SatellitePredictorBase,
     location: Location,
     date_start: datetime.date,
     min_elevation: float = 10.0

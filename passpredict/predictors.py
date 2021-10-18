@@ -5,6 +5,7 @@ from math import radians, degrees, pi
 from functools import cached_property
 from dataclasses import dataclass
 import logging
+from enum import Enum
 
 import numpy as np
 from orbit_predictor.predictors.pass_iterators import LocationPredictor as BaseLocationPredictor
@@ -15,9 +16,10 @@ from orbit_predictor.locations import Location
 from . import _rotations
 from .exceptions import NotReachable, PropagationError
 from .locations import Location
+from .utils import direction_from_azimuth
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .sources import TLESource
+    from .sources import TLESource, TLE
 
 
 class RangeAzEl(NamedTuple):
@@ -26,16 +28,27 @@ class RangeAzEl(NamedTuple):
     el: float     # deg
 
 
+class PassType(str, Enum):
+    daylight = 'daylight'
+    unlit = 'unlit'
+    visible = 'visible'
+
+
+@dataclass
 class PassPoint:
-    def __init__(self, datetime: dt.datetime, range_: float, azimuth: float, elevation: float):
-        self.dt = datetime          # datetime UTC
-        self.range_ = range_        # km
-        self.azimuth= azimuth       # deg
-        self.elevation = elevation  # deg
+    dt: dt.datetime    # datetime UTC
+    range_: float      # km
+    azimuth: float     # deg
+    elevation: float   # deg
 
     @property
     def range(self):
         return self.range_
+
+    @cached_property
+    def direction(self) -> str:
+        ''' Return direction from azimuth degree '''
+        return direction_from_azimuth(self.azimuth)
 
 
 class BasicPassInfo:
@@ -97,6 +110,8 @@ class PredictedPass:
     aos: PassPoint
     tca: PassPoint
     los: PassPoint
+    brightness: float = None
+    type: PassType = None
 
     @cached_property
     def midpoint(self):
@@ -134,6 +149,13 @@ class SatellitePredictor(HighAccuracyTLEPredictor):
 
     def get_tle(self):
         self.tle = self._source.get_tle(self.sate_id, dt.datetime.now(dt.timezone.utc))
+
+    @classmethod
+    def from_tle(cls, tle: TLE) -> SatellitePredictor:
+        predictor = cls(tle.satid)
+        predictor.tle = tle
+        predictor.set_propagator()
+        return predictor
 
     @property
     def sate_id(self):

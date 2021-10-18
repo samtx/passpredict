@@ -30,10 +30,10 @@ class JsonCache:
             with open(self.filename, 'r') as f:
                 self.cache = json.load(f)
         return self
-        
+
     def __exit__(self, *args):
         with open(self.filename, 'w') as f:
-            json.dump(self.cache, f)
+            json.dump(self.cache, f, indent=2)
 
     def get(self, key, ignore_ttl=False):
         if key not in self: return None
@@ -56,8 +56,8 @@ class ShelfCache:
     A cache for downloaded TLE data using a shelf.
     """
     filename = 'tle.db'
-        
-    def __init__(self, filename=filename, ttl=86400):   
+
+    def __init__(self, filename=filename, ttl=86400):
         self.filename = filename
         self.ttl = ttl
         self.cache = {}
@@ -65,7 +65,7 @@ class ShelfCache:
     def set(self, key, value):
         key_hash = self._hash(key)
         self.cache[key_hash] = value
-            
+
     def get(self, key, *a):
         key_hash = self._hash(key)
         value = self.cache.get(key_hash, *a)
@@ -78,7 +78,7 @@ class ShelfCache:
             del self.cache[key_hash]
             return value
         else:
-            return default_value        
+            return default_value
 
     def __contains__(self, key):
         key_hash = self._hash(key)
@@ -106,6 +106,6 @@ class ShelfCache:
     def open(self):
         self.cache = shelve.DbfilenameShelf(self.filename)
         return self
-        
+
     def close(self):
         self.cache.close()

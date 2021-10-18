@@ -3,8 +3,9 @@ from datetime import datetime, timedelta, timezone
 from functools import cached_property
 import json
 from typing import NamedTuple
+import dataclasses
 
-import requests
+import httpx
 import numpy as np
 from pydantic import BaseModel, Field
 
@@ -22,16 +23,19 @@ class TleSchema(BaseModel):
         title = 'TLE'
 
 
-class Tle():
-    def __init__(self, tle1: str, tle2: str):
-        self.tle1 = tle1
-        self.tle2 = tle2
+class Tle(NamedTuple):
+    tle1: str
+    tle2: str
 
-    @cached_property
+    @property
+    def lines(self):
+        return (self.tle1, self.tle2)
+
+    @property
     def epoch(self) -> datetime:
         return epoch_from_tle(self.tle1)
 
-    @cached_property
+    @property
     def satid(self) -> int:
         return satid_from_tle(self.tle1)
 
@@ -42,6 +46,15 @@ class Tle():
             epoch=self.epoch,
             satid=self.satid
         )
+
+    def dict(self):
+        """ Serialize to python dict object """
+        return self._asdict()
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        """ Create instance from dictionary """
+        return cls(d['tle1'], d['tle2'])
 
 
 def epoch_from_tle_datetime(epoch_string: str) -> datetime:
@@ -105,7 +118,7 @@ def get_orbit_data_from_celestrak(satellite_id):
         'FORMAT': 'json'
     }
     url = 'https://celestrak.com/NORAD/elements/gp.php'
-    r = requests.get(url, data=query)
+    r = httpx.get(url, data=query)
     return r.json()
 
 
@@ -120,7 +133,7 @@ def parse_tles_from_celestrak(satellite_id=None):
     else:
         url = 'https://celestrak.com/satcat/tle.php'
         params = {'CATNR': satellite_id}
-    r = requests.get(url, params=params, stream=True)
+    r = httpx.get(url, params=params)
     tle_data = {}
     for tle_strings in grouper(r.text.splitlines(), 3):
         tle_data.update(parse_tle(tle_strings))

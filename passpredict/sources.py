@@ -22,6 +22,10 @@ class TLE(NamedTuple):
     lines: Tuple[str]   # tuple of tle strings (tle1, tle2)
     date: datetime.datetime   # datetime in UTC
 
+    @property
+    def satid(self):
+        return sate_id
+
 
 class MemoryTLESource(MemoryTLESourceBase):
 
