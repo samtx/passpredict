@@ -1,4 +1,5 @@
 # Development Requirements
+-r requirements.txt
 Cython
 pytest==5.4.3
 pytest-cov
