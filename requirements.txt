@@ -2,6 +2,6 @@ sgp4>=2.12
 Cython
 numpy>=1.20
 orbit-predictor
-requests
+httpx
 pydantic
 click
