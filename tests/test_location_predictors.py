@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
+from passpredict import MemoryTLESource
 from passpredict import *
 
 # From orbit-predictor test suite
@@ -27,18 +28,20 @@ def test_satid_bugsat_predictions():
     From orbit-predictor test suite,  newsat 2
     https://github.com/satellogic/orbit-predictor/blob/master/tests/test_accurate_predictor.py
     """
-    db = MemoryTLESource()
     start = datetime(2017, 3, 6, 7, 51)
     satid = 'BUGSAT-1'
     tle_lines = (
         "1 40014U 14033E   14294.41438078  .00003468  00000-0  34565-3 0  3930",
         "2 40014  97.9781 190.6418 0032692 299.0467  60.7524 14.91878099 18425"
     )
-    db.add_tle(satid, tle_lines, start)
-    predictor = db.get_predictor(satid)
+    satellite = SatellitePredictor(satid)
+    satellite.tle = TLE(satid, tle_lines, start)
+    satellite.set_propagator()
 
     # ARG in orbit_predictor.locations
     location = Location("ARG", latitude_deg=-31.2884, longitude_deg=-64.2032868, elevation_m=492.96)
+
+    observer = Observer(location, satellite)
 
     STK_DATA = """
     ------------------------------------------------------------------------------------------------
@@ -72,7 +75,7 @@ def test_satid_bugsat_predictions():
             date = datetime.strptime(
                 "2014-10-22 20:18:11.921921", '%Y-%m-%d %H:%M:%S.%f')
 
-        pass_ = predictor.get_next_pass(location, date)
+        pass_ = observer.get_next_pass(date)
         assert_datetime_approx(pass_.aos.dt, aos, 1)
         assert_datetime_approx(pass_.los.dt, los, 1)
         assert_datetime_approx(pass_.tca.dt, max_elevation_date, 1)

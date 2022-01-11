@@ -1,7 +1,8 @@
 # cython: boundscheck=False, wraparound=False
 # cython: language_level=3
+# distutils: language = c++
 
-from libc.math cimport round as c_round
+from libc.math cimport round as c_round, fmod, floor, fabs
 
 import datetime
 
@@ -19,7 +20,8 @@ def epoch_to_jd(int epoch_year, double epoch_days):
     Convert TLE epoch value to julian date
     """
     cdef int year, mon, day, hr, minute
-    cdef double sec, jd, jdfr
+    cdef double sec
+    cdef double jd, jdfr
     if epoch_year < 57:
         year = epoch_year + 2000
     else:

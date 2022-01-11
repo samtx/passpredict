@@ -7,10 +7,9 @@ from .caches import JsonCache
 from .tle import get_TLE, Tle
 from .core import predict_single_satellite_overpasses
 from ._time import julian_date
-from .predictors import SatellitePredictor
+from .satellites import SatellitePredictor
 from .locations import Location
 from .sources import TLE
-from .utils import datetime_now_utc
 
 
 @click.command()
@@ -39,7 +38,7 @@ def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, al
     satellite = Satellite(
         id=satellite_id,
     )
-    date_start = datetime_now_utc()
+    date_start = datetime.datetime.utcnow()
     min_elevation = 10.0 # degrees
 
     if no_cache:

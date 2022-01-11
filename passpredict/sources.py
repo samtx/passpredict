@@ -1,20 +1,12 @@
 # TLE source for web app
-from __future__ import annotations
 import abc
 import datetime
 from typing import NamedTuple, Tuple
 
-from orbit_predictor.sources import (
-    TLESource,
-    MemoryTLESource as MemoryTLESourceBase,
-)
+from orbit_predictor.sources import MemoryTLESource
 
-from typing import TYPE_CHECKING
-
-from passpredict.predictors import SatellitePredictor
-if TYPE_CHECKING:
-    from .predictors import SatellitePredictorBase
-
+from .satellites import SatellitePredictor
+from .base import TLESource
 
 # from orbit_predictor.sources
 class TLE(NamedTuple):
@@ -22,19 +14,8 @@ class TLE(NamedTuple):
     lines: Tuple[str]   # tuple of tle strings (tle1, tle2)
     date: datetime.datetime   # datetime in UTC
 
-    @property
-    def satid(self):
-        return sate_id
 
-
-class MemoryTLESource(MemoryTLESourceBase):
-
-    def get_predictor(self, satid, predictor_class: SatellitePredictorBase = SatellitePredictor) -> SatellitePredictorBase:
-        klass = predictor_class(satid, self)
-        return klass
-
-
-class AsyncTLESourceBase(TLESource):
+class AsyncPasspredictTLESource(TLESource):
     """
     TLE source that checks the redis cache and postgres database
     for orbital elements
@@ -56,11 +37,13 @@ class AsyncTLESourceBase(TLESource):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def get_predictor(self, satid: int, date: datetime.datetime) -> SatellitePredictorBase:
+    async def get_predictor(self, satid: int, date: datetime.datetime):
         """
         Create Predictor instance with TLE data
         """
-        raise NotImplementedError
-
-
-
+        tle = await self.get_tle_or_404(satid, date)
+        predictor = SatellitePredictor(satid)
+        predictor._source = self
+        predictor.tle = tle
+        predictor.set_propagator()
+        return predictor

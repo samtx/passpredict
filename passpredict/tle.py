@@ -4,12 +4,12 @@ from functools import cached_property
 import json
 from typing import NamedTuple
 import dataclasses
+from itertools import zip_longest
 
 import httpx
 import numpy as np
 from pydantic import BaseModel, Field
 
-from .utils import grouper
 from passpredict._time import epoch_to_jd
 
 
@@ -120,6 +120,15 @@ def get_orbit_data_from_celestrak(satellite_id):
     url = 'https://celestrak.com/NORAD/elements/gp.php'
     r = httpx.get(url, data=query)
     return r.json()
+
+
+def grouper(iterable, n, fillvalue=None):
+    """
+    from itertools recipes https://docs.python.org/3.7/library/itertools.html#itertools-recipes
+    Collect data into fixed-length chunks or blocks
+    """
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=fillvalue)
 
 
 def parse_tles_from_celestrak(satellite_id=None):

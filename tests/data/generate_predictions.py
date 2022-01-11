@@ -7,7 +7,7 @@ import typing
 
 import tqdm
 
-import astrodynamics as astro
+import passpredict as pp
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -63,7 +63,7 @@ def main():
 
 
 
-def find_overpasses(location, satellite) -> typing.List[astro.PredictedPass]:
+def find_overpasses(location, satellite) -> typing.List[pp.PredictedPass]:
     """
     Find overpasses
     """

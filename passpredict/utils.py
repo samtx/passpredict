@@ -1,43 +1,48 @@
-from itertools import zip_longest
+from typing import NamedTuple
 import datetime
-from math import floor
+from zoneinfo import ZoneInfo
+from functools import lru_cache
 
-from numpy import pi as np_pi
+from timezonefinder import TimezoneFinder
 
 
-def shift_angle(x: float) -> float:
-    """Shift angle in radians to [-pi, pi)
+tf = TimezoneFinder()
 
-    Args:
-        x: float, angle in radians
 
-    Reference:
-        https://stackoverflow.com/questions/15927755/opposite-of-numpy-unwrap/32266181#32266181
+class DatetimeMetadata(NamedTuple):
+    start: datetime.datetime
+    end: datetime.datetime
+    n_steps = int
+
+
+def round_to_nearest_second(dt: datetime.datetime) -> datetime.datetime:
+    """  Round datetime to nearest whole second  """
+    if dt.microsecond >= 500_000:
+        dt += datetime.timedelta(seconds=1)
+    return dt.replace(microsecond=0)
+
+
+def get_pass_detail_datetime_metadata(
+    pass_,
+    delta_s: float,
+    *,
+    pad_minutes: int = 5,
+):
+    # add cushion to either side, rounded to the nearest second
+    padding = datetime.timedelta(minutes=pad_minutes)
+    start_date = round_to_nearest_second(pass_.aos.dt - padding)
+    end_date = round_to_nearest_second(pass_.los.dt + padding)
+    n_steps_float = (end_date - start_date).total_seconds() / delta_s
+    n_steps = round(n_steps_float)
+    time_step = datetime.timedelta(seconds=delta_s)
+    return start_date, n_steps, time_step
+
+
+@lru_cache(maxsize=128)
+def get_timezone_from_latlon(latitude: float, longitude: float) -> ZoneInfo:
     """
-    return (x + np_pi) % (2 * np_pi) - np_pi
-
-
-def grouper(iterable, n, fillvalue=None):
+    Returns timezone ZoneInfo object
     """
-    from itertools recipes https://docs.python.org/3.7/library/itertools.html#itertools-recipes
-    Collect data into fixed-length chunks or blocks
-    """
-    args = [iter(iterable)] * n
-    return zip_longest(*args, fillvalue=fillvalue)
-
-
-def datetime_now_utc():
-    """
-    Get datetime.datetime object in current utc
-    """
-    return datetime.datetime.now(datetime.timezone.utc)
-
-
-def direction_from_azimuth(azimuth: float) -> str:
-    ''' Return ordinal direction from azimuth degree '''
-    azm = azimuth % 360
-    mod = 360/16. # number of degrees per coordinate heading
-    start = 0 - mod/2
-    n = int(floor((azm-start)/mod))
-    coordinates = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N']
-    return coordinates[n]
+    tz_str = tf.timezone_at(lng=longitude, lat=latitude)
+    tz = datetime.timezone.utc if not tz_str else ZoneInfo(tz_str)
+    return tz
