@@ -10,10 +10,10 @@ common_kw = {
     'include_dirs': [
         'passpredict',
         'passpredict/sgp4',
+        'passpredict/sofa',
         np.get_include()
     ],
-    'extra_compile_args': ['-O3'],
-    'language': 'c++'
+    'extra_compile_args': ['-O2'],
     # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
 }
 
@@ -22,12 +22,17 @@ source_files += glob.glob('passpredict/sgp4/*.cpp')
 
 extensions = [
     Extension("passpredict._time",
-        ['passpredict/_time.pyx'] + source_files,
+        ['passpredict/_time.pyx'] + sorted(glob.glob('passpredict/sgp4/*.cpp')),
         **common_kw,
     ),
     Extension("passpredict._rotations",
-        ['passpredict/_rotations.pyx'],
+        ['passpredict/_rotations.pyx'] + sorted(glob.glob('passpredict/sofa/*.c')),
         **common_kw,
+    ),
+    Extension(
+        'passpredict._solar',
+        ['passpredict/_solar.pyx'],
+        **common_kw
     ),
 ]
 
@@ -70,5 +75,5 @@ setup(
             'passpredict = passpredict.cli:main'
         ]
     },
-    ext_modules = cythonize(extensions),
+    ext_modules = cythonize(extensions, language_level=3),
 )

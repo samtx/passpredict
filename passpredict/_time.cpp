@@ -3,9 +3,11 @@
 /* BEGIN: Cython Metadata
 {
     "distutils": {
-        "depends": [],
+        "depends": [
+            "passpredict/sgp4/SGP4.h"
+        ],
         "extra_compile_args": [
-            "-O3"
+            "-O2"
         ],
         "extra_link_args": [
             "--verbose"
@@ -13,12 +15,14 @@
         "include_dirs": [
             "passpredict",
             "passpredict/sgp4",
+            "passpredict/sofa",
             "/home/sam/passpredict/venv/lib/python3.9/site-packages/numpy/core/include"
         ],
         "language": "c++",
         "name": "passpredict._time",
         "sources": [
-            "passpredict/_time.pyx"
+            "passpredict/_time.pyx",
+            "passpredict/sgp4/SGP4.cpp"
         ]
     },
     "module_name": "passpredict._time"
@@ -1192,7 +1196,7 @@ static PyObject *__pyx_codeobj__4;
 static PyObject *__pyx_codeobj__6;
 /* Late includes */
 
-/* "passpredict/_time.pyx":17
+/* "passpredict/_time.pyx":18
  * 
  * 
  * def epoch_to_jd(int epoch_year, double epoch_days):             # <<<<<<<<<<<<<<
@@ -1236,11 +1240,11 @@ static PyObject *__pyx_pw_11passpredict_5_time_1epoch_to_jd(PyObject *__pyx_self
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_epoch_days)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("epoch_to_jd", 1, 2, 2, 1); __PYX_ERR(0, 17, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("epoch_to_jd", 1, 2, 2, 1); __PYX_ERR(0, 18, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "epoch_to_jd") < 0)) __PYX_ERR(0, 17, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "epoch_to_jd") < 0)) __PYX_ERR(0, 18, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -1248,12 +1252,12 @@ static PyObject *__pyx_pw_11passpredict_5_time_1epoch_to_jd(PyObject *__pyx_self
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_epoch_year = __Pyx_PyInt_As_int(values[0]); if (unlikely((__pyx_v_epoch_year == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
-    __pyx_v_epoch_days = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_epoch_days == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
+    __pyx_v_epoch_year = __Pyx_PyInt_As_int(values[0]); if (unlikely((__pyx_v_epoch_year == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 18, __pyx_L3_error)
+    __pyx_v_epoch_days = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_epoch_days == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 18, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("epoch_to_jd", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 17, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("epoch_to_jd", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 18, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("passpredict._time.epoch_to_jd", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -1286,9 +1290,9 @@ static PyObject *__pyx_pf_11passpredict_5_time_epoch_to_jd(CYTHON_UNUSED PyObjec
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("epoch_to_jd", 0);
 
-  /* "passpredict/_time.pyx":23
- *     cdef int year, mon, day, hr, minute
- *     cdef double sec, jd, jdfr
+  /* "passpredict/_time.pyx":25
+ *     cdef double sec
+ *     cdef double jd, jdfr
  *     if epoch_year < 57:             # <<<<<<<<<<<<<<
  *         year = epoch_year + 2000
  *     else:
@@ -1296,8 +1300,8 @@ static PyObject *__pyx_pf_11passpredict_5_time_epoch_to_jd(CYTHON_UNUSED PyObjec
   __pyx_t_1 = ((__pyx_v_epoch_year < 57) != 0);
   if (__pyx_t_1) {
 
-    /* "passpredict/_time.pyx":24
- *     cdef double sec, jd, jdfr
+    /* "passpredict/_time.pyx":26
+ *     cdef double jd, jdfr
  *     if epoch_year < 57:
  *         year = epoch_year + 2000             # <<<<<<<<<<<<<<
  *     else:
@@ -1305,9 +1309,9 @@ static PyObject *__pyx_pf_11passpredict_5_time_epoch_to_jd(CYTHON_UNUSED PyObjec
  */
     __pyx_v_year = (__pyx_v_epoch_year + 0x7D0);
 
-    /* "passpredict/_time.pyx":23
- *     cdef int year, mon, day, hr, minute
- *     cdef double sec, jd, jdfr
+    /* "passpredict/_time.pyx":25
+ *     cdef double sec
+ *     cdef double jd, jdfr
  *     if epoch_year < 57:             # <<<<<<<<<<<<<<
  *         year = epoch_year + 2000
  *     else:
@@ -1315,7 +1319,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_epoch_to_jd(CYTHON_UNUSED PyObjec
     goto __pyx_L3;
   }
 
-  /* "passpredict/_time.pyx":26
+  /* "passpredict/_time.pyx":28
  *         year = epoch_year + 2000
  *     else:
  *         year = epoch_year + 1900             # <<<<<<<<<<<<<<
@@ -1327,7 +1331,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_epoch_to_jd(CYTHON_UNUSED PyObjec
   }
   __pyx_L3:;
 
-  /* "passpredict/_time.pyx":27
+  /* "passpredict/_time.pyx":29
  *     else:
  *         year = epoch_year + 1900
  *     days2mdhms_SGP4(year, epoch_days, mon, day, hr, minute, sec)             # <<<<<<<<<<<<<<
@@ -1336,7 +1340,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_epoch_to_jd(CYTHON_UNUSED PyObjec
  */
   SGP4Funcs::days2mdhms_SGP4(__pyx_v_year, __pyx_v_epoch_days, __pyx_v_mon, __pyx_v_day, __pyx_v_hr, __pyx_v_minute, __pyx_v_sec);
 
-  /* "passpredict/_time.pyx":28
+  /* "passpredict/_time.pyx":30
  *         year = epoch_year + 1900
  *     days2mdhms_SGP4(year, epoch_days, mon, day, hr, minute, sec)
  *     jday_SGP4(year, mon, day, hr, minute, sec, jd, jdfr)             # <<<<<<<<<<<<<<
@@ -1345,7 +1349,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_epoch_to_jd(CYTHON_UNUSED PyObjec
  */
   SGP4Funcs::jday_SGP4(__pyx_v_year, __pyx_v_mon, __pyx_v_day, __pyx_v_hr, __pyx_v_minute, __pyx_v_sec, __pyx_v_jd, __pyx_v_jdfr);
 
-  /* "passpredict/_time.pyx":29
+  /* "passpredict/_time.pyx":31
  *     days2mdhms_SGP4(year, epoch_days, mon, day, hr, minute, sec)
  *     jday_SGP4(year, mon, day, hr, minute, sec, jd, jdfr)
  *     return (jd, jdfr)             # <<<<<<<<<<<<<<
@@ -1353,11 +1357,11 @@ static PyObject *__pyx_pf_11passpredict_5_time_epoch_to_jd(CYTHON_UNUSED PyObjec
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_jd); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_jd); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 31, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_jdfr); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_jdfr); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 31, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 31, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_GIVEREF(__pyx_t_2);
   PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_2);
@@ -1369,7 +1373,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_epoch_to_jd(CYTHON_UNUSED PyObjec
   __pyx_t_4 = 0;
   goto __pyx_L0;
 
-  /* "passpredict/_time.pyx":17
+  /* "passpredict/_time.pyx":18
  * 
  * 
  * def epoch_to_jd(int epoch_year, double epoch_days):             # <<<<<<<<<<<<<<
@@ -1390,7 +1394,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_epoch_to_jd(CYTHON_UNUSED PyObjec
   return __pyx_r;
 }
 
-/* "passpredict/_time.pyx":32
+/* "passpredict/_time.pyx":34
  * 
  * 
  * def julian_date(int year, int mon, int day, int hr, int minute, double sec):             # <<<<<<<<<<<<<<
@@ -1446,35 +1450,35 @@ static PyObject *__pyx_pw_11passpredict_5_time_3julian_date(PyObject *__pyx_self
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_mon)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("julian_date", 1, 6, 6, 1); __PYX_ERR(0, 32, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("julian_date", 1, 6, 6, 1); __PYX_ERR(0, 34, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_day)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("julian_date", 1, 6, 6, 2); __PYX_ERR(0, 32, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("julian_date", 1, 6, 6, 2); __PYX_ERR(0, 34, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_hr)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("julian_date", 1, 6, 6, 3); __PYX_ERR(0, 32, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("julian_date", 1, 6, 6, 3); __PYX_ERR(0, 34, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_minute)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("julian_date", 1, 6, 6, 4); __PYX_ERR(0, 32, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("julian_date", 1, 6, 6, 4); __PYX_ERR(0, 34, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  5:
         if (likely((values[5] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_sec)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("julian_date", 1, 6, 6, 5); __PYX_ERR(0, 32, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("julian_date", 1, 6, 6, 5); __PYX_ERR(0, 34, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "julian_date") < 0)) __PYX_ERR(0, 32, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "julian_date") < 0)) __PYX_ERR(0, 34, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 6) {
       goto __pyx_L5_argtuple_error;
@@ -1486,16 +1490,16 @@ static PyObject *__pyx_pw_11passpredict_5_time_3julian_date(PyObject *__pyx_self
       values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
       values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
     }
-    __pyx_v_year = __Pyx_PyInt_As_int(values[0]); if (unlikely((__pyx_v_year == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 32, __pyx_L3_error)
-    __pyx_v_mon = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_mon == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 32, __pyx_L3_error)
-    __pyx_v_day = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_day == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 32, __pyx_L3_error)
-    __pyx_v_hr = __Pyx_PyInt_As_int(values[3]); if (unlikely((__pyx_v_hr == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 32, __pyx_L3_error)
-    __pyx_v_minute = __Pyx_PyInt_As_int(values[4]); if (unlikely((__pyx_v_minute == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 32, __pyx_L3_error)
-    __pyx_v_sec = __pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_sec == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 32, __pyx_L3_error)
+    __pyx_v_year = __Pyx_PyInt_As_int(values[0]); if (unlikely((__pyx_v_year == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 34, __pyx_L3_error)
+    __pyx_v_mon = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_mon == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 34, __pyx_L3_error)
+    __pyx_v_day = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_day == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 34, __pyx_L3_error)
+    __pyx_v_hr = __Pyx_PyInt_As_int(values[3]); if (unlikely((__pyx_v_hr == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 34, __pyx_L3_error)
+    __pyx_v_minute = __Pyx_PyInt_As_int(values[4]); if (unlikely((__pyx_v_minute == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 34, __pyx_L3_error)
+    __pyx_v_sec = __pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_sec == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 34, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("julian_date", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 32, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("julian_date", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 34, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("passpredict._time.julian_date", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -1521,7 +1525,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_2julian_date(CYTHON_UNUSED PyObje
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("julian_date", 0);
 
-  /* "passpredict/_time.pyx":38
+  /* "passpredict/_time.pyx":40
  *     cdef double jd
  *     cdef double jdfr
  *     jday_SGP4(year, mon, day, hr, minute, sec, jd, jdfr)             # <<<<<<<<<<<<<<
@@ -1530,7 +1534,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_2julian_date(CYTHON_UNUSED PyObje
  */
   SGP4Funcs::jday_SGP4(__pyx_v_year, __pyx_v_mon, __pyx_v_day, __pyx_v_hr, __pyx_v_minute, __pyx_v_sec, __pyx_v_jd, __pyx_v_jdfr);
 
-  /* "passpredict/_time.pyx":39
+  /* "passpredict/_time.pyx":41
  *     cdef double jdfr
  *     jday_SGP4(year, mon, day, hr, minute, sec, jd, jdfr)
  *     return (jd, jdfr)             # <<<<<<<<<<<<<<
@@ -1538,11 +1542,11 @@ static PyObject *__pyx_pf_11passpredict_5_time_2julian_date(CYTHON_UNUSED PyObje
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_jd); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 39, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_jd); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 41, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_jdfr); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 39, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_jdfr); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 41, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 39, __pyx_L1_error)
+  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 41, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_GIVEREF(__pyx_t_1);
   PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_1);
@@ -1554,7 +1558,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_2julian_date(CYTHON_UNUSED PyObje
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "passpredict/_time.pyx":32
+  /* "passpredict/_time.pyx":34
  * 
  * 
  * def julian_date(int year, int mon, int day, int hr, int minute, double sec):             # <<<<<<<<<<<<<<
@@ -1575,7 +1579,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_2julian_date(CYTHON_UNUSED PyObje
   return __pyx_r;
 }
 
-/* "passpredict/_time.pyx":42
+/* "passpredict/_time.pyx":44
  * 
  * 
  * def jday2datetime(double jd):             # <<<<<<<<<<<<<<
@@ -1596,7 +1600,7 @@ static PyObject *__pyx_pw_11passpredict_5_time_5jday2datetime(PyObject *__pyx_se
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("jday2datetime (wrapper)", 0);
   assert(__pyx_arg_jd); {
-    __pyx_v_jd = __pyx_PyFloat_AsDouble(__pyx_arg_jd); if (unlikely((__pyx_v_jd == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 42, __pyx_L3_error)
+    __pyx_v_jd = __pyx_PyFloat_AsDouble(__pyx_arg_jd); if (unlikely((__pyx_v_jd == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 44, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -1636,7 +1640,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_4jday2datetime(CYTHON_UNUSED PyOb
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("jday2datetime", 0);
 
-  /* "passpredict/_time.pyx":48
+  /* "passpredict/_time.pyx":50
  *     cdef int year, mon, day, hr, minute, i_sec
  *     cdef double jdFrac, d_sec
  *     invjday_SGP4(jd, jdFrac, year, mon, day, hr, minute, d_sec)             # <<<<<<<<<<<<<<
@@ -1645,7 +1649,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_4jday2datetime(CYTHON_UNUSED PyOb
  */
   SGP4Funcs::invjday_SGP4(__pyx_v_jd, __pyx_v_jdFrac, __pyx_v_year, __pyx_v_mon, __pyx_v_day, __pyx_v_hr, __pyx_v_minute, __pyx_v_d_sec);
 
-  /* "passpredict/_time.pyx":49
+  /* "passpredict/_time.pyx":51
  *     cdef double jdFrac, d_sec
  *     invjday_SGP4(jd, jdFrac, year, mon, day, hr, minute, d_sec)
  *     i_sec = int(c_round(d_sec))             # <<<<<<<<<<<<<<
@@ -1654,7 +1658,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_4jday2datetime(CYTHON_UNUSED PyOb
  */
   __pyx_v_i_sec = ((int)round(__pyx_v_d_sec));
 
-  /* "passpredict/_time.pyx":50
+  /* "passpredict/_time.pyx":52
  *     invjday_SGP4(jd, jdFrac, year, mon, day, hr, minute, d_sec)
  *     i_sec = int(c_round(d_sec))
  *     if i_sec == 60:             # <<<<<<<<<<<<<<
@@ -1664,29 +1668,29 @@ static PyObject *__pyx_pf_11passpredict_5_time_4jday2datetime(CYTHON_UNUSED PyOb
   __pyx_t_1 = ((__pyx_v_i_sec == 60) != 0);
   if (__pyx_t_1) {
 
-    /* "passpredict/_time.pyx":51
+    /* "passpredict/_time.pyx":53
  *     i_sec = int(c_round(d_sec))
  *     if i_sec == 60:
  *         return datetime.datetime(year, mon, day, hr, minute, 59, tzinfo=tz_utc) + datetime.timedelta(seconds=1)             # <<<<<<<<<<<<<<
  *     return datetime.datetime(year, mon, day, hr, minute, i_sec, tzinfo=tz_utc)
  */
     __Pyx_XDECREF(__pyx_r);
-    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_datetime); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_datetime); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_datetime); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_datetime); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_year); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_year); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_mon); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_mon); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_day); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_day); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_6 = __Pyx_PyInt_From_int(__pyx_v_hr); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyInt_From_int(__pyx_v_hr); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_minute); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_minute); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_8 = PyTuple_New(6); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_8 = PyTuple_New(6); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
     __Pyx_GIVEREF(__pyx_t_2);
     PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_2);
@@ -1706,30 +1710,30 @@ static PyObject *__pyx_pf_11passpredict_5_time_4jday2datetime(CYTHON_UNUSED PyOb
     __pyx_t_5 = 0;
     __pyx_t_6 = 0;
     __pyx_t_7 = 0;
-    __pyx_t_7 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_tz_utc); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_tz_utc); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_tzinfo, __pyx_t_6) < 0) __PYX_ERR(0, 51, __pyx_L1_error)
+    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_tzinfo, __pyx_t_6) < 0) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __pyx_t_6 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_8, __pyx_t_7); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_8, __pyx_t_7); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_n_s_datetime); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_n_s_datetime); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_timedelta); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_timedelta); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __pyx_t_7 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_seconds, __pyx_int_1) < 0) __PYX_ERR(0, 51, __pyx_L1_error)
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_8, __pyx_empty_tuple, __pyx_t_7); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 51, __pyx_L1_error)
+    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_seconds, __pyx_int_1) < 0) __PYX_ERR(0, 53, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_8, __pyx_empty_tuple, __pyx_t_7); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __pyx_t_7 = PyNumber_Add(__pyx_t_6, __pyx_t_3); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_7 = PyNumber_Add(__pyx_t_6, __pyx_t_3); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 53, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -1737,7 +1741,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_4jday2datetime(CYTHON_UNUSED PyOb
     __pyx_t_7 = 0;
     goto __pyx_L0;
 
-    /* "passpredict/_time.pyx":50
+    /* "passpredict/_time.pyx":52
  *     invjday_SGP4(jd, jdFrac, year, mon, day, hr, minute, d_sec)
  *     i_sec = int(c_round(d_sec))
  *     if i_sec == 60:             # <<<<<<<<<<<<<<
@@ -1746,30 +1750,30 @@ static PyObject *__pyx_pf_11passpredict_5_time_4jday2datetime(CYTHON_UNUSED PyOb
  */
   }
 
-  /* "passpredict/_time.pyx":52
+  /* "passpredict/_time.pyx":54
  *     if i_sec == 60:
  *         return datetime.datetime(year, mon, day, hr, minute, 59, tzinfo=tz_utc) + datetime.timedelta(seconds=1)
  *     return datetime.datetime(year, mon, day, hr, minute, i_sec, tzinfo=tz_utc)             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_n_s_datetime); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_n_s_datetime); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_datetime); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_datetime); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_year); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_year); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_6 = __Pyx_PyInt_From_int(__pyx_v_mon); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_From_int(__pyx_v_mon); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_day); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_day); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
-  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_hr); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_hr); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_minute); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_minute); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_i_sec); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_i_sec); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_9 = PyTuple_New(6); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_9 = PyTuple_New(6); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __Pyx_GIVEREF(__pyx_t_7);
   PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_t_7);
@@ -1789,13 +1793,13 @@ static PyObject *__pyx_pf_11passpredict_5_time_4jday2datetime(CYTHON_UNUSED PyOb
   __pyx_t_5 = 0;
   __pyx_t_4 = 0;
   __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_tz_utc); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_tz_utc); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_tzinfo, __pyx_t_4) < 0) __PYX_ERR(0, 52, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_tzinfo, __pyx_t_4) < 0) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_9, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_9, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 54, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
@@ -1804,7 +1808,7 @@ static PyObject *__pyx_pf_11passpredict_5_time_4jday2datetime(CYTHON_UNUSED PyOb
   __pyx_t_4 = 0;
   goto __pyx_L0;
 
-  /* "passpredict/_time.pyx":42
+  /* "passpredict/_time.pyx":44
  * 
  * 
  * def jday2datetime(double jd):             # <<<<<<<<<<<<<<
@@ -1916,41 +1920,41 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "passpredict/_time.pyx":17
+  /* "passpredict/_time.pyx":18
  * 
  * 
  * def epoch_to_jd(int epoch_year, double epoch_days):             # <<<<<<<<<<<<<<
  *     """
  *     Convert TLE epoch value to julian date
  */
-  __pyx_tuple_ = PyTuple_Pack(10, __pyx_n_s_epoch_year, __pyx_n_s_epoch_days, __pyx_n_s_year, __pyx_n_s_mon, __pyx_n_s_day, __pyx_n_s_hr, __pyx_n_s_minute, __pyx_n_s_sec, __pyx_n_s_jd, __pyx_n_s_jdfr); if (unlikely(!__pyx_tuple_)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __pyx_tuple_ = PyTuple_Pack(10, __pyx_n_s_epoch_year, __pyx_n_s_epoch_days, __pyx_n_s_year, __pyx_n_s_mon, __pyx_n_s_day, __pyx_n_s_hr, __pyx_n_s_minute, __pyx_n_s_sec, __pyx_n_s_jd, __pyx_n_s_jdfr); if (unlikely(!__pyx_tuple_)) __PYX_ERR(0, 18, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple_);
   __Pyx_GIVEREF(__pyx_tuple_);
-  __pyx_codeobj__2 = (PyObject*)__Pyx_PyCode_New(2, 0, 10, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple_, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_passpredict__time_pyx, __pyx_n_s_epoch_to_jd, 17, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__2)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __pyx_codeobj__2 = (PyObject*)__Pyx_PyCode_New(2, 0, 10, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple_, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_passpredict__time_pyx, __pyx_n_s_epoch_to_jd, 18, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__2)) __PYX_ERR(0, 18, __pyx_L1_error)
 
-  /* "passpredict/_time.pyx":32
+  /* "passpredict/_time.pyx":34
  * 
  * 
  * def julian_date(int year, int mon, int day, int hr, int minute, double sec):             # <<<<<<<<<<<<<<
  *     """
  *     Convert date to julian date
  */
-  __pyx_tuple__3 = PyTuple_Pack(8, __pyx_n_s_year, __pyx_n_s_mon, __pyx_n_s_day, __pyx_n_s_hr, __pyx_n_s_minute, __pyx_n_s_sec, __pyx_n_s_jd, __pyx_n_s_jdfr); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 32, __pyx_L1_error)
+  __pyx_tuple__3 = PyTuple_Pack(8, __pyx_n_s_year, __pyx_n_s_mon, __pyx_n_s_day, __pyx_n_s_hr, __pyx_n_s_minute, __pyx_n_s_sec, __pyx_n_s_jd, __pyx_n_s_jdfr); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 34, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__3);
   __Pyx_GIVEREF(__pyx_tuple__3);
-  __pyx_codeobj__4 = (PyObject*)__Pyx_PyCode_New(6, 0, 8, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__3, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_passpredict__time_pyx, __pyx_n_s_julian_date, 32, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__4)) __PYX_ERR(0, 32, __pyx_L1_error)
+  __pyx_codeobj__4 = (PyObject*)__Pyx_PyCode_New(6, 0, 8, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__3, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_passpredict__time_pyx, __pyx_n_s_julian_date, 34, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__4)) __PYX_ERR(0, 34, __pyx_L1_error)
 
-  /* "passpredict/_time.pyx":42
+  /* "passpredict/_time.pyx":44
  * 
  * 
  * def jday2datetime(double jd):             # <<<<<<<<<<<<<<
  *     """
  *     Convert julian date float to python datetime object rounded to nearest second
  */
-  __pyx_tuple__5 = PyTuple_Pack(10, __pyx_n_s_jd, __pyx_n_s_jd, __pyx_n_s_year, __pyx_n_s_mon, __pyx_n_s_day, __pyx_n_s_hr, __pyx_n_s_minute, __pyx_n_s_i_sec, __pyx_n_s_jdFrac, __pyx_n_s_d_sec); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __pyx_tuple__5 = PyTuple_Pack(10, __pyx_n_s_jd, __pyx_n_s_jd, __pyx_n_s_year, __pyx_n_s_mon, __pyx_n_s_day, __pyx_n_s_hr, __pyx_n_s_minute, __pyx_n_s_i_sec, __pyx_n_s_jdFrac, __pyx_n_s_d_sec); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 44, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__5);
   __Pyx_GIVEREF(__pyx_tuple__5);
-  __pyx_codeobj__6 = (PyObject*)__Pyx_PyCode_New(1, 0, 10, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__5, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_passpredict__time_pyx, __pyx_n_s_jday2datetime, 42, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__6)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __pyx_codeobj__6 = (PyObject*)__Pyx_PyCode_New(1, 0, 10, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__5, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_passpredict__time_pyx, __pyx_n_s_jday2datetime, 44, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__6)) __PYX_ERR(0, 44, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -2232,76 +2236,76 @@ if (!__Pyx_RefNanny) {
   if (__Pyx_patch_abc() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
 
-  /* "passpredict/_time.pyx":6
- * from libc.math cimport round as c_round
+  /* "passpredict/_time.pyx":7
+ * from libc.math cimport round as c_round, fmod, floor, fabs
  * 
  * import datetime             # <<<<<<<<<<<<<<
  * 
  * cdef extern from "SGP4.h" namespace "SGP4Funcs":
  */
-  __pyx_t_1 = __Pyx_Import(__pyx_n_s_datetime, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 6, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_Import(__pyx_n_s_datetime, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 7, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_datetime, __pyx_t_1) < 0) __PYX_ERR(0, 6, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_datetime, __pyx_t_1) < 0) __PYX_ERR(0, 7, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "passpredict/_time.pyx":14
+  /* "passpredict/_time.pyx":15
  * 
  * 
  * tz_utc = datetime.timezone.utc             # <<<<<<<<<<<<<<
  * 
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_datetime); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_datetime); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_timezone); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_timezone); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_utc); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_utc); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_tz_utc, __pyx_t_1) < 0) __PYX_ERR(0, 14, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_tz_utc, __pyx_t_1) < 0) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "passpredict/_time.pyx":17
+  /* "passpredict/_time.pyx":18
  * 
  * 
  * def epoch_to_jd(int epoch_year, double epoch_days):             # <<<<<<<<<<<<<<
  *     """
  *     Convert TLE epoch value to julian date
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_11passpredict_5_time_1epoch_to_jd, NULL, __pyx_n_s_passpredict__time); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_11passpredict_5_time_1epoch_to_jd, NULL, __pyx_n_s_passpredict__time); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 18, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_epoch_to_jd, __pyx_t_1) < 0) __PYX_ERR(0, 17, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_epoch_to_jd, __pyx_t_1) < 0) __PYX_ERR(0, 18, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "passpredict/_time.pyx":32
+  /* "passpredict/_time.pyx":34
  * 
  * 
  * def julian_date(int year, int mon, int day, int hr, int minute, double sec):             # <<<<<<<<<<<<<<
  *     """
  *     Convert date to julian date
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_11passpredict_5_time_3julian_date, NULL, __pyx_n_s_passpredict__time); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 32, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_11passpredict_5_time_3julian_date, NULL, __pyx_n_s_passpredict__time); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 34, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_julian_date, __pyx_t_1) < 0) __PYX_ERR(0, 32, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_julian_date, __pyx_t_1) < 0) __PYX_ERR(0, 34, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "passpredict/_time.pyx":42
+  /* "passpredict/_time.pyx":44
  * 
  * 
  * def jday2datetime(double jd):             # <<<<<<<<<<<<<<
  *     """
  *     Convert julian date float to python datetime object rounded to nearest second
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_11passpredict_5_time_5jday2datetime, NULL, __pyx_n_s_passpredict__time); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_11passpredict_5_time_5jday2datetime, NULL, __pyx_n_s_passpredict__time); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 44, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_jday2datetime, __pyx_t_1) < 0) __PYX_ERR(0, 42, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_jday2datetime, __pyx_t_1) < 0) __PYX_ERR(0, 44, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "passpredict/_time.pyx":1
  * # cython: boundscheck=False, wraparound=False             # <<<<<<<<<<<<<<
  * # cython: language_level=3
- * 
+ * # distutils: language = c++
  */
   __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
