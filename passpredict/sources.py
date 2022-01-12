@@ -2,17 +2,61 @@
 import abc
 import datetime
 from typing import NamedTuple, Tuple
+from pathlib import Path
 
 from orbit_predictor.sources import MemoryTLESource
+import httpx
 
 from .satellites import SatellitePredictor
 from .base import TLESource
+from .caches import JsonCache
 
 # from orbit_predictor.sources
 class TLE(NamedTuple):
-    sate_id: int        # NORAD satellite ID
+    satid: int        # NORAD satellite ID
     lines: Tuple[str]   # tuple of tle strings (tle1, tle2)
     date: datetime.datetime   # datetime in UTC
+
+    @property
+    def sate_id(self):
+        return self.satid
+
+
+
+class CelestrakTLESource(TLESource):
+    """
+    TLE source that checks the cache for orbital elements,
+    otherwise queries Celestrak website
+    """
+    def __init__(self) -> None:
+        self.cache_path = Path.home() / '.passpredict' / 'cache.dat'
+        self.cache = JsonCache(self.cache_path)
+
+
+    def add_tle(self, satid: int, tle: TLE, epoch: datetime.datetime):
+        """
+        Add TLE to local cache
+        """
+        return super().add_tle(satid, tle, epoch)
+
+    def _get_tle(self, satid: int, date):
+        """
+        Query TLE from Cache
+        """
+        return super()._get_tle(satid, date)
+
+    def get_tle(self, satid: int, date):
+        """
+        Query TLE
+        """
+        return super().get_tle(satid, date)
+
+    def get_predictor(self, satid: int):
+        """
+        Return satellite predictor from tle
+        """
+        return super().get_predictor(satid)
+
 
 
 class AsyncPasspredictTLESource(TLESource):

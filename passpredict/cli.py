@@ -38,7 +38,7 @@ def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, al
     satellite = Satellite(
         id=satellite_id,
     )
-    date_start = datetime.datetime.utcnow()
+    date_start = datetime.datetime.now(tz=datetime.timezone.utc)
     min_elevation = 10.0 # degrees
 
     if no_cache:
@@ -53,8 +53,11 @@ def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, al
                 tle = get_TLE(satellite.id)
                 cache.set(sat_key, tle.dict(), ttl=86400)
 
-    predictor = SatellitePredictor.from_tle(tle)
-    overpasses = predict_single_satellite_overpasses(predictor, location, date_start, days, min_elevation=min_elevation)
+
+    satellite = SatellitePredictor(satellite.id)
+    satellite.tle = TLE(tle.satid, (tle.tle1, tle.tle2), tle.epoch)
+    satellite.set_propagator()
+    overpasses = predict_single_satellite_overpasses(satellite, location, date_start, days, min_elevation=min_elevation)
     overpass_table(overpasses, location, tle, tz, twelvehour=twelve, quiet=quiet)
     return 0
 
