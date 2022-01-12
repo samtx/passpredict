@@ -44,6 +44,17 @@ setup(
     version="0.1.0",
     packages=['passpredict'],
     python_requires=">=3.9",
+    install_requires=[
+        'sgp4>=2.12',
+        'numpy>=1.20',
+        'scipy>=1.7.3',
+        'orbit-predictor',
+        'pydantic',
+        'click',
+        'rich',
+        'httpx',
+        'timezonefinder',
+    ],
     extras_require={
         'dev': [
             'Cython',

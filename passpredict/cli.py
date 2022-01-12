@@ -1,6 +1,10 @@
 import datetime
+from math import floor
 
 import click
+from rich.console import Console
+from rich.table import Table
+from rich.align import Align
 
 from .schemas import Satellite, PassType
 from .caches import JsonCache
@@ -23,8 +27,9 @@ from .sources import TLE
 @click.option('-a', '--all', 'alltypes', is_flag=True, default=False)  # show all pass types
 @click.option('-q', '--quiet', is_flag=True, default=False)
 @click.option('-v', '--verbose', is_flag=True, default=False)
+@click.option('--summary', is_flag=True, default=False)  # make summary table of results
 @click.option('--no-cache', is_flag=True, default=False)
-def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, alltypes, quiet, verbose, no_cache):
+def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, alltypes, quiet, verbose, summary, no_cache):
     """
     Command line interface for pass predictions
     """
@@ -58,11 +63,14 @@ def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, al
     satellite.tle = TLE(tle.satid, (tle.tle1, tle.tle2), tle.epoch)
     satellite.set_propagator()
     overpasses = predict_single_satellite_overpasses(satellite, location, date_start, days, min_elevation=min_elevation)
-    overpass_table(overpasses, location, tle, tz, twelvehour=twelve, quiet=quiet)
+    # Filter visible passes only unless all passes are requested
+    if not alltypes:
+        overpasses = filter(lambda p: p.type == PassType.visible, overpasses)
+    overpass_table(overpasses, location, tle, tz, twelvehour=twelve, quiet=quiet, summary=summary)
     return 0
 
 
-def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, quiet=False):
+def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, quiet=False, summary=False):
     """
     Return a formatted string for tabular output
 
@@ -77,7 +85,6 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, quiet=F
             tabular formatted string
 """
     table_title = ""
-    table_header = ""
     if not quiet:
         satellite_id = tle.satid
         # Print datetimes with the correct timezone
@@ -87,49 +94,110 @@ def overpass_table(overpasses, location, tle, tz=None, twelvehour=False, quiet=F
         table_title += f"{tle.tle1:s}\n"
         table_title += f"{tle.tle2:s}\n"
     click.secho(table_title)
-    if twelvehour:
-        point_header = "  Time    El  Az "
-        point_header_underline = "--------- --- ---"
-    else:
-        #   Time   Elx Azx
-        point_header = "  Time   El  Az "
-        point_header_underline = "-------- --- ---"
-    table_header +=  f"            {'Start':^17s}   {'Maximum':^17s}   {'End':^17s}\n"
-    # table_header +=  "  Date    Mag   {0}   {0}   {0}      Type\n".format(point_header)
-    table_header +=  "  Date    {0}   {0}   {0}\n".format(point_header)
-    table_header += "--------  "
-    table_header += point_header_underline + " "*3
-    table_header += point_header_underline + " "*3
-    table_header += point_header_underline + " "*3
-    # table_header += "-"*10   # for 'Type' underline
-    click.echo(table_header)
 
-    def point_string(point):
-        time = point.dt.astimezone(tz)
-        if twelvehour:
-            point_line = time.strftime("%I:%M:%S") + time.strftime("%p")[0].lower()
-        else:
-            point_line = time.strftime("%H:%M:%S")
-        point_line += " " + "{:>2}\u00B0".format(int(point.elevation))
-        point_line += " " + "{:3}".format(point.direction)
-        return point_line
+    # Data results
+    if summary:
+        table = make_summary_table(overpasses, tz, twelvehour)
+    else:
+        table = make_detail_table(overpasses, tz, twelvehour)
+    console = Console()
+    console.print(table)
+
+
+def make_summary_table(overpasses, tz, twelvehour):
+    """
+    Make a summary data table to print to console
+    """
+    table = Table()
+    table.add_column(Align("Date", "center"), justify="right")
+    table.add_column(Align("Duration", "center"), justify="right")
+    table.add_column(Align("Max Elev", "center"), justify="right")
+    table.add_column(Align("Type", "center"), justify='center')
+
+    def get_min_sec_string(total_seconds: int) -> str:
+        """
+        Get total number of seconds, return string with min:sec format
+        """
+        nmin = floor(total_seconds / 60)
+        nsec = total_seconds - nmin * 60
+        return f"{nmin:.0f}:{nsec:0.0f}"
 
     for overpass in overpasses:
-        table_data = "{}".format(overpass.aos.dt.astimezone(tz).strftime("%m/%d/%y"))
+        row = []
+        date = overpass.aos.dt.astimezone(tz)
+        day = date.strftime("%x").lstrip('0')
+        # round to nearest minute
+        if date.second >= 30:
+            date.replace(minute=date.minute+1)
+        if twelvehour:
+            time = date.strftime("%I:%M").lstrip("0")
+            ampm = date.strftime('%p').lower()
+            row.append(f"{day:>8}  {time:>5} {ampm}")
+        else:
+            time = date.strftime("%H:%M")
+            row.append(f"{day}  {time}")
+
         # if overpass.brightness is not None:
         #     brightness_str = f"{overpass.brightness:4.1f}"
         # else:
         #     brightness_str = " "*4
         # table_data += " "*2 + brightness_str
-        table_data += " "*2 + point_string(overpass.aos) + ' |'
-        table_data += " " + point_string(overpass.tca) + ' |'
-        table_data += " " + point_string(overpass.los)
+
+
+        row.append(get_min_sec_string(overpass.duration))
+        row.append(f"{int(overpass.tca.elevation):2}\u00B0")
         if overpass.type:
-            table_data += " "*4 + f'{overpass.type.value:^9}'# + '\n'
+            row.append(overpass.type.value)# + '\n'
             fg = 'green' if overpass.type.value == PassType.visible else None
         else:
             fg = None
-        click.secho(table_data, fg=fg)
+        row = tuple(row)
+        table.add_row(*row, style=fg )
+    return table
+
+def make_detail_table(overpasses, tz, twelvehour):
+    """
+    Make a detailed data table to print to console
+    """
+    table = Table()
+    table.add_column(Align("Date", 'center'), justify="right")
+    for x in ('Start', 'Max', 'End'):
+        table.add_column(Align(f"{x}\nTime", "center"), justify="right")
+        table.add_column(Align(f"{x}\nEl", "center"), justify="right", width=4)
+        table.add_column(Align(f"{x}\nAz", "center"), justify="right", width=4)
+    table.add_column(Align("Type", "center"), justify='center')
+
+    def point_string(point):
+        time = point.dt.astimezone(tz)
+        point_data = []
+        if twelvehour:
+            point_data.append(time.strftime("%I:%M:%S").lstrip("0") + ' ' + time.strftime("%p").lower())
+        else:
+            point_data.append(time.strftime("%H:%M:%S"))
+        point_data.append("{:>2}\u00B0".format(int(point.elevation)))
+        point_data.append("{:3}".format(point.direction))
+        return point_data
+
+    for overpass in overpasses:
+        row = []
+        row.append("{}".format(overpass.aos.dt.astimezone(tz).strftime("%m/%d/%y")))
+
+        # if overpass.brightness is not None:
+        #     brightness_str = f"{overpass.brightness:4.1f}"
+        # else:
+        #     brightness_str = " "*4
+        # table_data += " "*2 + brightness_str
+        row += point_string(overpass.aos)
+        row += point_string(overpass.tca)
+        row += point_string(overpass.los)
+        if overpass.type:
+            row.append(overpass.type.value)# + '\n'
+            fg = 'green' if overpass.type.value == PassType.visible else None
+        else:
+            fg = None
+        row = tuple(row)
+        table.add_row(*row, style=fg )
+    return table
 
 
 def echo(*a, **kw):
