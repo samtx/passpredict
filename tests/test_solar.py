@@ -115,3 +115,13 @@ def test_location_is_sunlit(hr_dt, is_sunlit_expected):
     d = datetime.datetime(2016, 9, 8) + datetime.timedelta(hours=hr_dt)
     is_sunlit = location.is_sunlit(d)
     assert is_sunlit == approx(is_sunlit_expected)
+
+
+def test_sat_illumination_distance():
+    """
+    Vallado, 11-6, p.913
+    """
+    rsat = np.array([885.7296, -4389.3856, 5070.1765])
+    rsun = np.array([-1.43169570e+08, 4.12567046e+07, 1.27096677e+07])
+    dist = _solar.sat_illumination_distance(rsat, rsun)
+    assert dist == approx(6564.6870, abs=1.0)

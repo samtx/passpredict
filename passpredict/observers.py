@@ -315,7 +315,7 @@ class Observer(LocationPredictor):
             los_dt = self._find_los(tca_dt)
         else:
             aos_dt = los_dt = None
-        return BasicPassInfo(aos_dt, tca_dt, los_dt, elevation)
+            return BasicPassInfo(aos_dt, tca_dt, los_dt, elevation)
         # Find visual pass details
         # First, get endpoints of when location is not sunlit
         # Use cubic splines to find sun elevation

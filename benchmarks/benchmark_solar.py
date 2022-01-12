@@ -1,29 +1,42 @@
 # Write the benchmarking functions here.
 # See "Writing benchmarks" in the asv docs for more information.
-from datetime import datetime, timezone, timedelta
 
 import numpy as np
-from astropy.time import Time
 
-from passpredict.predictions import compute_sun_data, compute_time_array
-from passpredict.models import SpaceObject, RhoVector, Sun
-from passpredict.timefn import julian_date, jd2jc, jd2utc1, jday2datetime
-from passpredict.solar import sun_pos, is_sat_illuminated
+from passpredict import solar
+from passpredict import _solar
 
 
 class SunPosition:
-    
-    params = [1, 2, 5, 10, 14, 21]
-    param_names = ['days']
-    
-    def setup(self, days):
-        dt_start = datetime(2020, 7, 14, 11, 17, 00, tzinfo=timezone.utc)
-        dt_end = dt_start + timedelta(days=days)
-        self.t = compute_time_array(dt_start, dt_end, 1.0)
+    def setup(self):
+        self.jd = 2450540.547222222
+        self.rmod = np.empty(3, dtype=np.double)
 
-    def time_compute_sun_data(self, *args):
-        sun = compute_sun_data(self.t)
+    def time_sun_pos_cython(self):
+        _solar.sun_pos(self.jd)
+
+    def time_sun_pos(self):
+        solar.sun_pos.__wrapped__(self.jd)
+
+    def time_sun_pos_mod(self):
+        _solar.sun_pos_mod(self.jd, self.rmod)
 
 
-    def peakmem_compute_sun_data(self, *args):
-        sun = compute_sun_data(self.t)
+class SunPositionCache:
+    def setup(self):
+        self.jd = 2450540.547222222
+        self.rmod = np.empty(3, dtype=np.double)
+        solar.sun_pos(self.jd)
+
+    def time_sun_pos_cache(self):
+        solar.sun_pos(self.jd)
+
+
+class SatelliteIllumination:
+    def setup(self):
+        self.rsat = np.array([885.7296, -4389.3856, 5070.1765])
+        self.rsun = np.array([-1.43169570e+08, 4.12567046e+07, 1.27096677e+07])
+
+    def time_sat_illumination_distance(self):
+        _solar.sat_illumination_distance(self.rsat, self.rsun)
+
