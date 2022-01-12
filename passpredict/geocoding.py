@@ -1,4 +1,4 @@
-import requests
+import httpx
 
 nominatim_url = "https://nominatim.openstreetmap.org/search"
 
@@ -14,8 +14,8 @@ def geocoder(q, source=nominatim_url):
         'limit': 1,
     }
     try:
-        response = requests.get(source, params=params)
+        response = httpx.get(source, params=params)
         data = response.json()[0]
-    except requests.exceptions.RequestException:
+    except httpx.RequestError:
         data = None
     return data
