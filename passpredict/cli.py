@@ -18,7 +18,7 @@ from .sources import TLE
 
 @click.command()
 @click.option('-s', '--satellite-id', type=int)  # satellite id
-@click.option('-u', '--utc-offset', default=0.0, type=float, prompt=True)  # utc offset
+# @click.option('-u', '--utc-offset', default=0.0, type=float)  # utc offset
 @click.option('-d', '--days', default=10, type=click.IntRange(1, 14, clamp=True)) # day range
 @click.option('-lat', '--latitude', type=float)  # latitude
 @click.option('-lon', '--longitude', type=float)  # longitude
@@ -29,11 +29,10 @@ from .sources import TLE
 @click.option('-v', '--verbose', is_flag=True, default=False)
 @click.option('--summary', is_flag=True, default=False)  # make summary table of results
 @click.option('--no-cache', is_flag=True, default=False)
-def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, alltypes, quiet, verbose, summary, no_cache):
+def main(satellite_id, days, latitude, longitude, height, twelve, alltypes, quiet, verbose, summary, no_cache):
     """
     Command line interface for pass predictions
     """
-    tz = datetime.timezone(datetime.timedelta(hours=utc_offset))
     location = Location(
         latitude_deg=latitude,
         longitude_deg=longitude,
@@ -66,7 +65,7 @@ def main(satellite_id, utc_offset, days, latitude, longitude, height, twelve, al
     # Filter visible passes only unless all passes are requested
     if not alltypes:
         overpasses = filter(lambda p: p.type == PassType.visible, overpasses)
-    overpass_table(overpasses, location, tle, tz, twelvehour=twelve, quiet=quiet, summary=summary)
+    overpass_table(overpasses, location, tle, tz=location.timezone, twelvehour=twelve, quiet=quiet, summary=summary)
     return 0
 
 

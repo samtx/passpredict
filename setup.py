@@ -46,7 +46,7 @@ setup(
     python_requires=">=3.9",
     install_requires=[
         'sgp4>=2.12',
-        'numpy>=1.20',
+        'numpy>=1.22',
         'scipy>=1.7.3',
         'orbit-predictor',
         'pydantic',

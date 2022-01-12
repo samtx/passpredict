@@ -30,7 +30,8 @@ class PredictOverpasses:
         satellite.set_propagator()
 
         location = Location("Austin, Texas", 30.2711, -97.7434, 0)
-        self.observer = passpredict.Observer(location, satellite)
+        self.min_elevation = 10
+        self.observer = passpredict.Observer(location, satellite, aos_at_dg=self.min_elevation)
         self.satellite = satellite
         self.location = location
 
