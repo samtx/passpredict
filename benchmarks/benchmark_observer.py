@@ -47,3 +47,25 @@ class PredictOverpasses:
             self.ndays,
             10,  # min elevation
         )
+
+    def track_elevation_at_function_calls(self):
+        passpredict.predict_single_satellite_overpasses(
+            self.satellite,
+            self.location,
+            self.start,
+            self.ndays,
+            10,  # min elevation
+        )
+        res = self.observer._elevation_at.cache_info()
+        return res.hits + res.misses
+
+    def track_elevation_at_function_cache_ration(self):
+        passpredict.predict_single_satellite_overpasses(
+            self.satellite,
+            self.location,
+            self.start,
+            self.ndays,
+            10,  # min elevation
+        )
+        res = self.observer._elevation_at.cache_info()
+        return res.hits / (res.misses + res.hits)
