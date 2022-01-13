@@ -11,3 +11,11 @@ build-backend = "setuptools.build_meta"
 testpaths = [
     "tests"
 ]
+markers = [
+    "predict"
+]
+
+[tool.coverage.run]
+source = [
+    "passpredict"
+]

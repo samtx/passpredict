@@ -6,19 +6,18 @@ from rich.console import Console
 from rich.table import Table
 from rich.align import Align
 
-from .schemas import Satellite, PassType
 from .caches import JsonCache
 from .tle import get_TLE, Tle
 from .core import predict_single_satellite_overpasses
 from ._time import julian_date
 from .satellites import SatellitePredictor
 from .locations import Location
+from .observers import PassType
 from .sources import TLE
 
 
 @click.command()
 @click.option('-s', '--satellite-id', type=int)  # satellite id
-# @click.option('-u', '--utc-offset', default=0.0, type=float)  # utc offset
 @click.option('-d', '--days', default=10, type=click.IntRange(1, 14, clamp=True)) # day range
 @click.option('-lat', '--latitude', type=float)  # latitude
 @click.option('-lon', '--longitude', type=float)  # longitude
@@ -39,26 +38,24 @@ def main(satellite_id, days, latitude, longitude, height, twelve, alltypes, quie
         elevation_m=height,
         name=""
     )
-    satellite = Satellite(
-        id=satellite_id,
-    )
+    satid = satellite_id
     date_start = datetime.datetime.now(tz=datetime.timezone.utc)
     min_elevation = 10.0 # degrees
 
     if no_cache:
-        tle = get_TLE(satellite.id)
+        tle = get_TLE(satid)
     else:
         with JsonCache() as cache:
-            sat_key = f'sat:{satellite.id}'
+            sat_key = f'sat:{satid}'
             res = cache.get(sat_key)
             if res:
                 tle = Tle(tle1=res['tle1'], tle2=res['tle2'])
             else:
-                tle = get_TLE(satellite.id)
+                tle = get_TLE(satid)
                 cache.set(sat_key, tle.dict(), ttl=86400)
 
 
-    satellite = SatellitePredictor(satellite.id)
+    satellite = SatellitePredictor(satid)
     satellite.tle = TLE(tle.satid, (tle.tle1, tle.tle2), tle.epoch)
     satellite.set_propagator()
     overpasses = predict_single_satellite_overpasses(satellite, location, date_start, days, min_elevation=min_elevation)
@@ -135,14 +132,6 @@ def make_summary_table(overpasses, tz, twelvehour):
         else:
             time = date.strftime("%H:%M")
             row.append(f"{day}  {time}")
-
-        # if overpass.brightness is not None:
-        #     brightness_str = f"{overpass.brightness:4.1f}"
-        # else:
-        #     brightness_str = " "*4
-        # table_data += " "*2 + brightness_str
-
-
         row.append(get_min_sec_string(overpass.duration))
         row.append(f"{int(overpass.tca.elevation):2}\u00B0")
         if overpass.type:
@@ -150,9 +139,9 @@ def make_summary_table(overpasses, tz, twelvehour):
             fg = 'green' if overpass.type.value == PassType.visible else None
         else:
             fg = None
-        row = tuple(row)
         table.add_row(*row, style=fg )
     return table
+
 
 def make_detail_table(overpasses, tz, twelvehour):
     """
@@ -179,8 +168,7 @@ def make_detail_table(overpasses, tz, twelvehour):
 
     for overpass in overpasses:
         row = []
-        row.append("{}".format(overpass.aos.dt.astimezone(tz).strftime("%m/%d/%y")))
-
+        row.append(overpass.aos.dt.astimezone(tz).strftime("%x").lstrip('0'))
         # if overpass.brightness is not None:
         #     brightness_str = f"{overpass.brightness:4.1f}"
         # else:
@@ -194,7 +182,6 @@ def make_detail_table(overpasses, tz, twelvehour):
             fg = 'green' if overpass.type.value == PassType.visible else None
         else:
             fg = None
-        row = tuple(row)
         table.add_row(*row, style=fg )
     return table
 

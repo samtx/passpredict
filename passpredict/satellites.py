@@ -6,7 +6,8 @@ from functools import lru_cache
 import numpy as np
 from orbit_predictor.predictors.accurate import HighAccuracyTLEPredictor
 from orbit_predictor.coordinate_systems import ecef_to_llh, eci_to_ecef
-from sgp4.api import SGP4_ERRORS
+from sgp4.api import SGP4_ERRORS, Satrec
+from sgp4.model import WGS84
 from sgp4.propagation import gstime
 
 from .time import julian_date_from_datetime
@@ -14,6 +15,9 @@ from .solar import sun_pos
 from . import _solar
 from .exceptions import PropagationError
 from .constants import R_EARTH
+
+if typing.TYPE_CHECKING:
+    from .sources import PasspredictTLESource
 
 
 class LLH(typing.NamedTuple):
@@ -27,24 +31,24 @@ class SatellitePredictor(HighAccuracyTLEPredictor):
     """
     Predictor for satellite overpasses. Uses sgp4 for propagation
     """
-    def __init__(self, satid: int):
+    def __init__(self, satid: int, source: PasspredictTLESource):
         """
         Params:
             satid: int = NORAD id for satellite
             source: PasspredictTLESource
         """
         self.satid = satid
-        self._source = None
-        self.tle = None
-        self._propagator = None
+        self.tle = source.get_tle(satid)
+        self._propagator = self.get_propagator(self.tle.lines)
         self.intrinsic_mag = 1.0   # ISS is -1.8
 
     @property
     def sate_id(self):
         return self.satid
 
-    def set_propagator(self):
-        self._propagator = self._get_propagator()
+    def get_propagator(self, lines):
+        tle_line_1, tle_line_2 = lines
+        return Satrec.twoline2rv(tle_line_1, tle_line_2, WGS84)
 
     def get_only_position(self, datetime: datetime.datetime) -> np.ndarray:
         """
