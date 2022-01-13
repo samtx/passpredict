@@ -46,9 +46,22 @@ def jday2datetime(double jd):
     Convert julian date float to python datetime object rounded to nearest second
     """
     cdef int year, mon, day, hr, minute, i_sec
-    cdef double jdFrac, d_sec
+    cdef double d_sec
+    cdef double jdFrac = 0
     invjday_SGP4(jd, jdFrac, year, mon, day, hr, minute, d_sec)
     i_sec = int(c_round(d_sec))
     if i_sec == 60:
         return datetime.datetime(year, mon, day, hr, minute, 59, tzinfo=tz_utc) + datetime.timedelta(seconds=1)
     return datetime.datetime(year, mon, day, hr, minute, i_sec, tzinfo=tz_utc)
+
+
+def jday2datetime_us(double jd):
+    """
+    Convert julian date float to python datetime object including microseconds
+    """
+    cdef int year, mon, day, hr, minute
+    cdef double d_sec
+    cdef double jdFrac = 0
+    invjday_SGP4(jd, jdFrac, year, mon, day, hr, minute, d_sec)
+    i_sec, i_us = divmod(d_sec, 1)
+    return datetime.datetime(year, mon, day, hr, minute, int(i_sec), int(i_us*1e6), tzinfo=tz_utc)

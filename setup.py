@@ -58,7 +58,7 @@ setup(
     extras_require={
         'dev': [
             'Cython',
-            'pytest == 5.4.3',
+            'pytest>=6.2.5',
             'pytest-html',
             'pytest-cov',
             'flake8',

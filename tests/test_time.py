@@ -8,6 +8,7 @@ from pytest import approx
 
 from passpredict import *
 import passpredict.time
+from passpredict._time import jday2datetime_us
 
 def test_epoch_to_jd():
     """
@@ -43,6 +44,14 @@ class TestTimeFunctions:
         dt_desired = datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
         dt_difference = dt_computed - dt_desired
         assert dt_difference.total_seconds() == approx(0.0, abs=0.5)
+
+    def test_jday2datetime_us(self, yr, mo, dy, hr, mn, sec, jd_expected, atol):
+        """Convert a Julian date to a datetime with microseconds and back"""
+        dt_computed = jday2datetime_us(jd_expected)
+        sec, us = np.divmod(sec, 1)
+        dt_desired = datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
+        dt_difference = dt_computed - dt_desired
+        assert dt_difference.total_seconds() == approx(0.0, abs=0.005)
 
     def test_julian_day_to_datetime_and_back(self, yr, mo, dy, hr, mn, sec, jd_expected, atol):
         jd, jdfr = julian_date(yr, mo, dy, hr, mn, sec)

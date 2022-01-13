@@ -18,7 +18,8 @@ from .locations import (
 
 from .sources import (
     AsyncPasspredictTLESource,
-    TLESource,
+    PasspredictTLESource,
+    CelestrakTLESource,
     MemoryTLESource,
     TLE,
 )
@@ -30,6 +31,7 @@ from .satellites import (
 
 from .observers import (
     Observer,
+    BruteForceObserver,
     PredictedPass,
 )
 
@@ -47,11 +49,13 @@ __all__ = [
     'julian_date',
     'Location',
     'AsyncPasspredictTLESource',
-    'TLESource',
+    'PasspredictTLESource',
+    'CelestrakTLESource',
     'MemoryTLESource',
     'TLE',
     'SatellitePredictor',
     'PredictedPass',
     'Observer',
+    'BruteForceObserver',
     'R_EARTH',
 ]
