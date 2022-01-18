@@ -46,6 +46,9 @@ class SatellitePredictor(HighAccuracyTLEPredictor):
     def sate_id(self):
         return self.satid
 
+    def __repr__(self):
+        return f"<SatellitePredictor satid={self.satid} (TLE epoch {self.tle.epoch})>"
+
     def get_propagator(self, lines):
         tle_line_1, tle_line_2 = lines
         return Satrec.twoline2rv(tle_line_1, tle_line_2, WGS84)

@@ -1,9 +1,10 @@
 from __future__ import annotations
 import datetime
+import json
 import typing
 from math import degrees, floor
 from functools import cached_property
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from enum import Enum
 
 if typing.TYPE_CHECKING:
@@ -122,10 +123,31 @@ class PredictedPass:
         return midpt
 
     @cached_property
-    def duration(self):
+    def duration(self) -> float:
         """ Return pass duration in seconds """
         return (self.los.dt - self.aos.dt).total_seconds()
 
     def __repr__(self):
         return f"<PredictedPass {self.satid} over {repr(self.location)} on {self.aos.dt}"
+
+    def dict(self):
+        """
+        Serialize into dictionary
+        """
+        data = {
+            'satid': self.satid,
+            'location': {
+                'name': self.location.name,
+                'lat': self.location.latitude_deg,
+                'lon': self.location.longitude_deg,
+                'h': self.location.elevation_m,
+            },
+            'aos': asdict(self.aos),
+            'tca': asdict(self.tca),
+            'los': asdict(self.los),
+            'type': self.type
+        }
+        return data
+
+
 
