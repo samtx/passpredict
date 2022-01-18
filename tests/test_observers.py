@@ -1,9 +1,15 @@
 from datetime import datetime, timedelta, timezone
+import json
+from collections import defaultdict
+import pathlib
+import itertools
 
 import pytest
 
-from passpredict import MemoryTLESource
+from passpredict import MemoryTLESource, Observer
 from passpredict import *
+from passpredict.observers.predicted_pass import PassPoint
+from .data.generate_predictions import generate_predictions
 
 # From orbit-predictor test suite
 # https://github.com/satellogic/orbit-predictor/blob/master/tests/test_accurate_predictor.py
@@ -20,7 +26,7 @@ def assert_datetime_approx(dt1, dt2, delta_seconds):
     Compare two python datetimes. Assert difference is <= delta_seconds
     """
     diff = (dt1 - dt2).total_seconds()
-    assert abs(diff) <= delta_seconds
+    assert diff == pytest.approx(0.0, abs=delta_seconds)
 
 
 def test_satid_bugsat_predictions():
@@ -146,6 +152,99 @@ def test_satid_bugsat_brute_force_predictions():
         assert_datetime_approx(pass_.tca.dt, max_elevation_date, 0.5)
         assert pass_.duration == pytest.approx(duration_s, abs=1)
         assert pass_.tca.elevation == pytest.approx(max_elev_deg, abs=0.05)
+
+
+def generate_prediction_parameters():
+    """
+    Generate test observations using BruteForceObserver
+    """
+    # Get predictions.json if it exists
+    fname = 'predictions.json'
+    fpath = pathlib.Path(__file__).parent / 'data' / fname
+    if not fpath.exists():
+        generate_predictions(fname)
+    else:
+        with open(fpath, 'r') as f:
+            data = json.load(f)
+
+    # Encode locations list
+    locations = []
+    for l in data['locations']:
+        location = Location(l['name'], l['lat'], l['lon'], l['h'])
+        locations.append(location)
+
+    # Encode satellites list
+    satellites = []
+    for s in data['satellites']:
+        source = MemoryTLESource()
+        source.add_tle(TLE(s['satid'], s['lines']))
+        satellite = SatellitePredictor(s['satid'], source)
+        satellite.name = s['name']
+        satellites.append(satellite)
+
+    # Encode overpasses dictionary
+    overpasses = defaultdict(list)
+    for ls_key in data['overpasses']:
+        for op in data['overpasses'][ls_key]:
+            aos = PassPoint(
+                datetime.fromisoformat(op['aos']['dt']),
+                float(op['aos']['range']),
+                float(op['aos']['azimuth']),
+                float(op['aos']['elevation'])
+            )
+            tca = PassPoint(
+                datetime.fromisoformat(op['tca']['dt']),
+                float(op['tca']['range']),
+                float(op['tca']['azimuth']),
+                float(op['tca']['elevation'])
+            )
+            los = PassPoint(
+                datetime.fromisoformat(op['los']['dt']),
+                float(op['los']['range']),
+                float(op['los']['azimuth']),
+                float(op['los']['elevation'])
+            )
+            pass_ = PredictedPass(
+                op['satid'],
+                op['location'],
+                aos,
+                tca,
+                los,
+            )
+            overpasses[ls_key].append(pass_)
+
+    start = datetime.fromisoformat(data['start'])
+    params = []
+    for l, s in itertools.product(locations, satellites):
+        key = f"{l.name}-{s.name}"
+
+        # Currently, the Inuvik, Canada-Intelsat 5 combination is throwing an error.
+        # Mark as xfail for now
+        if key == "Inuvik, Canada-Intelsat 5":
+            param = pytest.param(l, s, overpasses[key], start, marks=pytest.mark.xfail, id=key)
+        else:
+            param = pytest.param(l, s, overpasses[key], start, id=key)
+        params.append(param)
+    return params
+
+
+@pytest.mark.parametrize(
+    'location, satellite, overpasses, start',
+    generate_prediction_parameters()
+)
+def test_observer_with_prediction_suite(location, satellite, overpasses, start):
+    date = start
+    observer = Observer(location, satellite, aos_at_dg=10, tolerance_s=0.5)
+    for expected_pass in overpasses:
+        pass_ = observer.get_next_pass(date)
+        assert_datetime_approx(pass_.aos.dt, expected_pass.aos.dt, 1)
+        assert_datetime_approx(pass_.los.dt, expected_pass.los.dt, 1)
+        assert_datetime_approx(pass_.tca.dt, expected_pass.tca.dt, 1)
+        expected_duration = (expected_pass.los.dt - expected_pass.aos.dt).total_seconds()
+        assert pass_.duration == pytest.approx(expected_duration, abs=2)
+        assert pass_.tca.elevation == pytest.approx(expected_pass.tca.elevation, abs=0.5)
+        date = pass_.los.dt + timedelta(minutes=1)
+
 
 if __name__ == "__main__":
     pytest.run(__file__)

@@ -53,9 +53,16 @@ class BruteForceObserver(ObserverBase):
         """Returns one pass each time"""
         jd = julian_date_sum(start_date)
         if not limit_date:
-            limit_jd = jd + 100
+            limit_jd = None
         else:
             limit_jd = julian_date_sum(limit_date)
+        # First check if satellite is currently above horizon
+        # If so, rewind start time until below horizon
+        # stop rewinding after 1 day
+        prev_jd_limit = jd - 1
+        while self._above_horizon(jd) and jd > prev_jd_limit:
+            jd = jd - self.jd_step
+
         prev_jd = jd - self.jd_step
         while True:
             if self._crosses_horizon(prev_jd, jd):
@@ -64,7 +71,7 @@ class BruteForceObserver(ObserverBase):
                 predicted_pass = self._build_predicted_pass(pass_)
                 yield predicted_pass
                 jd = los_jd + self.jd_step * 5
-            if limit_jd is not None and jd > limit_jd:
+            if limit_jd and jd > limit_jd:
                 break
             prev_jd = jd
             jd += self.jd_step
@@ -74,16 +81,12 @@ class BruteForceObserver(ObserverBase):
         self.aos_at = radians(elevation)
         self.aos_at_deg = elevation
 
-    def _is_ascending_jd(self, jd):
-        jd_prev = jd - self.jd_step
-        el_prev = self._elevation_at_jd(jd_prev)
+    def _above_horizon(self, jd):
         el = self._elevation_at_jd(jd)
-        return el_prev < el
+        return el >= self.aos_at
 
     def _crosses_horizon(self, jd1, jd2):
-        el1 = self._elevation_at_jd(jd1)
-        el2 = self._elevation_at_jd(jd2)
-        if el1 < self.aos_at and el2 >= self.aos_at:
+        if not self._above_horizon(jd1) and self._above_horizon(jd2):
             return True
         else:
             return False
