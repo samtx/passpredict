@@ -1,31 +1,19 @@
 # TLE source for web app
+from __future__ import annotations
 import abc
 import datetime
 import copy
-from typing import NamedTuple, Tuple, Any, Union
+from typing import Union, TYPE_CHECKING
 from pathlib import Path
 from collections import defaultdict
 
-from orbit_predictor.sources import MemoryTLESource
-import httpx
 
 from .satellites import SatellitePredictor
 from .base import TLESource
 from .caches import JsonCache
-from .tle import epoch_from_tle
 
-# from orbit_predictor.sources
-class TLE(NamedTuple):
-    satid: Union[int, str]        # NORAD satellite ID
-    lines: Tuple[str]   # tuple of tle strings (tle1, tle2)
-
-    @property
-    def sate_id(self):
-        return self.satid
-
-    @property
-    def epoch(self) -> datetime:
-        return epoch_from_tle(self.lines[0])
+if TYPE_CHECKING:
+    from .tle import TLE
 
 
 class PasspredictTLESource(abc.ABC):
@@ -136,5 +124,3 @@ class MemoryTLESource(PasspredictTLESource):
 
     def get_tle(self, satid: Union[int, str]):
         return self.tles[satid]
-
-

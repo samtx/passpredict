@@ -6,10 +6,9 @@ from math import radians, degrees, pi, log10, sin, cos, acos, floor
 from enum import Enum
 
 import numpy as np
-from scipy.optimize import minimize_scalar
+# from scipy.optimize import minimize_scalar
 
-from .predicted_pass import PredictedPass, BasicPassInfo, RangeAzEl, PassType, PassPoint
-from .base import ObserverBase
+from .base import ObserverBase, BasicPassInfo
 from ..time import julian_date, julian_date_from_datetime
 from .._time import jday2datetime_us
 from ..exceptions import NotReachable, PropagationError
@@ -30,24 +29,17 @@ class BruteForceObserver(ObserverBase):
         self,
         location: Location,
         satellite: SatellitePredictor,
-        max_elevation_gt=0,
-        aos_at_dg=0,
         time_step=10,
-        tolerance_s=0.25,
+        **kwargs
     ):
         """
         Initialize Observer but also compute radians for geodetic coordinates
         """
-        self.location = location
-        self.satellite = satellite
-        self.max_elevation_gt = radians(max([max_elevation_gt, aos_at_dg]))
-        self.set_minimum_elevation(aos_at_dg)
-        if tolerance_s <= 0:
-            raise Exception("Tolerance must be > 0")
+        super().__init__(location, satellite, **kwargs)
         if time_step <= 0:
             raise Exception("Time step must be > 0")
         self.jd_step = time_step / 86400
-        self.jd_tol = tolerance_s / 86400
+        self.jd_tol = self.tolerance_s / 86400
 
     def iter_passes(self, start_date, limit_date=None):
         """Returns one pass each time"""
