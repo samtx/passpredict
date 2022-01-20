@@ -21,11 +21,16 @@ from .sources import (
     PasspredictTLESource,
     CelestrakTLESource,
     MemoryTLESource,
+)
+
+from .tle import (
     TLE,
 )
 
 from .satellites import (
-    SatellitePredictor,
+    SGP4Predictor as SatellitePredictor,
+    SGP4Predictor,
+    KeplerianPredictor,
     LLH,
 )
 
@@ -54,6 +59,8 @@ __all__ = [
     'MemoryTLESource',
     'TLE',
     'SatellitePredictor',
+    'SGP4Predictor',
+    'KeplerianPredictor',
     'PredictedPass',
     'Observer',
     'BruteForceObserver',

@@ -11,8 +11,7 @@ from rich.console import Console
 # from rich.logging import log
 
 import passpredict as pp
-from passpredict.observers.brute_force import BruteForceObserver
-from passpredict.observers.original import Observer
+from passpredict.observers import BruteForceObserver
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -81,16 +80,14 @@ def generate_predictions(fname='predictions.json'):
         json.dump(data, f, indent=2, cls=JSONEncoder)
 
 
-
 def find_overpasses(loc, sat, start_date, end_date) -> typing.List[pp.PredictedPass]:
     """
     Find overpasses using Brute Force Predictor
     """
-    source = pp.MemoryTLESource()
-    source.add_tle(pp.TLE(sat.satid, sat.lines))
-    satellite = pp.SatellitePredictor(sat.satid, source)
+    tle = pp.TLE(sat.satid, sat.lines)
+    satellite = pp.SatellitePredictor.from_tle(tle)
     location = pp.Location(loc.name, loc.lat, loc.lon, loc.h)
-    observer = pp.BruteForceObserver(location, satellite, aos_at_dg=10, time_step=5, tolerance_s=0.1)
+    observer = BruteForceObserver(location, satellite, aos_at_dg=10, time_step=5, tolerance_s=0.1)
     pass_iterator = observer.iter_passes(start_date, end_date)
     overpasses = list(pass_iterator)
     data = [overpass.dict() for overpass in overpasses]

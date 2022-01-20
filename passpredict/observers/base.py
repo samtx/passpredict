@@ -1,16 +1,19 @@
 from __future__ import annotations
 import datetime
-from math import pi, log10, sin, cos, acos
+from math import pi, log10, sin, cos, acos, degrees, radians, floor
 import typing
-from functools import lru_cache
+from functools import lru_cache, cached_property
 from collections import defaultdict
+from dataclasses import dataclass, asdict
+from enum import Enum
 from abc import abstractmethod
 
 import numpy as np
 from numpy.linalg import norm
 from orbit_predictor.predictors.pass_iterators import LocationPredictor
+from passpredict.constants import R_EARTH
 
-from .predicted_pass import RangeAzEl, BasicPassInfo, PassPoint, PredictedPass
+from ..time import julian_date_from_datetime
 from .. import _rotations
 from ..utils import get_pass_detail_datetime_metadata
 from ..exceptions import NotReachable
@@ -18,9 +21,180 @@ from ..solar import sun_pos
 
 if typing.TYPE_CHECKING:
     from ..satellites import LLH
+    from ..locations import Location
+
+
+class RangeAzEl(typing.NamedTuple):
+    range: float  # km
+    az: float     # deg
+    el: float     # deg
+
+
+@dataclass(frozen=True)
+class PassPoint:
+    dt: datetime                # datetime UTC
+    range: float                # km
+    azimuth: float              # deg
+    elevation: float            # deg
+    brightness: float = None    # magnitude brightness
+    type: PassType = None       # visibility status
+
+    @cached_property
+    def direction(self) -> str:
+        ''' Return ordinal direction from azimuth degree '''
+        azm = self.azimuth % 360
+        mod = 360/16. # number of degrees per coordinate heading
+        start = 0 - mod/2
+        n = int(floor((azm-start)/mod))
+        coordinates = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N']
+        return coordinates[n]
+
+
+class PassType(str, Enum):
+    daylight = 'daylight'
+    unlit = 'unlit'
+    visible = 'visible'
+
+
+class Visibility(str, Enum):
+    daylight = 'daylight'
+    unlit = 'unlit'
+    visible = 'visible'
+    not_visible = 'not visible'
+
+
+class BasicPassInfo:
+    """
+    Holds basic pass information:
+        aos datetime
+        los datetime
+        tca datetime
+        max elevation
+        duration (property)
+        valid (property)
+    """
+    def __init__(
+        self,
+        aos_dt: datetime.datetime,
+        tca_dt: datetime.datetime,
+        los_dt: datetime.datetime,
+        max_elevation: float,
+        type_: PassType = None,
+        vis_begin_dt: datetime.datetime = None,
+        vis_end_dt: datetime.datetime = None,
+    ):
+        self.aos_dt = aos_dt if aos_dt is not None else None
+        self.tca_dt = tca_dt
+        self.los_dt = los_dt if los_dt is not None else None
+        self.max_elevation = max_elevation
+        self.type = type_
+        self.vis_begin_dt = vis_begin_dt
+        self.vis_end_dt = vis_end_dt
+
+    @property
+    def aos(self):
+        """ Backwards compatibilty from orbit_predictor """
+        return self.aos_dt
+
+    @property
+    def tca(self):
+        """ Backwards compatibilty from orbit_predictor """
+        return self.tca_dt
+
+    @property
+    def los(self):
+        """ Backwards compatibilty from orbit_predictor """
+        return self.los_dt
+
+    @property
+    def valid(self):
+        if (self.aos is None) or (self.los is None):
+            return False
+        return (self.max_elevation > 0)
+
+    @cached_property
+    def max_elevation_deg(self):
+        return degrees(self.max_elevation)
+
+    @cached_property
+    def duration(self) -> datetime.timedelta:
+        return self.los - self.aos
+
+
+@dataclass
+class PredictedPass:
+    satid: int
+    location: Location
+    aos: PassPoint
+    tca: PassPoint
+    los: PassPoint
+    type: PassType = None
+    azimuth: typing.Sequence[float] = None
+    elevation: typing.Sequence[float] = None
+    range: typing.Sequence[float] = None
+    datetime: typing.Sequence[datetime.datetime] = None
+    vis_begin: PassPoint = None
+    vis_end: PassPoint = None
+    brightness: float = None
+
+    @cached_property
+    def midpoint(self):
+        """ Return datetime in UTC of midpoint of pass """
+        midpt = self.aos.dt + (self.los.dt - self.aos.dt) / 2
+        return midpt
+
+    @cached_property
+    def duration(self) -> float:
+        """ Return pass duration in seconds """
+        return (self.los.dt - self.aos.dt).total_seconds()
+
+    def __repr__(self):
+        return f"<PredictedPass {self.satid} over {repr(self.location)} on {self.aos.dt}"
+
+    def dict(self):
+        """
+        Serialize into dictionary
+        """
+        data = {
+            'satid': self.satid,
+            'location': {
+                'name': self.location.name,
+                'lat': self.location.latitude_deg,
+                'lon': self.location.longitude_deg,
+                'h': self.location.elevation_m,
+            },
+            'aos': asdict(self.aos),
+            'tca': asdict(self.tca),
+            'los': asdict(self.los),
+            'type': self.type
+        }
+        return data
 
 
 class ObserverBase(LocationPredictor):
+
+    def __init__(
+        self,
+        location,
+        satellite,
+        max_elevation_gt: float = 0,
+        aos_at_dg: float = 0,
+        tolerance_s: float = 1,
+        sunrise_dg: float = -6,
+    ):
+        """
+        Initialize Observer but also compute radians for geodetic coordinates
+        """
+        self.location = location
+        self.satellite = satellite
+        self.max_elevation_gt = radians(max([max_elevation_gt, aos_at_dg]))
+        self.aos_at = radians(aos_at_dg)
+        self.aos_at_dg = aos_at_dg
+        if tolerance_s <= 0:
+            raise Exception("Tolerance must be > 0")
+        self.tolerance_s = tolerance_s
+        self.tolerance = datetime.timedelta(seconds=tolerance_s)
+        self.sunrise_dg = sunrise_dg
 
     @property
     def predictor(self):
@@ -138,12 +312,13 @@ class ObserverBase(LocationPredictor):
         )
         return range_
 
-    def point(self, datetime: datetime.datetime) -> PassPoint:
+    def point(self, d: datetime.datetime, visibility: bool = False) -> PassPoint:
         """
         Get PassPoint with range, azimuth, and elevation data for datetime
         """
-        rnazel = self.razel(datetime)
-        pt = PassPoint(datetime, rnazel.range, rnazel.az, rnazel.el)
+        rnazel = self.razel(d)
+        vis_state = self.determine_visibility(d) if visibility else None
+        pt = PassPoint(d, rnazel.range, rnazel.az, rnazel.el, type=vis_state)
         return pt
 
     @lru_cache(maxsize=16)
@@ -171,3 +346,25 @@ class ObserverBase(LocationPredictor):
         sat_rho = self.rho_jd(jd)
         phase_angle = acos(np.dot(sat_rho, sun_rho) / (norm(sat_rho) * norm(sun_rho)))
         return phase_angle
+
+    def determine_visibility(self, d: datetime.datetime) -> PassType:
+        """
+        Determine if satellite is visible for single datetime instance
+        """
+        jd = sum(julian_date_from_datetime(d))
+        return self.determine_visibility_jd(jd)
+
+    def determine_visibility_jd(self, jd: float) -> PassType:
+        """
+        Determine if satellite is visible for single julian date
+        """
+        sat_el = self._elevation_at_jd(jd)
+        if sat_el < self.aos_at_dg:
+            return None
+        sun_el = self.location.sun_elevation_jd(jd)
+        if sun_el > self.sunrise_dg:
+            return PassType.daylight
+        dist = self.satellite.illumination_distance_jd(jd)
+        if dist > R_EARTH:
+            return PassType.visible
+        return PassType.unlit

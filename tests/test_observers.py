@@ -8,7 +8,7 @@ import pytest
 
 from passpredict import MemoryTLESource, Observer
 from passpredict import *
-from passpredict.observers.predicted_pass import PassPoint
+from passpredict.observers import PassPoint
 from .data.generate_predictions import generate_predictions
 
 # From orbit-predictor test suite

@@ -2,7 +2,7 @@ import math
 from datetime import datetime, timedelta, timezone
 from functools import cached_property
 import json
-from typing import NamedTuple
+from typing import NamedTuple, Union, Tuple
 import dataclasses
 from itertools import zip_longest
 
@@ -10,7 +10,7 @@ import httpx
 import numpy as np
 from pydantic import BaseModel, Field
 
-from passpredict._time import epoch_to_jd
+from passpredict._time import epoch_to_jd, jday2datetime_us
 
 
 class TleSchema(BaseModel):
@@ -23,38 +23,38 @@ class TleSchema(BaseModel):
         title = 'TLE'
 
 
-class Tle(NamedTuple):
-    tle1: str
-    tle2: str
+# from orbit_predictor.sources
+class TLE(NamedTuple):
+    satid: Union[int, str]        # NORAD satellite ID
+    lines: Tuple[str]   # tuple of tle strings (tle1, tle2)
 
     @property
-    def lines(self):
-        return (self.tle1, self.tle2)
+    def sate_id(self):
+        return self.satid
 
     @property
     def epoch(self) -> datetime:
-        return epoch_from_tle(self.tle1)
+        return epoch_from_tle(self.lines[0])
 
     @property
-    def satid(self) -> int:
-        return satid_from_tle(self.tle1)
+    def tle1(self) -> str:
+        return self.lines[0]
 
-    def to_schema(self):
-        return TleSchema(
-            tle1=self.tle1,
-            tle2=self.tle2,
-            epoch=self.epoch,
-            satid=self.satid
-        )
+    @property
+    def tle2(self) -> str:
+        return self.lines[1]
 
-    def dict(self):
-        """ Serialize to python dict object """
-        return self._asdict()
 
-    @classmethod
-    def from_dict(cls, d: dict):
-        """ Create instance from dictionary """
-        return cls(d['tle1'], d['tle2'])
+def jd_to_epoch_string(jd: float) -> str:
+    """
+    Get TLE epoch string from julian date
+    """
+    d = jday2datetime_us(jd)
+    yearday = d.strftime("%y%j")
+    dayfraction = (d.hour*3600 + d.minute*60 + d.second + d.microsecond*1e-6) / 86400
+    dayfraction = round(dayfraction * 1e8, 0)
+    s = f"{yearday}.{dayfraction:8.0f}"
+    return s
 
 
 def epoch_from_tle_datetime(epoch_string: str) -> datetime:
@@ -179,6 +179,7 @@ class OMM(NamedTuple):
     jdsatepochF: float  # julian date fraction
     no_kozai: float     # kozai mean motion [rev/day], line 2, ch 53-63
     ecco: float         # eccentricity, line 2, ch 27-33
+    sma: float          # semi-major axis [km]
     inclo: float        # inclination [deg], line 2, ch 9-16
     nodeo: float        # right ascension of ascending node [deg], line 2, ch 18-25
     argpo: float        # argument of perigee [deg] line 2, ch 35-42
@@ -229,6 +230,7 @@ def tle_to_omm(tle1: str, tle2: str) -> OMM:
     argpo = float(tle2[35:43])
     mo = float(tle2[43:52])    # mean anomaly
     no_kozai = float(tle2[53:64])   # mean motion
+    sma = 6.6228 / (no_kozai**(2/3))  # ref: http://sat.belastro.net/satelliteorbitdetermination.com/orbit_elements_wiki.htm
     revnum = int(tle2[64:69])
 
     omm = OMM(

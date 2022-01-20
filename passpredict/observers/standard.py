@@ -7,8 +7,7 @@ from math import radians, pi
 import numpy as np
 from scipy.interpolate import CubicSpline
 
-from .predicted_pass import PredictedPass, BasicPassInfo, PassType
-from .base import ObserverBase
+from .base import ObserverBase, PredictedPass, BasicPassInfo, PassType
 from ..time import julian_date_from_datetime
 from .._time import jday2datetime
 from ..constants import R_EARTH
@@ -31,18 +30,12 @@ class Observer(ObserverBase):
         self,
         location: Location,
         satellite: SatellitePredictor,
-        max_elevation_gt=0,
-        aos_at_dg=0,
-        tolerance_s=1.0
+        **kwargs,
     ):
         """
-        Initialize Observer but also compute radians for geodetic coordinates
+        Initialize Observer
         """
-        self.location = location
-        self.satellite = satellite
-        self.max_elevation_gt = radians(max([max_elevation_gt, aos_at_dg]))
-        self.set_minimum_elevation(aos_at_dg)
-        self.set_tolerance(tolerance_s)
+        super().__init__(location, satellite, **kwargs)
 
     def iter_passes(self, start_date, limit_date=None):
         """Returns one pass each time"""

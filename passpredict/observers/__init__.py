@@ -1,10 +1,8 @@
-from .base import ObserverBase
+from .base import ObserverBase, PredictedPass, BasicPassInfo, RangeAzEl, PassType, PassPoint
 
-from .original import Observer
+from .standard import Observer
 
 from .brute_force import BruteForceObserver
-
-from .predicted_pass import PredictedPass, BasicPassInfo, RangeAzEl, PassType, PassPoint
 
 
 __all__ = [

@@ -10,14 +10,14 @@ from sgp4.api import SGP4_ERRORS, Satrec
 from sgp4.model import WGS84
 from sgp4.propagation import gstime
 
-from .time import julian_date_from_datetime
-from .solar import sun_pos
-from . import _solar
-from .exceptions import PropagationError
-from .constants import R_EARTH
+from ..time import julian_date_from_datetime
+from ..solar import sun_pos
+from .. import _solar
+from ..exceptions import PropagationError
+from ..constants import R_EARTH
 
 if typing.TYPE_CHECKING:
-    from .sources import PasspredictTLESource
+    from ..sources import PasspredictTLESource, TLE
 
 
 class LLH(typing.NamedTuple):
@@ -27,27 +27,35 @@ class LLH(typing.NamedTuple):
     altitude: np.typing.NDArray[float]
 
 
-class SatellitePredictor(HighAccuracyTLEPredictor):
+class SatellitePredictorBase(HighAccuracyTLEPredictor):
     """
-    Predictor for satellite overpasses. Uses sgp4 for propagation
+    Predictor for satellite overpasses.
     """
-    def __init__(self, satid: int, source: PasspredictTLESource):
+    def __init__(self, satid: int, source: PasspredictTLESource = None):
         """
         Params:
             satid: int = NORAD id for satellite
             source: PasspredictTLESource
         """
         self.satid = satid
-        self.tle = source.get_tle(satid)
-        self._propagator = self.get_propagator(self.tle.lines)
+        if source:
+            self.tle = source.get_tle(satid)
+            self._propagator = self.get_propagator(self.tle.lines)
         self.intrinsic_mag = 1.0   # ISS is -1.8
+
+    @classmethod
+    def from_tle(cls, tle: TLE) -> SatellitePredictorBase:
+        sat = cls(tle.satid)
+        sat.tle = tle
+        sat._propagator = sat.get_propagator(tle.lines)
+        return sat
 
     @property
     def sate_id(self):
         return self.satid
 
     def __repr__(self):
-        return f"<SatellitePredictor satid={self.satid} (TLE epoch {self.tle.epoch})>"
+        return f"<{self.__name__} satid={self.satid} (TLE epoch {self.tle.epoch})>"
 
     def get_propagator(self, lines):
         tle_line_1, tle_line_2 = lines

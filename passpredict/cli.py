@@ -7,13 +7,12 @@ from rich.table import Table
 from rich.align import Align
 
 from .caches import JsonCache
-from .tle import get_TLE, Tle
+from .tle import get_TLE, TLE
 from .core import predict_single_satellite_overpasses
 from ._time import julian_date
 from .satellites import SatellitePredictor
 from .locations import Location
 from .observers import PassType
-from .sources import TLE
 
 
 @click.command()

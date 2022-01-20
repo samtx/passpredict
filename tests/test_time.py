@@ -9,6 +9,7 @@ from pytest import approx
 from passpredict import *
 import passpredict.time
 from passpredict._time import jday2datetime_us
+from passpredict.tle import jd_to_epoch_string
 
 def test_epoch_to_jd():
     """
@@ -20,6 +21,15 @@ def test_epoch_to_jd():
     jd, jdfr = epoch_to_jd(yr, dt)
     assert jd == approx(jd_actual)
     assert jdfr == approx(jdfr_actual)
+
+
+def test_jd_to_epoch_string():
+    """
+    Vallado, p. 107
+    """
+    jd = 2449340.03502934
+    epoch_str = jd_to_epoch_string(jd)
+    assert epoch_str == "93352.53502934"
 
 
 @pytest.mark.parametrize(
