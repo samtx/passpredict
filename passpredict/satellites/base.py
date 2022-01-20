@@ -55,7 +55,7 @@ class SatellitePredictorBase(HighAccuracyTLEPredictor):
         return self.satid
 
     def __repr__(self):
-        return f"<{self.__name__} satid={self.satid} (TLE epoch {self.tle.epoch})>"
+        return f"<{self.__class__.__name__} satid={self.satid} (TLE epoch {self.tle.epoch})>"
 
     def get_propagator(self, lines):
         tle_line_1, tle_line_2 = lines

@@ -4,6 +4,7 @@ from pathlib import Path
 import collections
 import itertools
 import typing
+import bz2
 
 from rich.progress import track, Progress
 from rich import print as rprint
@@ -24,7 +25,7 @@ class JSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-def generate_predictions(fname='predictions.json'):
+def generate_predictions(fname='predictions.json.bz2'):
     """
     Generate pass predictions for the next 4 days for the given locations and satellites
     """
@@ -63,21 +64,18 @@ def generate_predictions(fname='predictions.json'):
     loc_sat = itertools.product(locations, satellites)
     N = len(locations) * len(satellites)
 
-    console = Console(record=True)
+    console = Console()
 
-    with Progress(console=console) as progress:
+    console.print(f"Generating {N} overpass predictions :satellite: ...")
 
-        task = progress.add_task("Generating overpass predictions :satellite: ...", total=N)
-
-        for loc, sat in loc_sat:
-            key = f"{loc.name}-{sat.name}"
-            progress.log(key)
-            data['overpasses'][key] = find_overpasses(loc, sat, start, end)
-            progress.update(task, advance=1)
+    for i, (loc, sat) in enumerate(loc_sat):
+        key = f"{loc.name}-{sat.name}"
+        console.print(f"[[cyan]{i+1}[/cyan]/[cyan]{N}[/cyan]] {key}", highlight=False)
+        data['overpasses'][key] = find_overpasses(loc, sat, start, end)
 
     fpath = Path(__file__).parent / fname
-    with open(fpath, 'w') as f:
-        json.dump(data, f, indent=2, cls=JSONEncoder)
+    with bz2.open(fpath, 'wt', encoding='utf-8') as f:
+        f.write(json.dumps(data, cls=JSONEncoder))
 
 
 def find_overpasses(loc, sat, start_date, end_date) -> typing.List[pp.PredictedPass]:
