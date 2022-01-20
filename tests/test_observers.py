@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import json
+import bz2
 from collections import defaultdict
 import pathlib
 import itertools
@@ -9,6 +10,7 @@ import pytest
 from passpredict import MemoryTLESource, Observer
 from passpredict import *
 from passpredict.observers import PassPoint
+from passpredict.exceptions import NotReachable
 from .data.generate_predictions import generate_predictions
 
 # From orbit-predictor test suite
@@ -159,13 +161,12 @@ def generate_prediction_parameters():
     Generate test observations using BruteForceObserver
     """
     # Get predictions.json if it exists
-    fname = 'predictions.json'
+    fname = 'predictions.json.bz2'
     fpath = pathlib.Path(__file__).parent / 'data' / fname
     if not fpath.exists():
         generate_predictions(fname)
-    else:
-        with open(fpath, 'r') as f:
-            data = json.load(f)
+    with bz2.open(fpath, 'rt') as f:
+        data = json.load(f)
 
     # Encode locations list
     locations = []
@@ -214,6 +215,7 @@ def generate_prediction_parameters():
             overpasses[ls_key].append(pass_)
 
     start = datetime.fromisoformat(data['start'])
+    end = datetime.fromisoformat(data['end'])
     params = []
     for l, s in itertools.product(locations, satellites):
         key = f"{l.name}-{s.name}"
@@ -221,29 +223,34 @@ def generate_prediction_parameters():
         # Currently, the Inuvik, Canada-Intelsat 5 combination is throwing an error.
         # Mark as xfail for now
         if key == "Inuvik, Canada-Intelsat 5":
-            param = pytest.param(l, s, overpasses[key], start, marks=pytest.mark.xfail, id=key)
+            param = pytest.param(l, s, overpasses[key], start, end, marks=pytest.mark.xfail, id=key)
         else:
-            param = pytest.param(l, s, overpasses[key], start, id=key)
+            param = pytest.param(l, s, overpasses[key], start, end, id=key)
         params.append(param)
     return params
 
 
 @pytest.mark.parametrize(
-    'location, satellite, overpasses, start',
+    'location, satellite, overpasses, start, end',
     generate_prediction_parameters()
 )
-def test_observer_with_prediction_suite(location, satellite, overpasses, start):
+def test_observer_with_prediction_suite(location, satellite, overpasses, start, end):
     date = start
     observer = Observer(location, satellite, aos_at_dg=10, tolerance_s=0.5)
-    for expected_pass in overpasses:
-        pass_ = observer.get_next_pass(date)
-        assert_datetime_approx(pass_.aos.dt, expected_pass.aos.dt, 1)
-        assert_datetime_approx(pass_.los.dt, expected_pass.los.dt, 1)
-        assert_datetime_approx(pass_.tca.dt, expected_pass.tca.dt, 1)
-        expected_duration = (expected_pass.los.dt - expected_pass.aos.dt).total_seconds()
-        assert pass_.duration == pytest.approx(expected_duration, abs=2)
-        assert pass_.tca.elevation == pytest.approx(expected_pass.tca.elevation, abs=0.5)
-        date = pass_.los.dt + timedelta(minutes=1)
+    if len(overpasses) == 0:
+        with pytest.raises(NotReachable):
+            pass_ = observer.get_next_pass(date, limit_date=end)
+            assert not pass_
+    else:
+        for expected_pass in overpasses:
+            pass_ = observer.get_next_pass(date, limit_date=end)
+            assert_datetime_approx(pass_.aos.dt, expected_pass.aos.dt, 1)
+            assert_datetime_approx(pass_.los.dt, expected_pass.los.dt, 1)
+            assert_datetime_approx(pass_.tca.dt, expected_pass.tca.dt, 1)
+            expected_duration = (expected_pass.los.dt - expected_pass.aos.dt).total_seconds()
+            assert pass_.duration == pytest.approx(expected_duration, abs=2)
+            assert pass_.tca.elevation == pytest.approx(expected_pass.tca.elevation, abs=0.5)
+            date = pass_.los.dt + timedelta(minutes=1)
 
 
 if __name__ == "__main__":

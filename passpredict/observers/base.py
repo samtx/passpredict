@@ -217,7 +217,7 @@ class ObserverBase(LocationPredictor):
         """
         Gets first overpass starting at aos_dt
         """
-        pass_ = next(self.iter_passes(aos_dt, limit_date=limit_date))
+        pass_ = next(self.iter_passes(aos_dt, limit_date=limit_date), None)
         if not pass_:
             raise NotReachable('Propagation limit date exceeded')
         return pass_
