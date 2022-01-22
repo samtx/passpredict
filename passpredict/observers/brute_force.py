@@ -9,6 +9,7 @@ import numpy as np
 # from scipy.optimize import minimize_scalar
 
 from .base import ObserverBase, BasicPassInfo
+from .functions import _make_utc
 from ..time import julian_date, julian_date_from_datetime
 from .._time import jday2datetime_us
 from ..exceptions import NotReachable, PropagationError
@@ -39,10 +40,11 @@ class BruteForceObserver(ObserverBase):
         if time_step <= 0:
             raise Exception("Time step must be > 0")
         self.jd_step = time_step / 86400
-        self.jd_tol = self.tolerance_s / 86400
 
-    def iter_passes(self, start_date, limit_date=None):
+    def iter_passes(self, start_date, limit_date=None, visible=False):
         """Returns one pass each time"""
+        start_date = _make_utc(start_date)
+        limit_date = _make_utc(limit_date)
         jd = julian_date_sum(start_date)
         if not limit_date:
             limit_jd = None
@@ -60,9 +62,10 @@ class BruteForceObserver(ObserverBase):
             if self._crosses_horizon(prev_jd, jd):
                 # satellite has just come above the horizon, find aos, tca, and los
                 pass_, los_jd = self._refine_pass(prev_jd, jd)
-                predicted_pass = self._build_predicted_pass(pass_)
-                yield predicted_pass
-                jd = los_jd + self.jd_step * 5
+                if self._is_pass_valid(pass_, visible=visible):
+                    predicted_pass = self._build_predicted_pass(pass_)
+                    yield predicted_pass
+                    jd = los_jd + self.jd_step * 5
             if limit_jd and jd > limit_jd:
                 break
             prev_jd = jd
