@@ -6,16 +6,29 @@ from math import radians, pi
 
 import numpy as np
 from scipy.interpolate import CubicSpline
+from scipy.optimize import root_scalar
 
 from .base import ObserverBase, PredictedPass, BasicPassInfo, PassType
+from .functions import find_root, julian_date_sum
 from ..time import julian_date_from_datetime
-from .._time import jday2datetime
+from .._time import jday2datetime_us
 from ..constants import R_EARTH
 from ..exceptions import PropagationError
 
 if typing.TYPE_CHECKING:
     from ..satellites import SatellitePredictor, LLH
     from ..locations import Location
+
+
+def _make_utc(d: datetime.datetime) -> datetime.datetime:
+    """ Make a datetime a UTC timezone aware datetime """
+    if not d:
+        return d
+    if d.tzinfo:
+        d = d.astimezone(datetime.timezone.utc)
+    else:
+        d = d.replace(tzinfo=datetime.timezone.utc)
+    return d
 
 
 class Observer(ObserverBase):
@@ -37,8 +50,10 @@ class Observer(ObserverBase):
         """
         super().__init__(location, satellite, **kwargs)
 
-    def iter_passes(self, start_date, limit_date=None):
+    def iter_passes(self, start_date, limit_date=None, visible=False):
         """Returns one pass each time"""
+        start_date = _make_utc(start_date)
+        limit_date = _make_utc(limit_date)
         current_date = start_date
         while True:
             if self._is_ascending(current_date):
@@ -46,7 +61,7 @@ class Observer(ObserverBase):
                 ascending_date = current_date
                 descending_date = self._find_nearest_descending(ascending_date)
                 pass_ = self._refine_pass(ascending_date, descending_date)
-                if pass_.valid:
+                if self._is_pass_valid(pass_, visible=visible):
                     if limit_date is not None and pass_.aos > limit_date:
                         break
                     predicted_pass = self._build_predicted_pass(pass_)
@@ -80,10 +95,11 @@ class Observer(ObserverBase):
             'tca': self.point(basic_pass.tca_dt),
             'los': self.point(basic_pass.los_dt),
         })
+        tz = basic_pass.aos.tzinfo
         if basic_pass.vis_begin_dt:
-            data['vis_begin'] = self.point(basic_pass.vis_begin_dt)
+            data['vis_begin'] = self.point(basic_pass.vis_begin_dt.astimezone(tz))
         if basic_pass.vis_end_dt:
-            data['vis_end'] = self.point(basic_pass.vis_end_dt)
+            data['vis_end'] = self.point(basic_pass.vis_end_dt.astimezone(tz))
         return PredictedPass(**data)
 
     def _find_nearest_descending(self, ascending_date):
@@ -128,45 +144,57 @@ class Observer(ObserverBase):
         jd0 = sum(julian_date_from_datetime(aos_dt))
         jdf = sum(julian_date_from_datetime(los_dt))
         jd = np.linspace(jd0, jdf, 5)  # use 5 points for spline
-        sun_el_fn = lambda j: self.location.sun_elevation_jd(j) + 6
+        sun_el_fn = lambda j: self.location.sun_elevation_jd(j) - self.sunrise_dg
         el = np.array([sun_el_fn(j) for j in jd])
         if np.min(el) > 0:
             # entire pass in sunlit
             return BasicPassInfo(aos_dt, tca_dt, los_dt, elevation, type_=PassType.daylight)
-
-        tol = 1/86400  # one second
-        # part of the pass is in darkness. Find new jd0, jdf
-        sun_el = CubicSpline(jd, el, bc_type='natural')
-        for root in sun_el.roots(extrapolate=False):
-            tmp1 = sun_el(root - tol)
-            tmp2 = sun_el(root + tol)
+        # part of the pass is in darkness.
+        if el[0]*el[-1] < 0:
+            # only part of the pass is sunlit. Find new jd0, jdf
+            result = root_scalar(sun_el_fn, method='bisect', bracket=(jd0, jdf), x0=jd0, xtol=self.jd_tol)
+            x = result.root
+            tmp1 = sun_el_fn(x - self.jd_tol)
+            tmp2 = sun_el_fn(x + self.jd_tol)
             if tmp1 < tmp2:
                 # sun elevation is decreasing
-                jd0 = root
+                jd0 = x
             else:
-                jdf = root
+                jdf = x
+        # sun_el = CubicSpline(jd, el, bc_type='natural')
+        # for root in sun_el.roots(extrapolate=False):
+        #     tmp1 = sun_el(root - self.jd_tol)
+        #     tmp2 = sun_el(root + self.jd_tol)
+        #     if tmp1 < tmp2:
+        #         # sun elevation is decreasing
+        #         jd0 = root
+        #     else:
+        #         jdf = root
+
+
         # Now use jd0 and jdf to find when satellite is illuminated by sun
-        jd = np.linspace(jd0, jdf, 5)  # use 10 points for spline
+        jd = np.linspace(jd0, jdf, 5)  # use 5 points for spline
         illum_fn = lambda j: self.satellite.illumination_distance_jd(j) - R_EARTH
         illum_pts = np.array([illum_fn(j) for j in jd])
         if np.max(illum_pts) < 0:
             # entire pass is in shadow
             return BasicPassInfo(aos_dt, tca_dt, los_dt, elevation, type_=PassType.unlit)
 
-        # part of the pass is visible
-        illum = CubicSpline(jd, illum_pts, bc_type='natural')
-        for root in illum.roots(extrapolate=False):
-            tmp1 = illum(root - tol)
-            tmp2 = illum(root + tol)
+        if illum_pts[0]*illum_pts[-1] < 0:
+            # the satellite is visible for only part of the pass. Find new jd0, jdf
+            result = root_scalar(illum_fn, method='bisect', bracket=(jd0, jdf), x0=jd0, xtol=self.jd_tol)
+            x = result.root
+            tmp1 = illum_fn(x - self.jd_tol)
+            tmp2 = illum_fn(x + self.jd_tol)
             if tmp1 < tmp2:
-                # satellite is going into shadow
-                jdf = root
-            else:
                 # satellite is coming out of shadow
-                jd0 = root
+                jd0 = x
+            else:
+                # satellite is going into shadow
+                jdf = x
         # Set visible start and end points for Pass
-        vis_begin_dt = jday2datetime(jd0)
-        vis_end_dt = jday2datetime(jdf)
+        vis_begin_dt = jday2datetime_us(jd0)
+        vis_end_dt = jday2datetime_us(jdf)
         return BasicPassInfo(
             aos_dt, tca_dt, los_dt, elevation, type_=PassType.visible,
             vis_begin_dt=vis_begin_dt, vis_end_dt=vis_end_dt,
@@ -205,7 +233,7 @@ class Observer(ObserverBase):
         end = tca
         start = tca - self._orbit_step(0.34)  # On third of the orbit
         elevation = self._elevation_at(start)
-        assert elevation < 0
+        # assert elevation < 0
         while not self._precision_reached(start, end):
             midpoint = self.midpoint(start, end)
             elevation = self._elevation_at(midpoint)

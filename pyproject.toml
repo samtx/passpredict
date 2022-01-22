@@ -12,7 +12,8 @@ testpaths = [
     "tests"
 ]
 markers = [
-    "predict"
+    "predict",
+    "slow"
 ]
 
 [tool.coverage.run]

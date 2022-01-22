@@ -40,6 +40,9 @@ def generate_predictions(fname='predictions.json.bz2'):
         Location('Johannesburg, South Africa', -26.2041, 28.0473, 1753),
         Location('New Norcia Deep Space Station, Australia', -31.0483, 116.1914, 252),
         Location('McMurdo Station, Antarctica', -77.8419, 166.6863, 10),
+        Location('Perth, Australia', -31.9523, 115.8613, 0),
+        Location('Seoul, South Korea', 37.5665, 126.9780, 38),
+        Location('Singapore', 1.3521, 103.8198, 0),
     ]
     satellites = [
         Satellite('International Space Station', 25544, ('1 25544U 98067A   21274.89460679  .00005555  00000-0  10931-3 0  9992','2 25544  51.6449 175.1112 0004190  48.8354  53.9444 15.48895782305133')),
@@ -50,6 +53,10 @@ def generate_predictions(fname='predictions.json.bz2'):
         Satellite('Aprizesat 5', 37792, ('1 37792U 11044E   21274.60878477  .00000190  00000-0  35454-4 0  9996','2 37792  98.3609 136.8622 0059209 108.1425 252.6243 14.75523908544976')),
         Satellite('OFEQ 11', 41759, ('1 41759U 16056A   20133.81295366 0.00000000  00000-0  00000-0 0    06','2 41759 141.8552 279.8922 0006334 285.1363  74.8629 15.34726396    09')),
         # Satellite('Molniya 2-9', 7276, ('1 07276U 74026A   22009.68875739  .00000086  00000+0  00000+0 0  9999', '2 07276  64.2566 249.8624 6562770 283.2228  15.7848  2.45095686245322')),
+        # Galaxy 19, Norad ID 33376  Geostationary satellite above USA (97 deg W)
+        # MUOS-5 Norad ID 41622, high inclined geosynchronous satellite at 97 deg W
+        # Beidou-3 IGSO-2, Norad ID 44337, high inclined geosynchronous satellite at 115 deg E
+        # QZS-1 37158
     ]
     start = datetime(2021, 10, 2, 0, 0, 0, tzinfo=timezone.utc)
     # end = start + timedelta(days=4)

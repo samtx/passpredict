@@ -194,6 +194,7 @@ class ObserverBase(LocationPredictor):
             raise Exception("Tolerance must be > 0")
         self.tolerance_s = tolerance_s
         self.tolerance = datetime.timedelta(seconds=tolerance_s)
+        self.jd_tol = self.tolerance_s / 86400
         self.sunrise_dg = sunrise_dg
 
     @property
@@ -205,6 +206,13 @@ class ObserverBase(LocationPredictor):
     def iter_passes(self, start_date, limit_date=None):
         raise NotImplementedError
 
+    def _is_pass_valid(self, pass_, visible=False):
+        if (pass_.aos is None) or (pass_.los is None):
+            return False
+        if visible and pass_.type != PassType.visible:
+            return False
+        return (pass_.max_elevation > 0)
+
     @property
     def passes_over(self, *a, **kw):
         return self.iter_passes(*a, **kw)
@@ -213,11 +221,12 @@ class ObserverBase(LocationPredictor):
         aos_dt: datetime.datetime,
         *,
         limit_date: datetime.datetime = None,
+        visible: bool = False,
     ) -> PredictedPass:
         """
         Gets first overpass starting at aos_dt
         """
-        pass_ = next(self.iter_passes(aos_dt, limit_date=limit_date), None)
+        pass_ = next(self.iter_passes(aos_dt, limit_date=limit_date, visible=visible), None)
         if not pass_:
             raise NotReachable('Propagation limit date exceeded')
         return pass_
