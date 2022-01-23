@@ -1,12 +1,17 @@
 import pytest
+from pytest import approx
 
 from passpredict import geocoding
 
 
 def test_geocoder_nominatium():
     query_str = "austin, texas"
-    res = geocoding.geocoder(query_str)
-    lat = round(float(res['lat']), 4)
-    lon = round(float(res['lon']), 4)
-    assert 30.2 <= lat <= 30.3
-    assert -97.7 >= lon >= -97.8
+    location = geocoding.NominatimGeocoder.query(query_str)
+    assert location.latitude_deg == approx(30.2711)
+    assert location.longitude_deg == approx(-97.7437)
+    assert "Austin" in location.name
+    assert "Texas" in location.name
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

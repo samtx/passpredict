@@ -41,7 +41,7 @@ class BruteForceObserver(ObserverBase):
             raise Exception("Time step must be > 0")
         self.jd_step = time_step / 86400
 
-    def iter_passes(self, start_date, limit_date=None, visible=False):
+    def iter_passes(self, start_date, limit_date=None, visible_only=False):
         """Returns one pass each time"""
         start_date = _make_utc(start_date)
         limit_date = _make_utc(limit_date)
@@ -62,7 +62,7 @@ class BruteForceObserver(ObserverBase):
             if self._crosses_horizon(prev_jd, jd):
                 # satellite has just come above the horizon, find aos, tca, and los
                 pass_, los_jd = self._refine_pass(prev_jd, jd)
-                if self._is_pass_valid(pass_, visible=visible):
+                if self._is_pass_valid(pass_, visible_only=visible_only):
                     predicted_pass = self._build_predicted_pass(pass_)
                     yield predicted_pass
                     jd = los_jd + self.jd_step * 5

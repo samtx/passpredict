@@ -50,7 +50,7 @@ class Observer(ObserverBase):
         """
         super().__init__(location, satellite, **kwargs)
 
-    def iter_passes(self, start_date, limit_date=None, visible=False):
+    def iter_passes(self, start_date, limit_date=None, visible_only=False):
         """Returns one pass each time"""
         start_date = _make_utc(start_date)
         limit_date = _make_utc(limit_date)
@@ -61,7 +61,7 @@ class Observer(ObserverBase):
                 ascending_date = current_date
                 descending_date = self._find_nearest_descending(ascending_date)
                 pass_ = self._refine_pass(ascending_date, descending_date)
-                if self._is_pass_valid(pass_, visible=visible):
+                if self._is_pass_valid(pass_, visible_only=visible_only):
                     if limit_date is not None and pass_.aos > limit_date:
                         break
                     predicted_pass = self._build_predicted_pass(pass_)

@@ -7,13 +7,13 @@ from typing import Union, TYPE_CHECKING
 from pathlib import Path
 from collections import defaultdict
 
+import httpx
 
 from .satellites import SatellitePredictor
 from .base import TLESource
 from .caches import JsonCache
-
-if TYPE_CHECKING:
-    from .tle import TLE
+from .tle import TLE
+from .utils import grouper
 
 
 class PasspredictTLESource(abc.ABC):
@@ -68,25 +68,29 @@ class CelestrakTLESource(TLESource):
     TLE source that checks the cache for orbital elements,
     otherwise queries Celestrak website
     """
-    def __init__(self) -> None:
-        self.cache_path = Path.home() / '.passpredict' / 'tle.dat'
-        self.data = {}
+    def __init__(self, cache_path: Union[str, Path] = None) -> None:
+        if not cache_path:
+            cache_path = 'tle.json'
+        self.cache_path = cache_path
+        self.cache = JsonCache(self.cache_path)
 
-    def load(self):
+    def load(self, strict: bool = False):
         """
         Load TLEs from cache
         """
-        with JsonCache(self.cache_path) as cache:
-            self.data = copy.deepcopy(cache.cache)
+        try:
+            self.cache.load()
+        except FileNotFoundError as e:
+            if strict:
+                raise e
+            else:
+                pass
 
     def save(self):
         """
         Save TLEs into cache file
         """
-        with JsonCache(self.cache_path) as cache:
-            for satkey in self.data:
-                if "sat:" in satkey:
-                    cache.set(f"sat:")
+        self.cache.save()
 
     def add_tle(self, satid: int, tle: TLE, epoch: datetime.datetime):
         """
@@ -94,27 +98,59 @@ class CelestrakTLESource(TLESource):
         """
         return super().add_tle(satid, tle, epoch)
 
-    def _get_tle(self, satid: int, date):
+    def get_tle(self, satid: int):
         """
-        Query TLE from Cache
+        Query TLE from cache. If not found in cache, then query Celestrak url
         """
-        return super()._get_tle(satid, date)
+        key = f"tle:{satid}"
+        res = self.cache.get(key)
+        if res:
+            tle = TLE(res['satid'], res['lines'], name=res.get('name', ''))
+        else:
+            tle = self._query_tles_from_celestrak(satid)
+            self.cache.set(key, tle.dict(), ttl=86400)
+        return tle
 
-    def get_tle(self, satid: int, date):
+    def _query_tles_from_celestrak(self, satid: int = None):
         """
-        Query TLE
+        Download current TLEs from Celestrak and save them to a JSON file
         """
-        return super().get_tle(satid, date)
+        url = 'https://celestrak.com/satcat/tle.php'
+        params = {'CATNR': satid}
+        r = httpx.get(url, params=params)
+        tle_strings = r.text.splitlines()
+        tle = self._parse_tle(tle_strings)
+        return tle
 
-    def get_predictor(self, satid: int):
-        """
-        Return satellite predictor from tle
-        """
-        predictor = SatellitePredictor(satid, self)
-        predictor.set_propagator()
-        return predictor
+        # if satid is None:
+        #     url = 'https://celestrak.com/NORAD/elements/stations.txt'
+        #     params = {}
+        # else:
+        #     url = 'https://celestrak.com/satcat/tle.php'
+        #     params = {'CATNR': satid}
+        # r = httpx.get(url, params=params)
+        # tles = []
+        # for tle_strings in grouper(r.text.splitlines(), 3):
+        #     tles.append(self._parse_tle(tle_strings))
+        # return tles
 
+    def _parse_tle(self, tle_strings):
+        """
+        Parse a single 3-line TLE from celestrak
+        """
+        if len(tle_strings) == 2:
+            tle1, tle2 = tle_strings
+            name = "" 
+        elif len(tle_strings) == 3:
+            tle0, tle1, tle2 = tle_strings
+            name = tle0.strip()  # satellite name
+        else:
+            raise Exception(f"Invalid TLE strings {tle_strings}")
+        satid = int(tle1[2:7])
+        tle = TLE(satid, (tle1, tle2), name=name)
+        return tle
 
+    
 class MemoryTLESource(PasspredictTLESource):
     def __init__(self):
         self.tles = defaultdict()

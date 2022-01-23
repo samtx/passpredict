@@ -40,6 +40,7 @@ class SatellitePredictorBase(HighAccuracyTLEPredictor):
         self.satid = satid
         if source:
             self.tle = source.get_tle(satid)
+            self.name = self.tle.name
             self._propagator = self.get_propagator(self.tle.lines)
         self.intrinsic_mag = 1.0   # ISS is -1.8
 
@@ -47,6 +48,7 @@ class SatellitePredictorBase(HighAccuracyTLEPredictor):
     def from_tle(cls, tle: TLE) -> SatellitePredictorBase:
         sat = cls(tle.satid)
         sat.tle = tle
+        sat.name = tle.name
         sat._propagator = sat.get_propagator(tle.lines)
         return sat
 

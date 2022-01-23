@@ -61,7 +61,7 @@ def test_heavens_above_zurich_iss_visibility_predictions():
         vis_end = datetime.strptime(f"{date_str} {line_parts[8]}+0100", "%Y %d %b %H:%M:%S%z")
 
         # Find next pass
-        pass_ = observer.get_next_pass(date, limit_date=end, visible=True)
+        pass_ = observer.get_next_pass(date, limit_date=end, visible_only=True)
         assert_datetime_approx(pass_.vis_begin.dt, vis_begin, 1.5)
         assert_datetime_approx(pass_.vis_end.dt, vis_end, 1.5)
         # assert_datetime_approx(pass_.tca.dt, tca, 5)
