@@ -206,10 +206,10 @@ class ObserverBase(LocationPredictor):
     def iter_passes(self, start_date, limit_date=None):
         raise NotImplementedError
 
-    def _is_pass_valid(self, pass_, visible=False):
+    def _is_pass_valid(self, pass_, visible_only=False):
         if (pass_.aos is None) or (pass_.los is None):
             return False
-        if visible and pass_.type != PassType.visible:
+        if visible_only and pass_.type != PassType.visible:
             return False
         return (pass_.max_elevation > 0)
 
@@ -221,12 +221,12 @@ class ObserverBase(LocationPredictor):
         aos_dt: datetime.datetime,
         *,
         limit_date: datetime.datetime = None,
-        visible: bool = False,
+        visible_only: bool = False,
     ) -> PredictedPass:
         """
         Gets first overpass starting at aos_dt
         """
-        pass_ = next(self.iter_passes(aos_dt, limit_date=limit_date, visible=visible), None)
+        pass_ = next(self.iter_passes(aos_dt, limit_date=limit_date, visible_only=visible_only), None)
         if not pass_:
             raise NotReachable('Propagation limit date exceeded')
         return pass_

@@ -2,6 +2,7 @@ from typing import NamedTuple
 import datetime
 from zoneinfo import ZoneInfo
 from functools import lru_cache
+from itertools import zip_longest
 
 from timezonefinder import TimezoneFinder
 
@@ -46,3 +47,12 @@ def get_timezone_from_latlon(latitude: float, longitude: float) -> ZoneInfo:
     tz_str = tf.timezone_at(lng=longitude, lat=latitude)
     tz = datetime.timezone.utc if not tz_str else ZoneInfo(tz_str)
     return tz
+
+
+def grouper(iterable, n, fillvalue=None):
+    """
+    from itertools recipes https://docs.python.org/3.7/library/itertools.html#itertools-recipes
+    Collect data into fixed-length chunks or blocks
+    """
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=fillvalue)

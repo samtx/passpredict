@@ -27,6 +27,7 @@ class TleSchema(BaseModel):
 class TLE(NamedTuple):
     satid: Union[int, str]        # NORAD satellite ID
     lines: Tuple[str]   # tuple of tle strings (tle1, tle2)
+    name: str = ""
 
     @property
     def sate_id(self):
@@ -43,6 +44,9 @@ class TLE(NamedTuple):
     @property
     def tle2(self) -> str:
         return self.lines[1]
+
+    def dict(self):
+        return self._asdict()
 
 
 def jd_to_epoch_string(jd: float) -> str:

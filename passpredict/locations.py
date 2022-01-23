@@ -39,6 +39,15 @@ class Location(LocationBase):
         self.position_llh = latitude_deg, longitude_deg, elevation_m
         self.recef = np.array(self.position_ecef)
 
+    def dict(self) -> dict:
+        d = {
+            'name': self.name,
+            'lat': self.lat,
+            'lon': self.lon,
+            'h': self.h
+        }
+        return d
+
     @property
     def lat(self) -> float:
         return self.latitude_deg
@@ -47,10 +56,18 @@ class Location(LocationBase):
     def lon(self) -> float:
         return self.longitude_deg
 
+    @property
+    def h(self) -> float:
+        return self.elevation_m
+
     @cached_property
     def timezone(self) -> ZoneInfo:
         """ Find timezone """
         return get_timezone_from_latlon(self.latitude_deg, self.longitude_deg)
+
+    @property
+    def tz(self) -> ZoneInfo:
+        return self.timezone
 
     @cached_property
     def offset(self) -> float:

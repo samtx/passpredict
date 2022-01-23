@@ -10,6 +10,8 @@ class JsonCache:
     filename = 'tle.json'
 
     def __init__(self, filename=filename):
+        # if not pathlib.Path(filename).is_file():
+        #     raise Exception(f"JsonCache filename {filename} is not valid.")
         self.filename = filename
         self.cache = {}
 
@@ -26,12 +28,22 @@ class JsonCache:
         del self.cache[key]
 
     def __enter__(self):
-        if pathlib.Path(self.filename).is_file():
-            with open(self.filename, 'r') as f:
-                self.cache = json.load(f)
+        self.load()
         return self
 
     def __exit__(self, *args):
+        self.save()
+
+    def load(self):
+        """ Load cache from json file """
+        try:
+            with open(self.filename, 'r') as f:
+                self.cache = json.load(f)
+        except FileNotFoundError:
+            pass
+
+    def save(self):
+        """ Save cache to json file """
         with open(self.filename, 'w') as f:
             json.dump(self.cache, f, indent=2)
 
