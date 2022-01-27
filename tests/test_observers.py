@@ -119,7 +119,7 @@ class TestStandardObserver:
         Test common LEO satellite overpasses using brute force observer as truth model
         """
         start = datetime(2021, 10, 2, tzinfo=timezone.utc)
-        end = datetime(2021, 10, 6, tzinfo=timezone.utc)
+        end = datetime(2021, 10, 5, tzinfo=timezone.utc)
         assert_overpass_accuracy_with_brute_force_observer(location, tle, start, end)
 
 
@@ -130,7 +130,7 @@ class TestStandardObserver:
     ])
     def test_leo_sso_sun_synchronous_satellites(self, location, tle):
         start = datetime(2021, 10, 2, tzinfo=timezone.utc)
-        end = datetime(2021, 10, 6, tzinfo=timezone.utc)
+        end = datetime(2021, 10, 5, tzinfo=timezone.utc)
         assert_overpass_accuracy_with_brute_force_observer(location, tle, start, end)
 
 
@@ -139,7 +139,7 @@ class TestStandardObserver:
     ])
     def test_leo_retrograde_satellites(self, location, tle):
         start = datetime(2021, 10, 2, tzinfo=timezone.utc)
-        end = datetime(2021, 10, 6, tzinfo=timezone.utc)
+        end = datetime(2021, 10, 5, tzinfo=timezone.utc)
         assert_overpass_accuracy_with_brute_force_observer(location, tle, start, end)
 
 
@@ -153,19 +153,19 @@ class TestStandardObserver:
     pytest.param(
         TLE('Intelsat 5', ('1 24916U 97046A   21274.50960067  .00000091  00000-0  00000-0 0  9997','2 24916   6.6785  62.7523 0003074 141.8639 212.2992  1.00271606 88373')),
         datetime(2021, 10, 2, tzinfo=timezone.utc),
-        datetime(2021, 10, 6, tzinfo=timezone.utc),
+        datetime(2021, 10, 5, tzinfo=timezone.utc),
         id='Intelsat 5'
     ),
     pytest.param(
         TLE('Galaxy 19', ('1 33376U 08045A   22021.62511755 -.00000127  00000-0  00000-0 0  9999', '2 33376   0.0154  72.0379 0003076 242.5276 294.4103  1.00270478 48785')),
         datetime(2022, 1, 21, tzinfo=timezone.utc),
-        datetime(2022, 1, 25, tzinfo=timezone.utc),
+        datetime(2022, 1, 24, tzinfo=timezone.utc),
         id='Galaxy 19'
     ),
     pytest.param(
         TLE('MUOS 5', ('1 41622U 16041A   22021.62018662 -.00000097  00000-0  00000-0 0  9992', '2 41622   5.9528 302.0771 0196044 233.2720  63.8350  1.00272532 20963')),
         datetime(2022, 1, 21, tzinfo=timezone.utc),
-        datetime(2022, 1, 25, tzinfo=timezone.utc),
+        datetime(2022, 1, 24, tzinfo=timezone.utc),
         id='MUOS 5'
     ),
 ])
@@ -184,7 +184,7 @@ def test_west_geo_geosynchronous_satellites(location, tle, start, end):
     pytest.param(
         TLE('BEIDOU 3 IGSO-2', ('1 44337U 19035A   22021.41416855 -.00000102  00000-0  00000-0 0  9994', '2 44337  55.1112 173.0353 0022302 186.9138  25.6402  1.00298568  9574')),
         datetime(2022, 1, 21, tzinfo=timezone.utc),
-        datetime(2022, 1, 25, tzinfo=timezone.utc),
+        datetime(2022, 1, 24, tzinfo=timezone.utc),
         id='BEIDOU 3'
     ),
 ])
