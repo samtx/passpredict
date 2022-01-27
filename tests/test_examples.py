@@ -2,6 +2,8 @@ from importlib.resources import path
 import sys
 import pathlib
 
+from examples.celestrak_source import celestrak_source
+
 
 # Set example directory on python path
 example_dir = pathlib.Path(__file__).parent.parent / 'examples'
@@ -30,3 +32,9 @@ def test_standard_observer():
     """
     standard_observer()
 
+
+def test_celestrak_source():
+    """
+    Make sure example doesn't error
+    """
+    celestrak_source()
