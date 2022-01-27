@@ -100,6 +100,8 @@ class Observer(ObserverBase):
             data['vis_begin'] = self.point(basic_pass.vis_begin_dt.astimezone(tz))
         if basic_pass.vis_end_dt:
             data['vis_end'] = self.point(basic_pass.vis_end_dt.astimezone(tz))
+        if basic_pass.vis_tca_dt:
+            data['vis_tca'] = self.point(basic_pass.vis_tca_dt.astimezone(tz))
         return PredictedPass(**data)
 
     def _find_nearest_descending(self, ascending_date):
@@ -195,9 +197,16 @@ class Observer(ObserverBase):
         # Set visible start and end points for Pass
         vis_begin_dt = jday2datetime_us(jd0)
         vis_end_dt = jday2datetime_us(jdf)
+        # Find maximum elevation during visible period
+        if vis_begin_dt <= tca_dt <= vis_end_dt:
+            vis_tca_dt = tca_dt
+        elif self._elevation_at(vis_begin_dt) > self._elevation_at(vis_end_dt):
+            vis_tca_dt = vis_begin_dt
+        else:
+            vis_tca_dt = vis_end_dt
         return BasicPassInfo(
             aos_dt, tca_dt, los_dt, elevation, type_=PassType.visible,
-            vis_begin_dt=vis_begin_dt, vis_end_dt=vis_end_dt,
+            vis_begin_dt=vis_begin_dt, vis_end_dt=vis_end_dt, vis_tca_dt=vis_tca_dt,
         )
 
     def _find_tca(self, ascending_date, descending_date):

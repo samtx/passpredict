@@ -82,6 +82,7 @@ class BasicPassInfo:
         type_: PassType = None,
         vis_begin_dt: datetime.datetime = None,
         vis_end_dt: datetime.datetime = None,
+        vis_tca_dt: datetime.datetime = None,
     ):
         self.aos_dt = aos_dt if aos_dt is not None else None
         self.tca_dt = tca_dt
@@ -90,6 +91,7 @@ class BasicPassInfo:
         self.type = type_
         self.vis_begin_dt = vis_begin_dt
         self.vis_end_dt = vis_end_dt
+        self.vis_tca_dt = vis_tca_dt
 
     @property
     def aos(self):
@@ -135,6 +137,7 @@ class PredictedPass:
     datetime: typing.Sequence[datetime.datetime] = None
     vis_begin: PassPoint = None
     vis_end: PassPoint = None
+    vis_tca: PassPoint = None
     brightness: float = None
 
     @cached_property
