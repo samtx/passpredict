@@ -1,0 +1,3 @@
+include passpredict/*.pyx
+include passpredict/sgp4/*.h
+include passpredict/sofa/*.h
