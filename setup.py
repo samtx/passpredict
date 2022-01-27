@@ -41,7 +41,7 @@ with open("README.md") as f:
 
 setup(
     name="passpredict",
-    version="0.1.1",
+    version="0.2.0",
     packages=['passpredict'],
     python_requires=">=3.9",
     install_requires=[
