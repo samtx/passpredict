@@ -1,0 +1,23 @@
+site_name: Passpredict
+
+theme:
+  name: material
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - js/main.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js
+  - https://cdn.jsdelivr.net/npm/katex/dist/contrib/mathtex-script-type.min.js
+
+extra_css:
+  - https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css

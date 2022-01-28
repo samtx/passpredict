@@ -1,13 +1,8 @@
-# passpredict
-
-[![Tests](https://github.com/samtx/passpredict/actions/workflows/main.yml/badge.svg)](https://github.com/samtx/passpredict/actions/workflows/main.yml)
+# Introduction
 
 Predict upcoming satellite overpasses over a point on Earth.
-
 This library exposes a command-line interface and a backend API to generate overpass predictions.
-
 Currently, passpredict requires Python 3.9 or newer. Future work is planned to backport the libary to Python 3.8, but it is currently not supported.
-
 
 ## Requirements
 
@@ -25,7 +20,7 @@ Currently, passpredict requires Python 3.9 or newer. Future work is planned to b
 
 ## Install
 
-The package and command line tool can be installed from PyPI using pip.
+The package and command line tool can be installed from PyPI using `pip`.
 
     pip install passpredict
 
@@ -83,4 +78,3 @@ Using TLE with epoch 2022-01-23T21:18:30.062880+00:00
 │ 2/02/22 │ 19:56:17 │  10° │  NNW │ 19:59:25 │  38° │   NE │ 20:02:33 │  10° │  ESE │ visible │
 └─────────┴──────────┴──────┴──────┴──────────┴──────┴──────┴──────────┴──────┴──────┴─────────┘
 ```
-
