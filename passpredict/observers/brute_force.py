@@ -9,7 +9,7 @@ import numpy as np
 # from scipy.optimize import minimize_scalar
 
 from .base import ObserverBase, BasicPassInfo
-from .functions import _make_utc
+from .functions import _make_utc, julian_date_sum
 from ..time import julian_date, julian_date_from_datetime
 from .._time import jday2datetime_us
 from ..exceptions import NotReachable, PropagationError
