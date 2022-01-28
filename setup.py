@@ -34,13 +34,14 @@ extensions = [
         **common_kw
     ),
 ]
+meta = dict()
 
 # Get long description
 with open("README.md", encoding="utf-8") as f:
     long_description = f.read()
+meta['long_description'] = long_description
 
 # Get version number
-meta = dict()
 with open("passpredict/__init__.py", encoding="utf-8") as f:
     for line in f.readlines():
         line = line.strip()
