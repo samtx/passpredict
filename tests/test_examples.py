@@ -2,8 +2,6 @@ from importlib.resources import path
 import sys
 import pathlib
 
-from examples.celestrak_source import celestrak_source
-
 
 # Set example directory on python path
 example_dir = pathlib.Path(__file__).parent.parent / 'examples'

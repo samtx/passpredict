@@ -122,25 +122,13 @@ class CelestrakTLESource(TLESource):
         tle = self._parse_tle(tle_strings)
         return tle
 
-        # if satid is None:
-        #     url = 'https://celestrak.com/NORAD/elements/stations.txt'
-        #     params = {}
-        # else:
-        #     url = 'https://celestrak.com/satcat/tle.php'
-        #     params = {'CATNR': satid}
-        # r = httpx.get(url, params=params)
-        # tles = []
-        # for tle_strings in grouper(r.text.splitlines(), 3):
-        #     tles.append(self._parse_tle(tle_strings))
-        # return tles
-
     def _parse_tle(self, tle_strings):
         """
         Parse a single 3-line TLE from celestrak
         """
         if len(tle_strings) == 2:
             tle1, tle2 = tle_strings
-            name = "" 
+            name = ""
         elif len(tle_strings) == 3:
             tle0, tle1, tle2 = tle_strings
             name = tle0.strip()  # satellite name
@@ -150,7 +138,7 @@ class CelestrakTLESource(TLESource):
         tle = TLE(satid, (tle1, tle2), name=name)
         return tle
 
-    
+
 class MemoryTLESource(PasspredictTLESource):
     def __init__(self):
         self.tles = defaultdict()

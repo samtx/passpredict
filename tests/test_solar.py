@@ -7,8 +7,6 @@ from numpy.linalg import norm
 
 from passpredict import _solar
 from passpredict import Location
-from passpredict import _rotations
-from passpredict.time import julian_date_from_datetime
 
 import pytest
 from pytest import approx

@@ -1,8 +1,12 @@
+from __future__ import annotations
 import datetime
+import typing
 
-from .satellites import SatellitePredictor
 from .observers import Observer
 from .locations import Location
+
+if typing.TYPE_CHECKING:
+    from .satellites import SatellitePredictorBase
 
 
 def predict_all_visible_satellite_overpasses(
@@ -24,7 +28,7 @@ def predict_all_visible_satellite_overpasses(
 
 
 def predict_single_satellite_overpasses(
-    satellite: SatellitePredictor,
+    satellite: SatellitePredictorBase,
     location: Location,
     date_start: datetime.date,
     days: int,
@@ -38,7 +42,7 @@ def predict_single_satellite_overpasses(
 
 
 def predict_next_overpass(
-    satellite: SatellitePredictor,
+    satellite: SatellitePredictorBase,
     location: Location,
     date_start: datetime.date,
     min_elevation: float = 10.0
@@ -49,7 +53,7 @@ def predict_next_overpass(
 
 
 def get_next_pass_detail(
-    satellite: SatellitePredictor,
+    satellite: SatellitePredictorBase,
     location: Location,
     date_start: datetime.datetime,
     min_elevation: float = 10.0,
@@ -60,7 +64,7 @@ def get_next_pass_detail(
 
 
 def get_satellite_llh(
-    satellite: SatellitePredictor,
+    satellite: SatellitePredictorBase,
     date_start: datetime.datetime,
     date_end: datetime.datetime,
     dt_seconds: float = 1,
