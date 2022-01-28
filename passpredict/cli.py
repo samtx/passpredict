@@ -2,16 +2,13 @@ import datetime
 from math import floor
 
 import click
-from pygments import highlight
 from rich.console import Console
 from rich.table import Table
 from rich.align import Align
 
+from . import __version__
 from .sources import CelestrakTLESource
 from .geocoding import NominatimGeocoder
-from .tle import get_TLE, TLE
-from .core import predict_single_satellite_overpasses
-from ._time import julian_date
 from .satellites import SGP4Predictor
 from .locations import Location
 from .observers import PassType, Observer
@@ -19,7 +16,7 @@ from .observers import PassType, Observer
 
 @click.command()
 @click.option('-s', '--satellite-id', type=int)  # satellite id
-@click.option('-d', '--days', default=10, type=click.IntRange(1, 14, clamp=True)) # day range
+@click.option('-d', '--days', default=10, type=int) # day range
 @click.option('-loc', '--location', 'location_query', default='', type=str)  # For geocoding location query
 @click.option('-lat', '--latitude', default='', type=str)   # latitude
 @click.option('-lon', '--longitude', default='', type=str)  # longitude
@@ -30,11 +27,11 @@ from .observers import PassType, Observer
 @click.option('-v', '--verbose', is_flag=True, default=False)
 @click.option('--summary', is_flag=True, default=False)  # make summary table of results
 @click.option('--no-cache', is_flag=True, default=False)
+@click.version_option(version=__version__)
 def main(satellite_id, days, location_query, latitude, longitude, height, twelve, alltypes, quiet, verbose, summary, no_cache):
     """
     Command line interface for pass predictions
     """
-
     if location_query:
         location = NominatimGeocoder.query(location_query)
     else:
@@ -59,9 +56,9 @@ def main(satellite_id, days, location_query, latitude, longitude, height, twelve
     overpasses = list(pass_iterator)
     # Filter visible passes only unless all passes are requested
     manager = PasspredictManager(
-        location, 
-        satellite, 
-        tle, 
+        location,
+        satellite,
+        tle,
         twelve,
         alltypes,
         quiet,
@@ -77,7 +74,7 @@ def main(satellite_id, days, location_query, latitude, longitude, height, twelve
     else:
         table = manager.overpass_table(overpasses)
         console.print(table)
-    source.save()   
+    source.save()
     return 0
 
 
@@ -85,16 +82,15 @@ class PasspredictManager:
     """
     Manager to hold all options regarding CLI passpredict query
     """
-
-    def __init__(self, 
-        location, 
+    def __init__(self,
+        location,
         satellite,
         tle,
-        twelvehour, 
-        alltypes, 
-        quiet, 
-        verbose, 
-        summary, 
+        twelvehour = False,
+        alltypes = False,
+        quiet = False,
+        verbose = False,
+        summary = False,
     ):
         self.location = location
         self.satellite = satellite
@@ -104,6 +100,17 @@ class PasspredictManager:
         self.quiet = quiet
         self.verbose = verbose
         self.summary = summary
+
+    def point_string(self, point):
+        time = point.dt.astimezone(self.location.tz)
+        point_data = []
+        if self.twelvehour:
+            point_data.append(time.strftime("%I:%M:%S").lstrip("0") + ' ' + time.strftime("%p").lower())
+        else:
+            point_data.append(time.strftime("%H:%M:%S"))
+        point_data.append("{:>2}\u00B0".format(int(point.elevation)))
+        point_data.append("{:3}".format(point.direction))
+        return point_data
 
     def overpass_table(self, overpasses):
         """
@@ -121,7 +128,7 @@ class PasspredictManager:
             table = self.make_summary_table(overpasses)
         else:
             table = self.make_detail_table(overpasses)
-        return table 
+        return table
 
     def make_results_header(self):
         header = ""
@@ -150,22 +157,13 @@ class PasspredictManager:
         table.add_column(Align("Duration", "center"), justify="right")
         table.add_column(Align("Max Elev", "center"), justify="right")
         table.add_column(Align("Type", "center"), justify='center')
-
-        def get_min_sec_string(total_seconds: int) -> str:
-            """
-            Get total number of seconds, return string with min:sec format
-            """
-            nmin = floor(total_seconds / 60)
-            nsec = total_seconds - nmin * 60
-            return f"{nmin:.0f}:{nsec:0.0f}"
-
         for overpass in overpasses:
             row = []
             date = overpass.aos.dt.astimezone(self.location.timezone)
             day = date.strftime("%x").lstrip('0')
             # round to nearest minute
             if date.second >= 30:
-                date.replace(minute=date.minute+1)
+                date += datetime.timedelta(minutes=1)
             if self.twelvehour:
                 time = date.strftime("%I:%M").lstrip("0")
                 ampm = date.strftime('%p').lower()
@@ -194,18 +192,6 @@ class PasspredictManager:
             table.add_column(Align(f"{x}\nEl", "center"), justify="right", width=4)
             table.add_column(Align(f"{x}\nAz", "center"), justify="right", width=4)
         table.add_column(Align("Type", "center"), justify='center')
-
-        def point_string(point):
-            time = point.dt.astimezone(self.location.tz)
-            point_data = []
-            if self.twelvehour:
-                point_data.append(time.strftime("%I:%M:%S").lstrip("0") + ' ' + time.strftime("%p").lower())
-            else:
-                point_data.append(time.strftime("%H:%M:%S"))
-            point_data.append("{:>2}\u00B0".format(int(point.elevation)))
-            point_data.append("{:3}".format(point.direction))
-            return point_data
-
         for overpass in overpasses:
             row = []
             row.append(overpass.aos.dt.astimezone(self.location.tz).strftime("%x").lstrip('0'))
@@ -214,9 +200,9 @@ class PasspredictManager:
             # else:
             #     brightness_str = " "*4
             # table_data += " "*2 + brightness_str
-            row += point_string(overpass.aos)
-            row += point_string(overpass.tca)
-            row += point_string(overpass.los)
+            row += self.point_string(overpass.aos)
+            row += self.point_string(overpass.tca)
+            row += self.point_string(overpass.los)
             if overpass.type:
                 row.append(overpass.type.value)# + '\n'
                 fg = 'green' if overpass.type.value == PassType.visible else None
@@ -225,15 +211,23 @@ class PasspredictManager:
             table.add_row(*row, style=fg )
         return table
 
-    
-        
 
 @click.command()
 def flush():
     """
     Remove all expired keys from cache
     """
-    pass
+    raise NotImplementedError
+
+
+def get_min_sec_string(total_seconds: int) -> str:
+    """
+    Get total number of seconds, return string with min:sec format
+    """
+    nmin = floor(total_seconds / 60)
+    nsec = total_seconds - nmin * 60
+    return f"{nmin:.0f}:{nsec:02.0f}"
+
 
 if __name__ == "__main__":
     main()

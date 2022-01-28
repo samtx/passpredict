@@ -11,9 +11,10 @@ from abc import abstractmethod
 import numpy as np
 from numpy.linalg import norm
 from orbit_predictor.predictors.pass_iterators import LocationPredictor
-from passpredict.constants import R_EARTH
 
+from .functions import julian_date_sum
 from ..time import julian_date_from_datetime
+from ..constants import R_EARTH
 from .. import _rotations
 from ..utils import get_pass_detail_datetime_metadata
 from ..exceptions import NotReachable
@@ -37,7 +38,7 @@ class PassPoint:
     azimuth: float              # deg
     elevation: float            # deg
     brightness: float = None    # magnitude brightness
-    type: PassType = None       # visibility status
+    type: Visibility = None       # visibility status
 
     @cached_property
     def direction(self) -> str:
@@ -324,13 +325,18 @@ class ObserverBase(LocationPredictor):
         )
         return range_
 
-    def point(self, d: datetime.datetime, visibility: bool = False) -> PassPoint:
+    def point(self, d: datetime.datetime, visibility: bool = True) -> PassPoint:
         """
         Get PassPoint with range, azimuth, and elevation data for datetime
         """
         rnazel = self.razel(d)
-        vis_state = self.determine_visibility(d) if visibility else None
-        pt = PassPoint(d, rnazel.range, rnazel.az, rnazel.el, type=vis_state)
+        vis_state = self.determine_visibility(d)
+        if (vis_state == Visibility.visible) and (self.satellite.intrinsic_mag is not None):
+            jd = julian_date_sum(d)
+            brightness = self.brightness(jd)
+        else:
+            brightness = None
+        pt = PassPoint(d, rnazel.range, rnazel.az, rnazel.el, type=vis_state, brightness=brightness)
         return pt
 
     @lru_cache(maxsize=16)
@@ -359,24 +365,24 @@ class ObserverBase(LocationPredictor):
         phase_angle = acos(np.dot(sat_rho, sun_rho) / (norm(sat_rho) * norm(sun_rho)))
         return phase_angle
 
-    def determine_visibility(self, d: datetime.datetime) -> PassType:
+    def determine_visibility(self, d: datetime.datetime) -> Visibility:
         """
         Determine if satellite is visible for single datetime instance
         """
         jd = sum(julian_date_from_datetime(d))
         return self.determine_visibility_jd(jd)
 
-    def determine_visibility_jd(self, jd: float) -> PassType:
+    def determine_visibility_jd(self, jd: float) -> Visibility:
         """
         Determine if satellite is visible for single julian date
         """
         sat_el = self._elevation_at_jd(jd)
-        if sat_el < self.aos_at_dg:
+        if sat_el < self.aos_at:
             return None
         sun_el = self.location.sun_elevation_jd(jd)
         if sun_el > self.sunrise_dg:
-            return PassType.daylight
+            return Visibility.daylight
         dist = self.satellite.illumination_distance_jd(jd)
         if dist > R_EARTH:
-            return PassType.visible
-        return PassType.unlit
+            return Visibility.visible
+        return Visibility.unlit

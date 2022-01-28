@@ -6,7 +6,7 @@ from pytest import approx
 
 from passpredict import Observer, Location, SGP4Predictor
 from passpredict import *
-from passpredict.observers.base import PassPoint
+from passpredict.observers import PassPoint, Visibility
 
 
 
@@ -18,7 +18,7 @@ def assert_datetime_approx(dt1, dt2, delta_seconds):
     assert diff == approx(0.0, abs=delta_seconds)
 
 
-def assert_passpoint_approx(pt1, pt2, *, dt_tol=1, el_tol=1, az_tol=10, range_tol=10):
+def assert_passpoint_approx(pt1, pt2, *, dt_tol=1, el_tol=1, az_tol=10, range_tol=10, bright_tol=3):
     """
     Compare two PassPoint objects
     """
@@ -27,6 +27,8 @@ def assert_passpoint_approx(pt1, pt2, *, dt_tol=1, el_tol=1, az_tol=10, range_to
     assert pt1.azimuth == approx(pt2.azimuth, abs=az_tol)
     assert pt1.direction == pt2.direction
     assert pt1.range == approx(pt2.range, abs=range_tol)
+    # if (pt1.brightness is not None) or (pt2.brightness is not None):
+    #     assert pt1.brightness == approx(pt2.brightness, abs=bright_tol)
 
 
 def test_heavens_above_zurich_iss_visibility_predictions():
@@ -38,6 +40,7 @@ def test_heavens_above_zurich_iss_visibility_predictions():
         "2 25544  51.6270 342.0904 0006847  44.2808  14.3181 15.49598315322461"
     )
     satellite = SGP4Predictor.from_tle(TLE('ISS', tle_lines))
+    satellite.intrinsic_mag = -1.8
 
     location = Location("Zurich", 47.3744, 8.5410, 0)
     observer = Observer(location, satellite, aos_at_dg=10, tolerance_s=0.5)
@@ -78,6 +81,8 @@ def test_heavens_above_zurich_iss_visibility_predictions():
         assert_datetime_approx(pass_.vis_begin.dt, vis_begin, 1.5)
         assert_datetime_approx(pass_.vis_end.dt, vis_end, 1.5)
         assert_datetime_approx(pass_.vis_tca.dt, tca, 1.5)
+        assert isinstance(pass_.brightness, float)
+        assert pass_.type == Visibility.visible
         date = pass_.los.dt + timedelta(minutes=10)
 
 
@@ -113,6 +118,7 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
         )
         tle = TLE(20580, tle_lines, name="HST")
         cls.satellite = SGP4Predictor.from_tle(tle)
+        cls.satellite.intrinsic_mag = 2.2
         cls.observer = Observer(cls.location, cls.satellite, aos_at_dg=10, tolerance_s=0.5)
 
     def test_visibile_overpasses(self):
@@ -145,6 +151,7 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
         for line in HEAVENS_ABOVE_PREDICTIONS.splitlines()[3:]:
             line_parts = line.split('\t')
             date_str = f"2022 {line_parts[0]}"
+            # brightness = float(line_parts[1])
             vis_begin = datetime.strptime(f"{date_str} {line_parts[2]}-0600", "%Y %d %b %H:%M:%S%z")
             tca = datetime.strptime(f"{date_str} {line_parts[5]}-0600", "%Y %d %b %H:%M:%S%z")
             vis_end = datetime.strptime(f"{date_str} {line_parts[8]}-0600", "%Y %d %b %H:%M:%S%z")
@@ -154,6 +161,9 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
             assert_datetime_approx(pass_.vis_begin.dt, vis_begin, 1.5)
             assert_datetime_approx(pass_.vis_end.dt, vis_end, 1.5)
             assert_datetime_approx(pass_.vis_tca.dt, tca, 1.5)
+            assert isinstance(pass_.brightness, float)
+            assert pass_.type == Visibility.visible
+            # assert pass_.brightness == approx(brightness, abs=3)  # this is very inaccurate
             date = pass_.los.dt + timedelta(minutes=10)
 
 
@@ -211,10 +221,13 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
             'el_tol': 1,
             'az_tol': 10,
             'range_tol': 10,
+            'bright_tol': 3,
         }
         assert_passpoint_approx(pass_.aos, aos_pt, **tol)
         assert_passpoint_approx(pass_.tca, tca_pt, **tol)
         assert_passpoint_approx(pass_.los, los_pt, **tol)
+        assert_passpoint_approx(pass_.vis_end, los_pt, **tol)
+        assert pass_.type == Visibility.visible
 
 
 

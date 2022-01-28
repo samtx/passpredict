@@ -1,4 +1,4 @@
-from .base import ObserverBase, PredictedPass, BasicPassInfo, RangeAzEl, PassType, PassPoint
+from .base import ObserverBase, PredictedPass, BasicPassInfo, RangeAzEl, PassType, PassPoint, Visibility
 
 from .standard import Observer
 
@@ -14,4 +14,5 @@ __all__ = [
     'RangeAzEl',
     'PassType',
     'PassPoint',
+    'Visibility',
 ]

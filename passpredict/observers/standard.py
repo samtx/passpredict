@@ -8,7 +8,7 @@ import numpy as np
 from scipy.interpolate import CubicSpline
 from scipy.optimize import root_scalar
 
-from .base import ObserverBase, PredictedPass, BasicPassInfo, PassType
+from .base import ObserverBase, PredictedPass, BasicPassInfo, PassType, Visibility
 from .functions import find_root, julian_date_sum
 from ..time import julian_date_from_datetime
 from .._time import jday2datetime_us
@@ -86,6 +86,7 @@ class Observer(ObserverBase):
 
     def _build_predicted_pass(self, basic_pass: BasicPassInfo):
         """Returns a classic predicted pass"""
+        type_ = basic_pass.type
         data = defaultdict()
         data.update({
             'satid': self.predictor.satid,
@@ -102,6 +103,13 @@ class Observer(ObserverBase):
             data['vis_end'] = self.point(basic_pass.vis_end_dt.astimezone(tz))
         if basic_pass.vis_tca_dt:
             data['vis_tca'] = self.point(basic_pass.vis_tca_dt.astimezone(tz))
+        if (basic_pass.type == Visibility.visible) and (self.satellite.intrinsic_mag is not None):
+            brightness = 999
+            for pt in ('vis_begin', 'vis_tca', 'vis_end',):
+                b = data[pt].brightness
+                if b and b < brightness:
+                    brightness = b
+            data['brightness'] = brightness
         return PredictedPass(**data)
 
     def _find_nearest_descending(self, ascending_date):

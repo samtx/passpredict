@@ -1,4 +1,5 @@
 import glob
+import pathlib
 
 from setuptools import Extension, setup
 from Cython.Build import cythonize
@@ -17,8 +18,6 @@ common_kw = {
     # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
 }
 
-source_files = []
-source_files += glob.glob('passpredict/sgp4/*.cpp')
 
 extensions = [
     Extension("passpredict._time",
@@ -36,13 +35,28 @@ extensions = [
     ),
 ]
 
-with open("README.md") as f:
+# Get long description
+with open("README.md", encoding="utf-8") as f:
     long_description = f.read()
+
+# Get version number
+meta = dict()
+with open("passpredict/__init__.py", encoding="utf-8") as f:
+    for line in f.readlines():
+        line = line.strip()
+        if line.startswith('__version__'):
+            exec(line, {}, meta)
+            assert '__version__' in meta
+            break
 
 setup(
     name="passpredict",
-    version="0.2.0",
-    packages=['passpredict'],
+    version=meta['__version__'],
+    packages=[
+        'passpredict',
+        'passpredict.observers',
+        'passpredict.satellites',
+    ],
     python_requires=">=3.9",
     install_requires=[
         'sgp4>=2.12',
@@ -66,7 +80,7 @@ setup(
     },
     package_data={
         # If any package contains *.txt, *.rst, *.dat, *.csv files, include them:
-        '': ['*.txt', '*.rst', '*.dat', '*.csv'],
+        '': ['*.txt', '*.rst', '*.dat', '*.csv', '*.md'],
     },
     # metadata to display on PyPI
     author="Sam Friedman",
