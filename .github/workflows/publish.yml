@@ -1,4 +1,4 @@
-name: Build wheels, test, and upload to PyPI
+name: Build wheels and upload to PyPI
 
 # Build on every branch push, tag push, and pull request change:
 # on: [push, pull_request]
@@ -28,8 +28,8 @@ jobs:
         run: |
           python -m pip install cibuildwheel==2.3.1
 
+      # cibuildwheel options are listed in pyproject.toml
       - name: Build wheels
-        # cibuildwheel options are listed in pyproject.toml
         run: |
           python -m cibuildwheel --output-dir wheelhouse
 
@@ -44,8 +44,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: actions/setup-python@v2
-        name: Install Python
+      - name: Setup Python
+        uses: actions/setup-python@v2
         with:
           python-version: "3.10"
 
