@@ -27,4 +27,4 @@ source = [
 [tool.cibuildwheel]
 build = "cp38-* cp39-* cp310-*"
 test-requires = "pytest"
-test-command = "pytest -v"
+test-command = "pytest {project}/tests"
