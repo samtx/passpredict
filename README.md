@@ -9,7 +9,7 @@ This library exposes a command-line interface and a backend API to generate over
 
 ## Requirements
 
-- python >= 3.7
+- python >= 3.8
 - numpy >= 1.22
 - scipy
 - cython >= 0.29.24
@@ -19,7 +19,7 @@ This library exposes a command-line interface and a backend API to generate over
 - httpx
 - timezonefinder
 - tzdata (Windows only)
-- backports.zoneinfo (Python 3.7 and 3.8)
+- backports.zoneinfo (Python 3.8 only)
 
 
 ## Install

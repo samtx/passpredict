@@ -58,7 +58,7 @@ setup(
         'passpredict.observers',
         'passpredict.satellites',
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         'sgp4>=2.12',
         'numpy>=1.22',
