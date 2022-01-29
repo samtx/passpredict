@@ -4,3 +4,7 @@ class NotReachable(Exception):
 
 class PropagationError(Exception):
     """Raised when a calculation issue is found"""
+
+
+class CelestrakError(Exception):
+    """ Raised when TLEs can't be downloaded from Celestrak """

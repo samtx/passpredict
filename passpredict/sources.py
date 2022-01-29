@@ -12,6 +12,7 @@ import httpx
 from .satellites import SatellitePredictor
 from .base import TLESource
 from .caches import JsonCache
+from .exceptions import CelestrakError
 from .tle import TLE
 from .utils import grouper
 
@@ -139,6 +140,8 @@ class CelestrakTLESource(TLESource):
         url = 'https://celestrak.com/satcat/tle.php'
         params = {'CATNR': satid}
         r = httpx.get(url, params=params)
+        if r.text.lower() == "no tle found" or r.status_code >= 300:
+            raise CelestrakError(f'Celestrak TLE for satellite {satid} not found')
         tle_strings = r.text.splitlines()
         tle = self._parse_tle(tle_strings)
         return tle
@@ -152,8 +155,8 @@ class CelestrakTLESource(TLESource):
         """
         url = f'https://celestrak.com/NORAD/elements/{category}.txt'
         r = httpx.get(url)
-        if r.status_code >= 400:
-            raise Exception(f'Celestrak TLEs for {category}.txt not found')
+        if not r.text or r.status_code >= 300:
+            raise CelestrakError(f'Celestrak TLEs for {category}.txt not found')
         tles = []
         tle_strings = r.text.splitlines()
         for raw_tle in grouper(tle_strings, 3):

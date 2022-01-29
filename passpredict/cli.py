@@ -11,6 +11,7 @@ from rich.align import Align
 from passpredict.observers.base import Visibility
 
 from . import __version__
+from .exceptions import CelestrakError
 from .sources import CelestrakTLESource
 from .geocoding import NominatimGeocoder
 from .satellites import SGP4Predictor
@@ -20,8 +21,8 @@ from .tle import TLE
 
 
 @click.command()
-@click.option('-s', '--satid', 'satids', type=int, default=[25544], multiple=True)  # satellite id
-@click.option('-c', '--category', 'categories', type=str, default=[''], multiple=True)  # Celestrak category
+@click.option('-s', '--satid', 'satids', type=int, default=list(), multiple=True)  # satellite id
+@click.option('-c', '--category', 'categories', type=str, default=list(), multiple=True)  # Celestrak category
 @click.option('-d', '--days', default=10, type=int) # day range
 @click.option('-loc', '--location', 'location_query', default='', type=str)  # For geocoding location query
 @click.option('-lat', '--latitude', default='', type=str)   # latitude
@@ -57,10 +58,16 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
     source.load()
     # Get TLE data for selected satellites and categories
     tles = []
-    for satid in satids:
-        tles.append(source.get_tle(satid))
-    for category in categories:
-        tles += source.get_tle_category(category)
+    if len(satids) == 0 and len(categories) == 0:
+        raise click.BadParameter("Must specify satellite ID or category")
+    try:
+        for satid in satids:
+            tles.append(source.get_tle(satid))
+        for category in categories:
+            tles += source.get_tle_category(category)
+    except CelestrakError as err:
+        raise click.BadParameter(str(err))
+
     # Get overpasses for each TLE
     visible_only = not alltypes
     overpasses = []

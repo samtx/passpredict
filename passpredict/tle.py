@@ -48,6 +48,9 @@ class TLE(NamedTuple):
     def dict(self):
         return self._asdict()
 
+    def __repr__(self):
+        return f"<TLE satid={self.satid} epoch={self.epoch}>"
+
 
 def jd_to_epoch_string(jd: float) -> str:
     """

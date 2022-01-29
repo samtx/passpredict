@@ -1,10 +1,12 @@
 import datetime
 
 import pytest
+import click
 from click.testing import CliRunner
 
 from passpredict import cli
 from passpredict import Location, SGP4Predictor, Observer, TLE
+from passpredict.exceptions import CelestrakError
 
 
 
@@ -47,6 +49,18 @@ def test_cli(options_string):
     runner = CliRunner()
     result = runner.invoke(cli.main, options_string)
     assert result.exit_code == 0
+
+
+def test_cli_fake_category():
+    runner = CliRunner()
+    result = runner.invoke(cli.main, '--category fake --location="austin, texas" -d 1', catch_exceptions=True)
+    assert result.exit_code != 0
+
+
+def test_cli_fake_satid():
+    runner = CliRunner()
+    result = runner.invoke(cli.main, '-s 9999999 --location="austin, texas" -d 1', catch_exceptions=True)
+    assert result.exit_code != 0
 
 
 @pytest.mark.parametrize('twelve', (
