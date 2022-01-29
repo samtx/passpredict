@@ -41,7 +41,10 @@ In this example, we are generating a list of pass predictions for the Internatio
 
 ```python
 import datetime
-from zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 from passpredict import CelestrakTLESource, Location, SGP4Predictor, Observer
 
@@ -67,19 +70,24 @@ Predict upcoming visible overpasses of the International Space Station. The loca
 - Visible passes only
 
 ```
-$ passpredict -lat 30.2711 -lon -97.1234 -s 25544
-
+$ passpredict -lat 30.2711 -lon -97.1234 -s 25544 --days 10
+Computing overpasses for 1 satellites over 10 days...
 Satellite ID 25544 ISS (ZARYA) overpasses
 Lat=30.2711°, Lon=-97.1234°, Timezone America/Chicago
-Using TLE with epoch 2022-01-23T21:18:30.062880+00:00
-1 25544U 98067A   22023.88784795  .00005671  00000-0  10872-3 0  9995
-2 25544  51.6443 331.1875 0006753  55.2214  46.3522 15.49604727322805
+Using TLE with epoch 2022-01-28T20:31:51.927167+00:00
+1 25544U 98067A   22028.85546212  .00007118  00000+0  13400-3 0  9994
+2 25544  51.6447 306.5909 0006818  72.1061  40.7231 15.49683806323578
 
-┏━━━━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┓
-┃         ┃  Start   ┃ Sta… ┃ Sta… ┃    Max   ┃ Max  ┃ Max  ┃    End   ┃ End  ┃ End  ┃         ┃
-┃  Date   ┃   Time   ┃   El ┃   Az ┃   Time   ┃  El  ┃  Az  ┃   Time   ┃  El  ┃  Az  ┃  Type   ┃
-┡━━━━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━┩
-│ 2/02/22 │ 19:56:17 │  10° │  NNW │ 19:59:25 │  38° │   NE │ 20:02:33 │  10° │  ESE │ visible │
-└─────────┴──────────┴──────┴──────┴──────────┴──────┴──────┴──────────┴──────┴──────┴─────────┘
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┓
+┃         ┃                   ┃  Start   ┃ Sta… ┃ Sta… ┃    Max   ┃ Max  ┃ Max  ┃    End   ┃ End  ┃ End  ┃         ┃
+┃  Date   ┃     Satellite     ┃   Time   ┃   El ┃   Az ┃   Time   ┃  El  ┃  Az  ┃   Time   ┃  El  ┃  Az  ┃  Type   ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━┩
+│ 2/02/22 │ 25544 ISS (ZARYA) │ 19:56:06 │  10° │  NNW │ 19:59:14 │  37° │   NE │ 20:02:22 │  10° │  ESE │ visible │
+│ 2/03/22 │ 25544 ISS (ZARYA) │ 19:08:22 │  10° │  NNW │ 19:10:59 │  21° │   NE │ 19:13:37 │  10° │    E │ visible │
+│ 2/04/22 │ 25544 ISS (ZARYA) │ 19:56:23 │  10° │   NW │ 19:59:36 │  50° │   SW │ 20:02:51 │  10° │  SSE │ visible │
+│ 2/05/22 │ 25544 ISS (ZARYA) │ 19:08:09 │  10° │   NW │ 19:11:28 │  73° │   NE │ 19:14:46 │  10° │   SE │ visible │
+│ 2/06/22 │ 25544 ISS (ZARYA) │ 19:58:00 │  10° │    W │ 19:59:42 │  13° │   SW │ 20:01:27 │  10° │  SSW │ visible │
+│ 2/07/22 │ 25544 ISS (ZARYA) │ 19:08:49 │  10° │  WNW │ 19:11:39 │  26° │   SW │ 19:14:29 │  10° │    S │ visible │
+└─────────┴───────────────────┴──────────┴──────┴──────┴──────────┴──────┴──────┴──────────┴──────┴──────┴─────────┘
 ```
 
