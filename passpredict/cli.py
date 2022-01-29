@@ -23,11 +23,12 @@ from .tle import TLE
 @click.command()
 @click.option('-s', '--satid', 'satids', type=int, default=list(), multiple=True)  # satellite id
 @click.option('-c', '--category', 'categories', type=str, default=list(), multiple=True)  # Celestrak category
-@click.option('-d', '--days', default=10, type=int) # day range
+@click.option('-d', '--days', default=1, type=int) # day range
 @click.option('-loc', '--location', 'location_query', default='', type=str)  # For geocoding location query
 @click.option('-lat', '--latitude', default='', type=str)   # latitude
 @click.option('-lon', '--longitude', default='', type=str)  # longitude
 @click.option('-h', '--height', default=0.0, type=float)    # height
+@click.option('--min-elevation', default=10, type=click.FloatRange(min=-90, max=90))  # minimum elevation in degrees
 @click.option('--twelve/--twentyfour', '-12/-24', is_flag=True, default=False)  # 12 hour / 24 hour format
 @click.option('-a', '--all', 'alltypes', is_flag=True, default=False)  # show all pass types
 @click.option('-q', '--quiet', is_flag=True, default=False)
@@ -35,7 +36,7 @@ from .tle import TLE
 @click.option('--summary', is_flag=True, default=False)  # make summary table of results
 @click.option('--no-cache', is_flag=True, default=False)
 @click.version_option(version=__version__)
-def main(satids, categories, days, location_query, latitude, longitude, height, twelve, alltypes, quiet, verbose, summary, no_cache):
+def main(satids, categories, days, location_query, latitude, longitude, height, min_elevation, twelve, alltypes, quiet, verbose, summary, no_cache):
     """
     Command line interface for pass predictions
     """
@@ -52,7 +53,6 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
         raise Exception("Must specify observing location")
     date_start = datetime.datetime.now(tz=location.timezone)
     date_end = date_start + datetime.timedelta(days=days)
-    min_elevation = 10.0 # degrees
 
     source = CelestrakTLESource()
     source.load()
@@ -69,8 +69,15 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
         raise click.BadParameter(str(err))
 
     # Get overpasses for each TLE
+    console = Console()
+
     visible_only = not alltypes
     overpasses = []
+
+    if not quiet:
+        msg = f"Computing overpasses for {len(tles)} satellites over {days} days..."
+        console.print(msg)
+
     for tle in tles:
         satellite = SGP4Predictor.from_tle(tle)
         observer = Observer(location, satellite, aos_at_dg=min_elevation, tolerance_s=0.75)
@@ -89,7 +96,6 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
         verbose,
         summary,
     )
-    console = Console()
     if not quiet:
         header = manager.make_results_header()
         console.print(header, highlight=False)
