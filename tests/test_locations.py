@@ -1,11 +1,12 @@
 # test rotations.py
-from zoneinfo import ZoneInfo
 
 import numpy as np
 import pytest
 from pytest import approx
 
 from passpredict import Location
+from passpredict.zoneinfo import ZoneInfo
+
 
 @pytest.mark.parametrize(
     'lat, lon, h, ecef_expected, tol',

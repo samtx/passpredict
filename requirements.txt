@@ -8,3 +8,4 @@ click
 rich
 httpx
 timezonefinder
+backports.zoneinfo;python_version<"3.9"

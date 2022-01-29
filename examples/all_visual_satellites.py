@@ -1,5 +1,8 @@
 import datetime
-from zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 from passpredict import CelestrakTLESource, Location, SGP4Predictor, Observer
 

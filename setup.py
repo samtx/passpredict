@@ -58,7 +58,7 @@ setup(
         'passpredict.observers',
         'passpredict.satellites',
     ],
-    python_requires=">=3.9",
+    python_requires=">=3.7",
     install_requires=[
         'sgp4>=2.12',
         'numpy>=1.22',
@@ -69,6 +69,7 @@ setup(
         'rich',
         'httpx',
         'timezonefinder',
+        'backports.zoneinfo;python_version<"3.9"'
     ],
     extras_require={
         'dev': [

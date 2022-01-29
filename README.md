@@ -6,12 +6,10 @@ Predict upcoming satellite overpasses over a point on Earth.
 
 This library exposes a command-line interface and a backend API to generate overpass predictions.
 
-Currently, passpredict requires Python 3.9 or newer. Future work is planned to backport the libary to Python 3.8, but it is currently not supported.
-
 
 ## Requirements
 
-- python >= 3.9
+- python >= 3.7
 - numpy >= 1.22
 - scipy
 - cython >= 0.29.24
@@ -21,6 +19,7 @@ Currently, passpredict requires Python 3.9 or newer. Future work is planned to b
 - httpx
 - timezonefinder
 - tzdata (Windows only)
+- backports.zoneinfo (Python 3.7 and 3.8)
 
 
 ## Install
