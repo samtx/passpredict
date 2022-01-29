@@ -1,13 +1,13 @@
 import datetime
 from functools import lru_cache
 
-from . import _time
+from ._time import julian_date as _julian_date
 from .constants import DAYSEC
 
 
 @lru_cache(maxsize=128)
 def julian_date(year: int, mon: int, day: int, hr: int, minute: int, sec: float):
-    return _time.julian_date(year, mon, day, hr, minute, sec)
+    return _julian_date(year, mon, day, hr, minute, sec)
 
 
 def julian_date_from_datetime(dt: datetime.datetime):
