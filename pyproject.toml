@@ -26,5 +26,19 @@ source = [
 
 [tool.cibuildwheel]
 build = "cp38-* cp39-* cp310-*"
-test-requires = "pytest"
+skip = "*-musllinux_*"
+build-verbosity = ""
+before-test = [
+    "rm -r {project}/passpredict"
+]
+test-extras = "dev"
 test-command = "pytest {project}/tests"
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64"]
+
+[tool.cibuildwheel.macos]
+archs = ["auto"]
+
+[tool.cibuildwheel.windows]
+archs = ["auto"]

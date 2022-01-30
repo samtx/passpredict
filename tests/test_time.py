@@ -1,6 +1,5 @@
 # test time.py and _time.pyx
 from datetime import datetime, timezone
-from passpredict.constants import DAYSEC
 
 import numpy as np
 import pytest
@@ -9,6 +8,7 @@ from pytest import approx
 from passpredict import time as ptime
 from passpredict import _time as _ptime
 from passpredict.tle import jd_to_epoch_string
+from passpredict.constants import DAYSEC
 
 def test_epoch_to_jd():
     """

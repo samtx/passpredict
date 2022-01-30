@@ -8,7 +8,6 @@ from itertools import zip_longest
 
 import httpx
 import numpy as np
-from pydantic import BaseModel, Field
 
 from passpredict._time import epoch_to_jd, jday2datetime_us
 

@@ -64,7 +64,6 @@ setup(
         'numpy>=1.22',
         'scipy>=1.7.3',
         'orbit-predictor',
-        'pydantic',
         'click',
         'rich',
         'httpx',
