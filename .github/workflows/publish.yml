@@ -60,6 +60,7 @@ jobs:
       - name: Build wheels
         env:
           CIBW_BUILD: ${{ matrix.whl }}
+          CIBW_TEST_REQUIRES_WINDOWS: tzdata pytest numpy click
         run: |
           python -m cibuildwheel --output-dir wheelhouse
 

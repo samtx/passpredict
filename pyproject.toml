@@ -42,3 +42,4 @@ archs = ["x86_64"]
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
+test-requires = "tzdata pytest numpy click"
