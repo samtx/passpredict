@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from zoneinfo import ZoneInfo
 
 import pytest
 from pytest import approx
@@ -7,6 +6,7 @@ from pytest import approx
 from passpredict import Observer, Location, SGP4Predictor
 from passpredict import *
 from passpredict.observers import PassPoint, Visibility
+from passpredict.zoneinfo import ZoneInfo
 
 
 

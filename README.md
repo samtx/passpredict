@@ -6,16 +6,29 @@ Predict upcoming satellite overpasses over a point on Earth.
 
 This library exposes a command-line interface and a backend API to generate overpass predictions.
 
-Currently, `passpredict` requires Python 3.9 or newer. Future work is planned to backport the libary to Python 3.8, but it is currently not supported.
+
+## Requirements
+
+- python >= 3.8
+- numpy >= 1.22
+- scipy
+- cython >= 0.29.24
+- orbit-predictor
+- click
+- rich
+- httpx
+- timezonefinder
+- tzdata (Windows only)
+- backports.zoneinfo (Python 3.8 only)
 
 
 ## Install
 
-The package and command line tool can be installed from PyPI using `pip`.
+The package and command line tool can be installed from PyPI using pip.
 
     pip install passpredict
 
-If you intend to use the package as a command line tool, it is a good idea to install the package with its dependencies using `pipx`.
+If you intend to use the package as a command line tool, it is a good idea to install the package with its dependencies using [pipx](https://pypa.github.io/pipx/).
 
     pipx install passpredict
 
@@ -28,7 +41,10 @@ In this example, we are generating a list of pass predictions for the Internatio
 
 ```python
 import datetime
-from zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 from passpredict import CelestrakTLESource, Location, SGP4Predictor, Observer
 
@@ -52,21 +68,132 @@ Predict upcoming visible overpasses of the International Space Station. The loca
 - International Space Station (ID 25544)
 - Location: 30.2711&deg; N, 97.1234&deg; W
 - Visible passes only
+- Compute passes for 10 days
 
 ```
-$ passpredict -lat 30.2711 -lon -97.1234 -s 25544
-
+$ passpredict -lat 30.2711 -lon -97.1234 -s 25544 --days 10
+Computing overpasses for 1 satellites over 10 days...
 Satellite ID 25544 ISS (ZARYA) overpasses
 Lat=30.2711°, Lon=-97.1234°, Timezone America/Chicago
-Using TLE with epoch 2022-01-23T21:18:30.062880+00:00
-1 25544U 98067A   22023.88784795  .00005671  00000-0  10872-3 0  9995
-2 25544  51.6443 331.1875 0006753  55.2214  46.3522 15.49604727322805
+Using TLE with epoch 2022-01-28T20:31:51.927167+00:00
+1 25544U 98067A   22028.85546212  .00007118  00000+0  13400-3 0  9994
+2 25544  51.6447 306.5909 0006818  72.1061  40.7231 15.49683806323578
 
-┏━━━━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┓
-┃         ┃  Start   ┃ Sta… ┃ Sta… ┃    Max   ┃ Max  ┃ Max  ┃    End   ┃ End  ┃ End  ┃         ┃
-┃  Date   ┃   Time   ┃   El ┃   Az ┃   Time   ┃  El  ┃  Az  ┃   Time   ┃  El  ┃  Az  ┃  Type   ┃
-┡━━━━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━┩
-│ 2/02/22 │ 19:56:17 │  10° │  NNW │ 19:59:25 │  38° │   NE │ 20:02:33 │  10° │  ESE │ visible │
-└─────────┴──────────┴──────┴──────┴──────────┴──────┴──────┴──────────┴──────┴──────┴─────────┘
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┓
+┃         ┃                   ┃  Start   ┃ Sta… ┃ Sta… ┃    Max   ┃ Max  ┃ Max  ┃    End   ┃ End  ┃ End  ┃         ┃
+┃  Date   ┃     Satellite     ┃   Time   ┃   El ┃   Az ┃   Time   ┃  El  ┃  Az  ┃   Time   ┃  El  ┃  Az  ┃  Type   ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━┩
+│ 2/02/22 │ 25544 ISS (ZARYA) │ 19:56:06 │  10° │  NNW │ 19:59:14 │  37° │   NE │ 20:02:22 │  10° │  ESE │ visible │
+│ 2/03/22 │ 25544 ISS (ZARYA) │ 19:08:22 │  10° │  NNW │ 19:10:59 │  21° │   NE │ 19:13:37 │  10° │    E │ visible │
+│ 2/04/22 │ 25544 ISS (ZARYA) │ 19:56:23 │  10° │   NW │ 19:59:36 │  50° │   SW │ 20:02:51 │  10° │  SSE │ visible │
+│ 2/05/22 │ 25544 ISS (ZARYA) │ 19:08:09 │  10° │   NW │ 19:11:28 │  73° │   NE │ 19:14:46 │  10° │   SE │ visible │
+│ 2/06/22 │ 25544 ISS (ZARYA) │ 19:58:00 │  10° │    W │ 19:59:42 │  13° │   SW │ 20:01:27 │  10° │  SSW │ visible │
+│ 2/07/22 │ 25544 ISS (ZARYA) │ 19:08:49 │  10° │  WNW │ 19:11:39 │  26° │   SW │ 19:14:29 │  10° │    S │ visible │
+└─────────┴───────────────────┴──────────┴──────┴──────┴──────────┴──────┴──────┴──────────┴──────┴──────┴─────────┘
 ```
 
+
+Use geocoding to designate a location and find overpasses for all satellites on Celestrak's visual satellite list. Compute visual passes for 1 day.
+
+- Location: "Austin, Texas"
+- Satellites: https://celestrak.com/NORAD/elements/visual.txt
+- Visual passes only
+- Compute passes for 1 day
+
+```
+$ passpredict --location "Austin, Texas" --category visual --days 1
+Computing overpasses for 163 satellites over 1 days...
+for Austin, Travis County, Texas, 78701, United States
+Lat=30.2711°, Lon=-97.7437°, Timezone America/Chicago
+
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┓
+┃         ┃                          ┃  Start   ┃ Sta… ┃ Sta… ┃    Max   ┃ Max  ┃ Max  ┃    End   ┃ End  ┃ End  ┃         ┃
+┃  Date   ┃        Satellite         ┃   Time   ┃   El ┃   Az ┃   Time   ┃  El  ┃  Az  ┃   Time   ┃  El  ┃  Az  ┃  Type   ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━┩
+│ 1/30/22 │ 15354 ERBS               │ 18:26:34 │  10° │  WSW │ 18:29:28 │  33° │   NW │ 18:32:24 │  10° │  NNE │ visible │
+│ 1/30/22 │ 694 ATLAS CENTAUR 2      │ 18:27:28 │  10° │  WSW │ 18:30:13 │  11° │   SW │ 18:32:52 │  10° │  SSW │ visible │
+│ 1/30/22 │ 13552 COSMOS 1408        │ 18:29:20 │  10° │   SE │ 18:32:06 │  20° │    E │ 18:34:55 │  10° │   NE │ visible │
+│ 1/30/22 │ 19046 SL-3 R/B           │ 18:32:35 │  10° │  SSW │ 18:35:48 │  25° │    W │ 18:39:04 │  10° │   NW │ visible │
+│ 1/30/22 │ 5730 SL-8 R/B            │ 18:32:38 │  10° │   SW │ 18:37:48 │  43° │  WNW │ 18:44:29 │  10° │    N │ visible │
+│ 1/30/22 │ 43600 AEOLUS             │ 18:35:43 │  10° │  SSW │ 18:37:46 │  22° │    W │ 18:39:52 │  10° │   NW │ visible │
+│ 1/30/22 │ 14032 COSMOS 1455        │ 18:38:17 │  10° │   NW │ 18:41:10 │  21° │    W │ 18:44:03 │  10° │   SW │ visible │
+│ 1/30/22 │ 28932 H-2A R/B           │ 18:38:46 │  10° │    E │ 18:40:21 │  11° │  ENE │ 18:41:56 │  10° │   NE │ visible │
+│ 1/30/22 │ 16182 SL-16 R/B          │ 18:42:16 │  10° │  ESE │ 18:43:35 │  10° │    E │ 18:44:56 │  10° │    E │ visible │
+│ 1/30/22 │ 16792 SL-14 R/B          │ 18:42:17 │  10° │   SE │ 18:45:20 │  18° │    E │ 18:48:24 │  10° │   NE │ visible │
+│ 1/30/22 │ 48274 TIANHE             │ 18:42:45 │  10° │   NW │ 18:44:47 │  15° │  NNW │ 18:46:51 │  10° │  NNE │ visible │
+│ 1/30/22 │ 25977 HELIOS 1B          │ 18:43:24 │  10° │  NNE │ 18:47:43 │  88° │  ENE │ 18:52:03 │  10° │  SSW │ visible │
+
+...
+```
+
+
+Compute all overpasses for amateur radio satellites for 1 day
+
+- Location: "Austin, Texas"
+- Satellites: https://celestrak.com/NORAD/elements/amateur.txt
+- All pass types
+- Compute passes for 1 day
+
+```
+$ passpredict --location "Austin, Texas" --category amateur --days 1 --all
+Computing overpasses for 90 satellites over 1 days...
+for Austin, Travis County, Texas, 78701, United States
+Lat=30.2711°, Lon=-97.7437°, Timezone America/Chicago
+
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━━┓
+┃         ┃                                ┃  Start   ┃ Sta… ┃ Sta… ┃    Max   ┃ Max  ┃ Max  ┃    End   ┃ End  ┃ End  ┃          ┃
+┃  Date   ┃           Satellite            ┃   Time   ┃   El ┃   Az ┃   Time   ┃  El  ┃  Az  ┃   Time   ┃  El  ┃  Az  ┃   Type   ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━━┩
+│ 1/30/22 │ 43880 UWE-4                    │ 10:59:40 │  10° │   SE │ 11:03:22 │  36° │  ENE │ 11:07:07 │  10° │    N │ daylight │
+│ 1/30/22 │ 44854 DUCHIFAT-3               │ 11:03:03 │  10° │  WNW │ 11:06:55 │  32° │    N │ 11:10:48 │  10° │  ENE │ daylight │
+│ 1/30/22 │ 43786 ITASAT 1                 │ 11:04:01 │  10° │    N │ 11:08:05 │  59° │  WNW │ 11:12:10 │  10° │  SSW │ daylight │
+│ 1/30/22 │ 41847 CAS-2T & KS-1Q           │ 11:05:22 │  10° │    N │ 11:10:48 │  38° │  WNW │ 11:15:39 │  10° │   SW │ daylight │
+│ 1/30/22 │ 43137 FOX-1D (AO-92)           │ 11:20:27 │  10° │    N │ 11:23:59 │  71° │  WNW │ 11:27:31 │  10° │  SSW │ daylight │
+│ 1/30/22 │ 43017 RADFXSAT (FOX-1B)        │ 11:31:26 │  10° │  SSW │ 11:35:21 │  30° │    W │ 11:39:40 │  10° │   NW │ daylight │
+│ 1/30/22 │ 46839 BY70-3                   │ 11:38:01 │  10° │  NNW │ 11:40:55 │  26° │  WNW │ 11:43:49 │  10° │   SW │ daylight │
+│ 1/30/22 │ 42017 NAYIF-1 (EO-88)          │ 11:38:05 │  10° │   NW │ 11:39:56 │  13° │  WNW │ 11:41:48 │  10° │  WSW │ daylight │
+│ 1/30/22 │ 39134 SOMP                     │ 11:46:15 │  10° │  NNE │ 11:48:14 │  13° │   NE │ 11:50:12 │  10° │    E │ daylight │
+│ 1/30/22 │ 44909 RS-44 & BREEZE-KM R/B    │ 11:59:02 │  10° │   SE │ 12:04:24 │  19° │    E │ 12:10:00 │  10° │   NE │ daylight │
+│ 1/30/22 │ 50466 XW-3 (CAS-9)             │ 11:59:32 │  10° │    N │ 12:04:00 │  32° │  WNW │ 12:08:28 │  10° │   SW │ daylight │
+│ 1/30/22 │ 47963 DIY-1 (ARDUIQUBE)        │ 12:09:51 │  10° │  WSW │ 12:11:40 │  12° │    W │ 12:13:31 │  10° │  WNW │ daylight │
+│ 1/30/22 │ 45857 BY70-2                   │ 12:10:17 │  10° │  NNW │ 12:13:44 │  23° │  WNW │ 12:17:11 │  10° │  WSW │ daylight │
+│ 1/30/22 │ 32953 YUBILEINY (RS-30)        │ 12:14:52 │  10° │    W │ 12:16:44 │  10° │  WNW │ 12:18:39 │  10° │   NW │ daylight │
+
+...
+```
+
+Compute all overpasses for two satellites over two days. Display summary table of results.
+
+- Location: "Austin, Texas"
+- Satellites: International Space Staion (25544), Hubble Space Telescope (20580)
+- All overpass types
+- 2 days
+- Display summary table of results
+
+```
+$ passpredict --location "Austin, Texas" --satid 25544 --satid 20580 --days 2 --all --summary
+Computing overpasses for 2 satellites over 2 days...
+for Austin, Travis County, Texas, 78701, United States
+Lat=30.2711°, Lon=-97.7437°, Timezone America/Chicago
+
+┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┓
+┃      Date      ┃     Satellite     ┃ Duration ┃ Max Elev ┃   Type   ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━┩
+│ 1/30/22  12:35 │ 25544 ISS (ZARYA) │     4:58 │      19° │ daylight │
+│ 1/30/22  14:11 │ 25544 ISS (ZARYA) │     5:40 │      25° │ daylight │
+│ 1/30/22  18:50 │ 20580 HST         │     6:52 │      25° │ visible  │
+│ 1/30/22  20:30 │ 20580 HST         │     8:05 │      58° │ visible  │
+│ 1/30/22  20:44 │ 25544 ISS (ZARYA) │     5:16 │      21° │  unlit   │
+│ 1/30/22  22:11 │ 20580 HST         │     8:10 │      66° │  unlit   │
+│ 1/30/22  22:21 │ 25544 ISS (ZARYA) │     5:34 │      24° │  unlit   │
+│ 1/30/22  23:53 │ 20580 HST         │     7:34 │      35° │  unlit   │
+│ 1/31/22  01:36 │ 20580 HST         │     3:07 │      11° │  unlit   │
+│ 1/31/22  13:22 │ 25544 ISS (ZARYA) │     6:27 │      47° │ daylight │
+│ 1/31/22  18:39 │ 20580 HST         │     7:17 │      30° │ visible  │
+│ 1/31/22  19:57 │ 25544 ISS (ZARYA) │     3:18 │      13° │  unlit   │
+│ 1/31/22  20:19 │ 20580 HST         │     8:08 │      63° │ visible  │
+│ 1/31/22  21:32 │ 25544 ISS (ZARYA) │     6:29 │      51° │  unlit   │
+│ 1/31/22  22:00 │ 20580 HST         │     8:08 │      62° │  unlit   │
+│ 1/31/22  23:42 │ 20580 HST         │     7:15 │      30° │  unlit   │
+└────────────────┴───────────────────┴──────────┴──────────┴──────────┘
+```

@@ -1,10 +1,12 @@
 import datetime
 
 import pytest
+import click
 from click.testing import CliRunner
 
 from passpredict import cli
 from passpredict import Location, SGP4Predictor, Observer, TLE
+from passpredict.exceptions import CelestrakError
 
 
 
@@ -26,29 +28,39 @@ def tle():
 
 
 @pytest.fixture(scope="module")
-def satellite(tle):
+def overpasses(location, tle):
     """
     List of generated overpasses for cli table output testing
     """
-    return SGP4Predictor.from_tle(tle)
-
-
-@pytest.fixture(scope="module")
-def overpasses(location, satellite):
-    """
-    List of generated overpasses for cli table output testing
-    """
+    satellite = SGP4Predictor.from_tle(tle)
     observer = Observer(location, satellite)
     start = datetime.datetime(2022, 1, 27)
     end = start + datetime.timedelta(days=4)
     passes = list(observer.iter_passes(start, end))
     return passes
 
-
-def test_cli():
+@pytest.mark.parametrize('options_string',[
+    pytest.param('-s 25544 --location="austin, texas"', id="one sat, geocode location"),
+    pytest.param('-s 25544 -lat 30.1234 -lon -98.134', id="one sat, location coordinates"),
+    pytest.param('--category visual --location="austin, texas" -d 1', id='sat category'),
+    pytest.param('-s 25544 -s 20580 -s 27386 --location="austin, texas" -d 3', id="multi sat"),
+])
+def test_cli(options_string):
     runner = CliRunner()
-    result = runner.invoke(cli.main,'-s 25544 --location="austin, texas"')
+    result = runner.invoke(cli.main, options_string)
     assert result.exit_code == 0
+
+
+def test_cli_fake_category():
+    runner = CliRunner()
+    result = runner.invoke(cli.main, '--category fake --location="austin, texas" -d 1', catch_exceptions=True)
+    assert result.exit_code != 0
+
+
+def test_cli_fake_satid():
+    runner = CliRunner()
+    result = runner.invoke(cli.main, '-s 9999999 --location="austin, texas" -d 1', catch_exceptions=True)
+    assert result.exit_code != 0
 
 
 @pytest.mark.parametrize('twelve', (
@@ -56,14 +68,14 @@ def test_cli():
     pytest.param(False, id='24hour'),
 ))
 class TestCliTable:
-    def test_cli_summary_table(self, location, satellite, tle, overpasses, twelve):
-        manager = cli.PasspredictManager(location, satellite, tle,
+    def test_cli_summary_table(self, location, tle, overpasses, twelve):
+        manager = cli.PasspredictManager(location, tle,
             twelvehour=twelve, summary=True
         )
         manager.make_summary_table(overpasses)
 
-    def test_cli_detail_table(self, location, satellite, tle, overpasses, twelve):
-        manager = cli.PasspredictManager(location, satellite, tle,
+    def test_cli_detail_table(self, location, tle, overpasses, twelve):
+        manager = cli.PasspredictManager(location, tle,
             twelvehour=twelve, summary=False
         )
         manager.make_detail_table(overpasses)
@@ -78,3 +90,16 @@ class TestCliTable:
 def test_get_min_sec_string(nsec, expected_str):
     s = cli.get_min_sec_string(nsec)
     assert s == expected_str
+
+
+@pytest.mark.parametrize('tles, res', [
+    pytest.param([TLE(123, ('123', '123'))], True, id='list of one'),
+    pytest.param([TLE(123, ('123', '123')), TLE(456, ('456', '456'))], True, id='list of two'),
+    pytest.param((TLE(123, ('123', '123')), TLE(456, ('456', '456'))), True, id='tuple of two'),
+    pytest.param((TLE(123, ('123', '123')),), True, id='tuple of one'),
+    pytest.param({TLE(123, ('123', '123')), TLE(456, ('456', '456'))}, True, id='set of two'),
+    pytest.param(TLE(123, ('123', '123')), False, id='single TLE'),
+    pytest.param('blahblah', False, id='string, not TLE'),
+])
+def test_is_tle_sequence(tles, res):
+    assert cli.is_tle_sequence(tles) == res

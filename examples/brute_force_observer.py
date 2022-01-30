@@ -30,7 +30,6 @@ def brute_force_observer():
     overpasses = list(pass_iterator)
     manager = PasspredictManager(
         location,
-        satellite,
         tle,
         twelvehour=False,
         quiet=False,

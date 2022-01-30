@@ -1,7 +1,7 @@
 import datetime
-from zoneinfo import ZoneInfo
 
 from passpredict import CelestrakTLESource, Location, SGP4Predictor, Observer
+from passpredict.zoneinfo import ZoneInfo
 
 
 def celestrak_source():

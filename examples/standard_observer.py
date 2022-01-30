@@ -20,15 +20,15 @@ def standard_observer():
         (
             '1 25544U 98067A   21274.89460679  .00005555  00000-0  10931-3 0  9992',
             '2 25544  51.6449 175.1112 0004190  48.8354  53.9444 15.48895782305133'
-        )
+        ),
+        name='ISS',
     )
     satellite = SGP4Predictor.from_tle(tle)
     observer = Observer(location, satellite, aos_at_dg=min_elevation, tolerance_s=0.5)
-    pass_iterator =  observer.iter_passes(date_start, limit_date=date_end)
+    pass_iterator = observer.iter_passes(date_start, limit_date=date_end)
     overpasses = list(pass_iterator)
     manager = PasspredictManager(
         location,
-        satellite,
         tle,
         twelvehour=False,
         quiet=False,
@@ -38,7 +38,7 @@ def standard_observer():
     )
     console = Console()
     console.print(manager.make_results_header())
-    console.print(manager.overpass_table(overpasses))    
+    console.print(manager.overpass_table(overpasses))
     return
 
 

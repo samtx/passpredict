@@ -1,5 +1,4 @@
 from functools import cached_property
-from zoneinfo import ZoneInfo
 from datetime import datetime, timezone as py_timezone
 from math import radians
 
@@ -7,6 +6,7 @@ import numpy as np
 from orbit_predictor.locations import Location as LocationBase
 from orbit_predictor import coordinate_systems
 
+from .zoneinfo import ZoneInfo
 from .utils import get_timezone_from_latlon
 from .time import julian_date_from_datetime
 from .solar import sun_pos

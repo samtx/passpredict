@@ -1,3 +1,6 @@
+# Jupyter Notebooks
+*.ipynb
+
 # Cython C/Cpp files
 passpredict/_*.c
 passpredict/_*.cpp

@@ -8,7 +8,6 @@ from itertools import zip_longest
 
 import httpx
 import numpy as np
-from pydantic import BaseModel, Field
 
 from passpredict._time import epoch_to_jd, jday2datetime_us
 
@@ -47,6 +46,9 @@ class TLE(NamedTuple):
 
     def dict(self):
         return self._asdict()
+
+    def __repr__(self):
+        return f"<TLE satid={self.satid} epoch={self.epoch}>"
 
 
 def jd_to_epoch_string(jd: float) -> str:

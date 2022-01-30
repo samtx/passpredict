@@ -1,10 +1,11 @@
 from typing import NamedTuple
 import datetime
-from zoneinfo import ZoneInfo
 from functools import lru_cache
 from itertools import zip_longest
 
 from timezonefinder import TimezoneFinder
+
+from .zoneinfo import ZoneInfo
 
 
 tf = TimezoneFinder()
