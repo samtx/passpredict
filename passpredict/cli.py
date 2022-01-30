@@ -204,7 +204,7 @@ class PasspredictManager:
             else:
                 time = date.strftime("%H:%M")
                 row.append(f"{day}  {time}")
-            row.append(self.sat_name_idx[overpass.satid])
+            row.append(f"{overpass.satid} {self.sat_name_idx[overpass.satid]}")
             row.append(get_min_sec_string(overpass.duration))
             row.append(f"{int(overpass.tca.elevation):2}\u00B0")
             if overpass.type:
