@@ -1,3 +1,6 @@
+[project]
+requires-python = ">=3.8"
+
 [build-system]
 requires = [
     "setuptools",
@@ -20,3 +23,23 @@ markers = [
 source = [
     "passpredict"
 ]
+
+[tool.cibuildwheel]
+build = "cp38-* cp39-* cp310-*"
+skip = "*-musllinux_*"
+build-verbosity = ""
+before-test = [
+    "rm -r {project}/passpredict"
+]
+test-extras = "dev"
+test-command = "pytest {project}/tests"
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64"]
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64"]
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
+test-requires = "tzdata pytest numpy click"

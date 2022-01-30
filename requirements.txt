@@ -3,8 +3,8 @@ numpy>=1.22,<1.23
 scipy>=1.7.3
 Cython>=0.29.24
 orbit-predictor
-pydantic
 click
 rich
 httpx
 timezonefinder
+backports.zoneinfo;python_version<"3.9"

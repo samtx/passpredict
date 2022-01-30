@@ -86,7 +86,6 @@ class Observer(ObserverBase):
 
     def _build_predicted_pass(self, basic_pass: BasicPassInfo):
         """Returns a classic predicted pass"""
-        type_ = basic_pass.type
         data = defaultdict()
         data.update({
             'satid': self.predictor.satid,
@@ -150,7 +149,6 @@ class Observer(ObserverBase):
             return BasicPassInfo(aos_dt, tca_dt, los_dt, elevation)
         # Find visual pass details
         # First, get endpoints of when location is not sunlit
-        # Use cubic splines to find sun elevation
         jd0 = sum(julian_date_from_datetime(aos_dt))
         jdf = sum(julian_date_from_datetime(los_dt))
         jd = np.linspace(jd0, jdf, 5)  # use 5 points for spline
@@ -171,16 +169,6 @@ class Observer(ObserverBase):
                 jd0 = x
             else:
                 jdf = x
-        # sun_el = CubicSpline(jd, el, bc_type='natural')
-        # for root in sun_el.roots(extrapolate=False):
-        #     tmp1 = sun_el(root - self.jd_tol)
-        #     tmp2 = sun_el(root + self.jd_tol)
-        #     if tmp1 < tmp2:
-        #         # sun elevation is decreasing
-        #         jd0 = root
-        #     else:
-        #         jdf = root
-
 
         # Now use jd0 and jdf to find when satellite is illuminated by sun
         jd = np.linspace(jd0, jdf, 5)  # use 5 points for spline

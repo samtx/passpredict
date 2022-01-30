@@ -34,13 +34,14 @@ extensions = [
         **common_kw
     ),
 ]
+meta = dict()
 
 # Get long description
 with open("README.md", encoding="utf-8") as f:
     long_description = f.read()
+meta['long_description'] = long_description
 
 # Get version number
-meta = dict()
 with open("passpredict/__init__.py", encoding="utf-8") as f:
     for line in f.readlines():
         line = line.strip()
@@ -57,17 +58,17 @@ setup(
         'passpredict.observers',
         'passpredict.satellites',
     ],
-    python_requires=">=3.9",
+    python_requires=">=3.8",
     install_requires=[
         'sgp4>=2.12',
         'numpy>=1.22',
         'scipy>=1.7.3',
         'orbit-predictor',
-        'pydantic',
         'click',
         'rich',
         'httpx',
         'timezonefinder',
+        'backports.zoneinfo;python_version<"3.9"'
     ],
     extras_require={
         'dev': [

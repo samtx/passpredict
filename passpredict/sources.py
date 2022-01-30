@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import datetime
 import copy
-from typing import Union, TYPE_CHECKING
+from typing import Union, TYPE_CHECKING, List
 from pathlib import Path
 from collections import defaultdict
 
@@ -12,6 +12,7 @@ import httpx
 from .satellites import SatellitePredictor
 from .base import TLESource
 from .caches import JsonCache
+from .exceptions import CelestrakError
 from .tle import TLE
 from .utils import grouper
 
@@ -98,7 +99,7 @@ class CelestrakTLESource(TLESource):
         """
         return super().add_tle(satid, tle, epoch)
 
-    def get_tle(self, satid: int):
+    def get_tle(self, satid: int) -> TLE:
         """
         Query TLE from cache. If not found in cache, then query Celestrak url
         """
@@ -107,20 +108,61 @@ class CelestrakTLESource(TLESource):
         if res:
             tle = TLE(res['satid'], res['lines'], name=res.get('name', ''))
         else:
-            tle = self._query_tles_from_celestrak(satid)
+            tle = self._query_tle_from_celestrak(satid)
             self.cache.set(key, tle.dict(), ttl=86400)
         return tle
 
-    def _query_tles_from_celestrak(self, satid: int = None):
+    def get_tle_category(self, category: str) -> List[TLE]:
+        """
+        Query TLE from cache. If not found in cache, then query Celestrak url
+        """
+        # first, get list of satellite IDs for category
+        key = f"tlecategory:{category}"
+        res = self.cache.get(key)
+        if res:
+            satids = res
+            tles = []
+            for satid in satids:
+                tle = self.get_tle(satid)
+                tles.append(tle)
+        else:
+            tles = self._query_tle_category_from_celestrak(category)
+            satid_list = [t.satid for t in tles]
+            self.cache.set(key, satid_list, ttl=86400)
+            for tle in tles:
+                self.cache.set(f"tle:{tle.satid}", tle.dict(), ttl=86460)
+        return tles
+
+    def _query_tle_from_celestrak(self, satid: int = None):
         """
         Download current TLEs from Celestrak and save them to a JSON file
         """
         url = 'https://celestrak.com/satcat/tle.php'
         params = {'CATNR': satid}
         r = httpx.get(url, params=params)
+        if r.text.lower() == "no tle found" or r.status_code >= 300:
+            raise CelestrakError(f'Celestrak TLE for satellite {satid} not found')
         tle_strings = r.text.splitlines()
         tle = self._parse_tle(tle_strings)
         return tle
+
+    def _query_tle_category_from_celestrak(self, category: str) -> List[TLE]:
+        """
+        Download current TLEs from Celestrak and save them to a JSON file
+
+        Enter Celestrak category string.
+        Eg. visual, stations, tle-new, weather, noaa, oneweb, starlink
+        """
+        url = f'https://celestrak.com/NORAD/elements/{category}.txt'
+        r = httpx.get(url)
+        if not r.text or r.status_code >= 300:
+            raise CelestrakError(f'Celestrak TLEs for {category}.txt not found')
+        tles = []
+        tle_strings = r.text.splitlines()
+        for raw_tle in grouper(tle_strings, 3):
+            tle = self._parse_tle(raw_tle)
+            tles.append(tle)
+        return tles
 
     def _parse_tle(self, tle_strings):
         """

@@ -9,30 +9,24 @@ sys.path.append(example_dir)
 
 from examples import *
 
+"""
+Make sure examples don't error
+"""
 
 def test_brute_force_observer():
-    """
-    Make sure example doesn't error
-    """
     brute_force_observer()
 
 
 def test_vallado_predict_11_6():
-    """
-    Make sure example doesn't error
-    """
     vallado_predict_11_6()
 
 
 def test_standard_observer():
-    """
-    Make sure example doesn't error
-    """
     standard_observer()
 
 
 def test_celestrak_source():
-    """
-    Make sure example doesn't error
-    """
     celestrak_source()
+
+def test_all_visual_satellites():
+    all_visual_satellites()
