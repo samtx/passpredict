@@ -31,6 +31,12 @@ def assert_passpoint_approx(pt1, pt2, *, dt_tol=1, el_tol=1, az_tol=10, range_to
     #     assert pt1.brightness == approx(pt2.brightness, abs=bright_tol)
 
 
+def assert_sun_elevation_at_date(location, dt, el, tol=0.1):
+    """
+    Compare the sun elevation at the location
+    """
+    assert location.sun_elevation(dt.astimezone(timezone.utc)) == approx(el, abs=tol)
+
 def test_heavens_above_zurich_iss_visibility_predictions():
     """
     From heavens-above.com. Queried 1/21/2022
@@ -188,7 +194,7 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
             elevation=10,
             brightness=6.0
         )
-        # aos_pt.sun_elevation = -5.9
+        assert_sun_elevation_at_date(self.location, aos_pt.dt, -6.4)  # aos_pt.sun_elevation = -6.4
         tca_pt = PassPoint(
             dt=datetime(2022, 1, 31, 18, 42, 3, tzinfo=TZ),
             range=891,
@@ -196,7 +202,7 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
             elevation=34,
             brightness=1.9
         )
-        # tca_pt.sun_elevation = -7.2
+        assert_sun_elevation_at_date(self.location, tca_pt.dt, -7.2)  # tca_pt.sun_elevation = -7.2
         los_pt = PassPoint(
             dt=datetime(2022, 1, 31, 18, 45, 46, tzinfo=TZ),
             range=1775,
@@ -204,7 +210,7 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
             elevation=10,
             brightness=2.8
         )
-        # los_pt.sun_elevation = -8.0
+        assert_sun_elevation_at_date(self.location, los_pt.dt, -8.0)  # los_pt.sun_elevation = -8.0
         vis_end_pt = PassPoint(
             dt=datetime(2022, 1, 31, 18, 46, 3, tzinfo=TZ),
             range=1876,
@@ -212,7 +218,7 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
             elevation=9,
             brightness=2.9
         )
-        # vis_end_pt.sun_elevation = -8.0
+        assert_sun_elevation_at_date(self.location, vis_end_pt.dt, -8.0)   # vis_end_pt.sun_elevation = -8.0
 
         # Find next pass
         pass_ = self.observer.get_next_pass(start, visible_only=True)
@@ -229,6 +235,177 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
         assert_passpoint_approx(pass_.vis_end, los_pt, **tol)
         assert pass_.type == Visibility.visible
 
+
+class TestHeavensAboveCapeTownEnvisatVisibilty:
+
+    @classmethod
+    def setup_class(cls):
+        cls.location = Location("Cape Town, South Africa", -33.9290, 18.4174, 0)
+        tle_lines = (
+            "1 27386U 02009A   22030.56291447  .00000091  00000-0  43706-4 0  9996",
+            "2 27386  98.1695  18.2467 0001188  87.4527  20.8530 14.38072512 43711"
+        )
+        tle = TLE(27386, tle_lines, name="Envisat")
+        cls.satellite = SGP4Predictor.from_tle(tle)
+        cls.satellite.intrinsic_mag = 3.7
+        cls.observer = Observer(cls.location, cls.satellite, aos_at_dg=10, tolerance_s=0.5, sunrise_dg=-2)
+
+    def test_visibile_overpasses(self):
+        """
+        From heavens-above.com. Queried 1/30/2022
+        Location: Cape Town, South Africa
+        Satellite: Envisat, ID 27386
+
+        Search period start:	31 January 2022 00:00
+        Search period end:	8 February 2022 00:00
+        Orbit:	764 x 766 km, 98.2° (Epoch: 30 January)
+
+        """
+        HEAVENS_ABOVE_PREDICTIONS = """
+        Date	Brightness	Start	Highest point	End	Pass type
+        (mag)	Time	Alt.	Az.	Time	Alt.	Az.	Time	Alt.	Az.
+        31 Jan	5.8	03:39:46	10°	ENE	03:42:47	16°	ESE	03:45:49	10°	SSE	visible
+        31 Jan	3.2	05:16:21	10°	N	05:21:17	52°	W	05:26:19	10°	SSW	visible
+        01 Feb	3.4	04:39:24	10°	NNE	04:44:26	66°	ESE	04:49:33	10°	S	visible
+        02 Feb	5.0	04:03:30	10°	NE	04:07:47	28°	ESE	04:12:07	10°	SSE	visible
+        02 Feb	3.9	05:42:19	10°	NNW	05:46:40	28°	W	05:51:03	10°	SW	visible
+        03 Feb	6.0	03:29:20	10°	E	03:31:19	12°	ESE	03:33:19	10°	SE	visible
+        03 Feb	3.0	05:04:37	10°	N	05:09:41	68°	W	05:14:49	10°	SSW	visible
+        04 Feb	3.9	04:27:58	10°	NNE	04:32:53	50°	ESE	04:37:51	10°	S	visible
+        05 Feb	5.4	03:52:27	10°	ENE	03:56:17	22°	ESE	04:00:10	10°	SSE	visible
+        05 Feb	3.6	05:30:20	10°	NNW	05:35:01	36°	W	05:39:45	10°	SSW	visible
+        06 Feb	3.0	04:52:59	10°	NNE	04:58:05	88°	WNW	05:03:15	10°	SSW	visible
+        07 Feb	4.4	04:16:39	10°	NE	04:21:21	39°	ESE	04:26:06	10°	S	visible"""  # NOQA
+
+        TZ = self.location.timezone
+        UTC = timezone.utc
+        start = datetime(2022, 1, 31, 3, tzinfo=TZ)
+        end = datetime(2022, 2, 8, tzinfo=TZ)
+        date = start
+        for line in HEAVENS_ABOVE_PREDICTIONS.splitlines()[3:]:
+            line_parts = line.split('\t')
+            date_str = f"2022 {line_parts[0]}"
+            # brightness = float(line_parts[1])
+            vis_begin = datetime.strptime(f"{date_str} {line_parts[2]}+0200", "%Y %d %b %H:%M:%S%z")
+            tca = datetime.strptime(f"{date_str} {line_parts[5]}+0200", "%Y %d %b %H:%M:%S%z")
+            vis_end = datetime.strptime(f"{date_str} {line_parts[8]}+0200", "%Y %d %b %H:%M:%S%z")
+
+            # Find next pass
+            pass_ = self.observer.get_next_pass(date, limit_date=end, visible_only=True)
+            assert_datetime_approx(pass_.vis_begin.dt, vis_begin, 1.5)
+            assert_datetime_approx(pass_.vis_end.dt, vis_end, 1.5)
+            assert_datetime_approx(pass_.vis_tca.dt, tca, 1.5)
+            assert isinstance(pass_.brightness, float)
+            assert pass_.type == Visibility.visible
+            # assert pass_.brightness == approx(brightness, abs=3)  # this is very inaccurate
+            date = pass_.los.dt + timedelta(minutes=10)
+
+
+    def test_visibility_one_overpass_Feb_06_2022_0450(self):
+        HEAVENS_ABOVE_PREDICTIONS = """
+        Date:	06 February 2022
+        Orbit:	764 x 766 km, 98.2° (Epoch: 30 January)
+        Event	Time	Altitude	Azimuth	Distance (km)	Brightness	Sun altitude
+        Rises	04:50:42	0°	13° (NNE)	3,219	6.0	-16.1°
+        Reaches altitude 10°	04:52:59	10°	13° (NNE)	2,301	5.3	-15.7°
+        Maximum altitude	04:58:05	88°	284° (WNW)	779	3.0	-14.8°
+        Drops below altitude 10°	05:03:15	10°	193° (SSW)	2,332	5.7	-13.9°
+        Sets	05:05:34	0°	192° (SSW)	3,266	6.5	-13.5°"""
+        TZ = self.location.timezone
+        UTC = timezone.utc
+        start = datetime(2022, 2, 6, 0, 0, 0, tzinfo=TZ).astimezone(UTC)
+
+        aos_pt = PassPoint(
+            dt=datetime(2022, 2, 6, 4, 52, 59, tzinfo=TZ),
+            range=2301,
+            azimuth=13,
+            elevation=10,
+            brightness=5.3
+        )
+        assert_sun_elevation_at_date(self.location, aos_pt.dt, -15.7, 0.1)  # sun_elevation = -15.7
+        tca_pt = PassPoint(
+            dt=datetime(2022, 2, 6, 4, 58, 5, tzinfo=TZ),
+            range=779,
+            azimuth=284,
+            elevation=88,
+            brightness=3.0
+        )
+        assert_sun_elevation_at_date(self.location, tca_pt.dt, -14.8)   # tca_pt.sun_elevation = -14.8
+        los_pt = PassPoint(
+            dt=datetime(2022, 2, 6, 5, 3, 15, tzinfo=TZ),
+            range=2332,
+            azimuth=193,
+            elevation=10,
+            brightness=5.7
+        )
+        assert_sun_elevation_at_date(self.location, los_pt.dt, -13.9)  # los_pt.sun_elevation = -13.9
+
+        # Find next pass
+        pass_ = self.observer.get_next_pass(start, visible_only=True)
+        tol = {
+            'dt_tol': 1.5,
+            'el_tol': 1,
+            'az_tol': 10,
+            'range_tol': 10,
+            'bright_tol': 3,
+        }
+        assert_passpoint_approx(pass_.vis_begin, aos_pt, **tol)
+        assert_passpoint_approx(pass_.vis_tca, tca_pt, **tol)
+        assert_passpoint_approx(pass_.vis_end, los_pt, **tol)
+        assert pass_.type == Visibility.visible
+
+    def test_visibility_one_overpass_Feb_02_2022_0539(self):
+        """
+        Date:	02 February 2022
+        Orbit:	764 x 766 km, 98.2° (Epoch: 30 January)
+        Event	Time	Altitude	Azimuth	Distance (km)	Brightness	Sun altitude
+        Rises	05:39:45	0°	347° (NNW)	3,219	5.9	-6.4°
+        Reaches altitude 10°	05:42:20	10°	335° (NNW)	2,302	5.0	-5.9°
+        Maximum altitude	05:46:40	28°	276° (W)	1,419	3.9	-5.1°
+        Drops below altitude 10°	05:51:03	10°	218° (SW)	2,329	5.4	-4.2°
+        Sets	05:53:41	0°	206° (SSW)	3,264	6.2	-3.7°"""
+        TZ = self.location.timezone
+        UTC = timezone.utc
+        start = datetime(2022, 2, 2, 4, 30, 0, tzinfo=TZ)  # just after a previous pass
+
+        aos_pt = PassPoint(
+            dt=datetime(2022, 2, 2, 5, 42, 20, tzinfo=TZ),
+            range=2302,
+            azimuth=335,
+            elevation=10,
+            brightness=5.0
+        )
+        assert_sun_elevation_at_date(self.location, aos_pt.dt, -5.9)  # aos_pt.sun_elevation = -5.9
+        tca_pt = PassPoint(
+            dt=datetime(2022, 2, 2, 5, 46, 40, tzinfo=TZ),
+            range=1419,
+            azimuth=276,
+            elevation=28,
+            brightness=3.9
+        )
+        assert_sun_elevation_at_date(self.location, tca_pt.dt, -5.1)  # tca_pt.sun_elevation = -5.1
+        los_pt = PassPoint(
+            dt=datetime(2022, 2, 2, 5, 51, 3, tzinfo=TZ),
+            range=2329,
+            azimuth=218,
+            elevation=10,
+            brightness=5.4
+        )
+        assert_sun_elevation_at_date(self.location, los_pt.dt, -4.2)  # los_pt.sun_elevation = -4.2
+
+        # Find next pass
+        pass_ = self.observer.get_next_pass(start, visible_only=True)
+        tol = {
+            'dt_tol': 1.5,
+            'el_tol': 1,
+            'az_tol': 10,
+            'range_tol': 10,
+            'bright_tol': 3,
+        }
+        assert_passpoint_approx(pass_.vis_begin, aos_pt, **tol)
+        assert_passpoint_approx(pass_.vis_tca, tca_pt, **tol)
+        assert_passpoint_approx(pass_.vis_end, los_pt, **tol)
+        assert pass_.type == Visibility.visible
 
 
 if __name__ == "__main__":
