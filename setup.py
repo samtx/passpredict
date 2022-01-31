@@ -77,6 +77,9 @@ setup(
             'pytest-html',
             'pytest-cov',
             'flake8',
+        ],
+        'docs': [
+            'mkdocs-material',
         ]
     },
     package_data={
@@ -87,7 +90,7 @@ setup(
     author="Sam Friedman",
     author_email=None,
     description="Predict upcoming satellite overpasses",
-    long_description=long_description,
+    long_description=meta['long_description'],
     long_description_content_type="text/markdown",
     keywords="iss predict orbit sgp4 satellite",
     url="https://www.github.com/samtx/passpredict",   # project home page, if any

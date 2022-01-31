@@ -1,6 +1,0 @@
-# Development Requirements
--r requirements.txt
-pytest>=6.2.5
-pytest-cov
-pytest-html
-flake8
