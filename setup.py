@@ -8,9 +8,9 @@ import numpy as np
 common_kw = {
     'extra_link_args': ['--verbose'],
     'include_dirs': [
-        'passpredict',
-        'passpredict/sgp4',
-        'passpredict/sofa',
+        'src/passpredict',
+        'src/passpredict/sgp4',
+        'src/passpredict/sofa',
         np.get_include()
     ],
     'extra_compile_args': ['-O2'],
@@ -20,16 +20,16 @@ common_kw = {
 
 extensions = [
     Extension("passpredict._time",
-        ['passpredict/_time.pyx'] + sorted(glob.glob('passpredict/sgp4/*.cpp')),
+        ['src/passpredict/_time.pyx'] + sorted(glob.glob('src/passpredict/sgp4/*.cpp')),
         **common_kw,
     ),
     Extension("passpredict._rotations",
-        ['passpredict/_rotations.pyx'] + sorted(glob.glob('passpredict/sofa/*.c')),
+        ['src/passpredict/_rotations.pyx'] + sorted(glob.glob('src/passpredict/sofa/*.c')),
         **common_kw,
     ),
     Extension(
         'passpredict._solar',
-        ['passpredict/_solar.pyx'],
+        ['src/passpredict/_solar.pyx'],
         **common_kw
     ),
 ]

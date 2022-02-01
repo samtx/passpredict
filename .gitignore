@@ -2,12 +2,12 @@
 *.ipynb
 
 # Cython C/Cpp files
-passpredict/_*.c
-passpredict/_*.cpp
+src/passpredict/_*.c
+src/passpredict/_*.cpp
 
 # c++ files
-passpredict/ext/main
-passpredict/ext/*.o
+src/passpredict/ext/main
+src/passpredict/ext/*.o
 
 # sgp4 library
 /cextern/sgp4/*.o
