@@ -7,9 +7,8 @@ from passpredict import TLE
 
 class TestCelestrakSource:
 
-    def test_celestrak_source_get_tle(self, tmp_path):
-        cache_path = tmp_path / 'tle.json'
-        source = sources.CelestrakTLESource(cache_path)
+    def test_celestrak_source_get_tle(self):
+        source = sources.CelestrakTLESource()
         tle = source.get_tle(25544)
         assert tle.satid == 25544
         assert len(tle.lines) == 2

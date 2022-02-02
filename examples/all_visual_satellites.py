@@ -10,7 +10,6 @@ from passpredict import CelestrakTLESource, Location, SGP4Predictor, Observer
 def all_visual_satellites():
     location = Location('Austin, TX', 30.2711, -97.7437, 0)
     source = CelestrakTLESource()
-    source.load()
     tles = source.get_tle_category("visual")  # Visible satellites
     overpasses = []
     start = datetime.datetime.now(tz=ZoneInfo('America/Chicago'))
@@ -20,7 +19,6 @@ def all_visual_satellites():
         observer = Observer(location, satellite, aos_at_dg=10)
         passes = observer.pass_list(start, end, visible_only=True)
         overpasses += passes
-    source.save()
     return overpasses
 
 
