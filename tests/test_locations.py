@@ -5,7 +5,11 @@ import pytest
 from pytest import approx
 
 from passpredict import Location
-from passpredict.zoneinfo import ZoneInfo
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 
 @pytest.mark.parametrize(
