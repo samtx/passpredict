@@ -6,7 +6,11 @@ requires = [
     "setuptools",
     "wheel",
     "numpy>=1.22",
-    "Cython>=0.29.24"
+    "Cython>=0.29.24",
+    "orbit-predictor",
+    "timezonefinder",
+    "scipy>=1.7.3",
+    "httpx",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -21,16 +25,13 @@ markers = [
 
 [tool.coverage.run]
 source = [
-    "passpredict"
+    "src/passpredict"
 ]
 
 [tool.cibuildwheel]
 build = "cp38-* cp39-* cp310-*"
 skip = "*-musllinux_*"
 build-verbosity = ""
-before-test = [
-    "rm -r {project}/passpredict"
-]
 test-extras = "dev"
 test-command = "pytest {project}/tests"
 

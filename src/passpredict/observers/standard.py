@@ -5,7 +5,6 @@ import typing
 from math import radians, pi
 
 import numpy as np
-from scipy.interpolate import CubicSpline
 from scipy.optimize import root_scalar
 
 from .base import ObserverBase, PredictedPass, BasicPassInfo, PassType, Visibility

@@ -91,7 +91,6 @@ jobs:
           source venvtest/bin/activate
           python -m pip install dist/*.tar.gz
           python -m pip install pytest numpy click
-          rm -r passpredict
           python -m pytest tests
 
       - name: Upload sdist artifact
