@@ -5,7 +5,11 @@ from itertools import zip_longest
 
 from timezonefinder import TimezoneFinder
 
-from .zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
+
 
 
 tf = TimezoneFinder()
