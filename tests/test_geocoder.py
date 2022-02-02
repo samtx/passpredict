@@ -6,7 +6,8 @@ from passpredict import geocoding
 
 def test_geocoder_nominatium():
     query_str = "austin, texas"
-    location = geocoding.NominatimGeocoder.query(query_str)
+    geocoder = geocoding.NominatimGeocoder()
+    location = geocoder.query(query_str)
     assert location.latitude_deg == approx(30.2711)
     assert location.longitude_deg == approx(-97.7437)
     assert "Austin" in location.name

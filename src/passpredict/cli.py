@@ -7,6 +7,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 from rich.align import Align
+from passpredict.caches import JsonCache
 
 from passpredict.observers.base import Visibility
 
@@ -40,8 +41,12 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
     """
     Command line interface for pass predictions
     """
+    cache = JsonCache()
+    cache.load()
+
     if location_query:
-        location = NominatimGeocoder.query(location_query)
+        geocoder = NominatimGeocoder(cache=cache)
+        location = geocoder.query(location_query)
     elif latitude != '' and longitude != '':
         location = Location(
             latitude_deg=float(latitude),
@@ -54,8 +59,7 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
     date_start = datetime.datetime.now(tz=location.timezone)
     date_end = date_start + datetime.timedelta(days=days)
 
-    source = CelestrakTLESource()
-    source.load()
+    source = CelestrakTLESource(cache=cache)
     # Get TLE data for selected satellites and categories
     tles = []
     if len(satids) == 0 and len(categories) == 0:
@@ -104,7 +108,7 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
     else:
         table = manager.overpass_table(overpasses)
         console.print(table)
-    source.save()
+    cache.save()
     return 0
 
 

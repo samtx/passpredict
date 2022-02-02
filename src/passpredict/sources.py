@@ -11,7 +11,7 @@ import httpx
 
 from .satellites import SatellitePredictor
 from .base import TLESource
-from .caches import JsonCache
+from .caches import BaseCache, MemoryCache
 from .exceptions import CelestrakError
 from .tle import TLE
 from .utils import grouper
@@ -69,29 +69,11 @@ class CelestrakTLESource(TLESource):
     TLE source that checks the cache for orbital elements,
     otherwise queries Celestrak website
     """
-    def __init__(self, cache_path: Union[str, Path] = None) -> None:
-        if not cache_path:
-            cache_path = 'tle.json'
-        self.cache_path = cache_path
-        self.cache = JsonCache(self.cache_path)
-
-    def load(self, strict: bool = False):
-        """
-        Load TLEs from cache
-        """
-        try:
-            self.cache.load()
-        except FileNotFoundError as e:
-            if strict:
-                raise e
-            else:
-                pass
-
-    def save(self):
-        """
-        Save TLEs into cache file
-        """
-        self.cache.save()
+    def __init__(self, cache: BaseCache = None) -> None:
+        if cache:
+            self.cache = cache
+        else:
+            self.cache = MemoryCache()
 
     def add_tle(self, satid: int, tle: TLE, epoch: datetime.datetime):
         """
