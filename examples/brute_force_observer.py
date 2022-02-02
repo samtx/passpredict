@@ -26,8 +26,7 @@ def brute_force_observer():
     source.add_tle(tle)
     satellite = SatellitePredictor(25544, source)
     observer = BruteForceObserver(location, satellite, aos_at_dg=min_elevation, time_step=5, tolerance_s=0.1)
-    pass_iterator =  observer.iter_passes(date_start, limit_date=date_end)
-    overpasses = list(pass_iterator)
+    overpasses =  observer.pass_list(date_start, limit_date=date_end)
     manager = PasspredictManager(
         location,
         tle,

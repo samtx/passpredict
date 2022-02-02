@@ -24,10 +24,10 @@ def assert_overpass_accuracy_with_brute_force_observer(location, tle, start, end
     date = start
     if len(expected_overpasses) == 0:
         with pytest.raises(NotReachable):
-            pass_ = observer.get_next_pass(date, limit_date=end)
+            pass_ = observer.next_pass(date, limit_date=end)
         return
     for expected_pass in expected_overpasses:
-        pass_ = observer.get_next_pass(date, limit_date=end)
+        pass_ = observer.next_pass(date, limit_date=end)
         assert_datetime_approx(pass_.aos.dt, expected_pass.aos.dt, dt_tol)
         assert_datetime_approx(pass_.los.dt, expected_pass.los.dt, dt_tol)
         assert_datetime_approx(pass_.tca.dt, expected_pass.tca.dt, dt_tol)
@@ -89,7 +89,7 @@ def test_bugsat_predictions(observer_class, observer_kwargs):
             date = datetime.strptime(
                 "2014-10-22 20:18:11.921921", '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=UTC)
 
-        pass_ = observer.get_next_pass(date)
+        pass_ = observer.next_pass(date)
         assert_datetime_approx(pass_.aos.dt, aos, 1)
         assert_datetime_approx(pass_.los.dt, los, 1)
         assert_datetime_approx(pass_.tca.dt, max_elevation_date, 1)

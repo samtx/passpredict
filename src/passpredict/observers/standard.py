@@ -87,7 +87,7 @@ class Observer(ObserverBase):
         """Returns a classic predicted pass"""
         data = defaultdict()
         data.update({
-            'satid': self.predictor.satid,
+            'satid': self.satellite.satid,
             'location': self.location,
             'type': basic_pass.type,
             'aos': self.point(basic_pass.aos_dt),
@@ -116,7 +116,7 @@ class Observer(ObserverBase):
                 return candidate
         else:
             # logger.error('Could not find a descending pass over %s start date: %s - TLE: %s',
-            #              self.location, ascending_date, self.predictor.tle)
+            #              self.location, ascending_date, self.satellite.tle)
             raise PropagationError("Can not find an descending phase")
 
     def _find_nearest_ascending(self, descending_date):
@@ -125,7 +125,7 @@ class Observer(ObserverBase):
                 return candidate
         else:
             # logger.error('Could not find an ascending pass over %s start date: %s - TLE: %s',
-            #              self.location, descending_date, self.predictor.tle)
+            #              self.location, descending_date, self.satellite.tle)
             raise PropagationError('Can not find an ascending phase')
 
     def _sample_points(self, date):
@@ -230,7 +230,7 @@ class Observer(ObserverBase):
     def _orbit_step(self, size):
         """Returns a time step, that will make the satellite advance a given number of orbits"""
         step_in_radians = size * 2 * pi
-        seconds = (step_in_radians / self.predictor.mean_motion) * 60
+        seconds = (step_in_radians / self.satellite.mean_motion) * 60
         return datetime.timedelta(seconds=seconds)
 
     def _find_aos(self, tca):
