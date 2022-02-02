@@ -1,16 +1,17 @@
 from __future__ import annotations
 import datetime
+from distutils.log import warn
 from math import pi, log10, sin, cos, acos, degrees, radians, floor
-import typing
+from typing import List, TYPE_CHECKING, NamedTuple, Sequence, Tuple
 from functools import lru_cache, cached_property
 from collections import defaultdict
 from dataclasses import dataclass, asdict
 from enum import Enum
 from abc import abstractmethod
+import warnings
 
 import numpy as np
 from numpy.linalg import norm
-from orbit_predictor.predictors.pass_iterators import LocationPredictor
 
 from .functions import julian_date_sum
 from ..time import julian_date_from_datetime
@@ -20,12 +21,12 @@ from ..utils import get_pass_detail_datetime_metadata
 from ..exceptions import NotReachable
 from ..solar import sun_pos
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from ..satellites import LLH
     from ..locations import Location
 
 
-class RangeAzEl(typing.NamedTuple):
+class RangeAzEl(NamedTuple):
     range: float  # km
     az: float     # deg
     el: float     # deg
@@ -132,10 +133,10 @@ class PredictedPass:
     tca: PassPoint
     los: PassPoint
     type: PassType = None
-    azimuth: typing.Sequence[float] = None
-    elevation: typing.Sequence[float] = None
-    range: typing.Sequence[float] = None
-    datetime: typing.Sequence[datetime.datetime] = None
+    azimuth: Sequence[float] = None
+    elevation: Sequence[float] = None
+    range: Sequence[float] = None
+    datetime: Sequence[datetime.datetime] = None
     vis_begin: PassPoint = None
     vis_end: PassPoint = None
     vis_tca: PassPoint = None
@@ -175,7 +176,7 @@ class PredictedPass:
         return data
 
 
-class ObserverBase(LocationPredictor):
+class ObserverBase:
 
     def __init__(
         self,
@@ -204,6 +205,7 @@ class ObserverBase(LocationPredictor):
     @property
     def predictor(self):
         """ For backwards compatibility with orbit-predictor location predictor """
+        warnings.warn(".predictor is deprecated; use .satellite", DeprecationWarning)
         return self.satellite
 
     @abstractmethod
@@ -217,16 +219,48 @@ class ObserverBase(LocationPredictor):
             return False
         return (pass_.max_elevation > 0)
 
-    @property
-    def passes_over(self, *a, **kw):
-        return self.iter_passes(*a, **kw)
+    def pass_list(
+        self,
+        start_date: datetime.datetime,
+        limit_date: datetime.datetime,
+        *,
+        visible_only: bool = False
+    ) -> List[PredictedPass]:
+        """
+        Compute overpass predictions. Return list of PredictedPass objects
+
+        Parameters
+        ----------
+        start_date : datetime.datetime
+            The start date of the overpass predictions
+        limit_date : datetime.datetime
+            The end date of the overpass predictions
+        visible_only : bool, optional
+            Return only visible overpasses, by default False
+
+        Returns
+        -------
+        List[PredictedPass]
+            A list of PredictedPass objects
+        """
+        return list(self.iter_passes(
+            start_date, limit_date=limit_date, visible_only=visible_only
+        ))
 
     def get_next_pass(self,
-        aos_dt: datetime.datetime,
-        *,
-        limit_date: datetime.datetime = None,
-        visible_only: bool = False,
+        *a,
+        **kw
     ) -> PredictedPass:
+        """ Gets first overpass starting at aos_dt """
+        warnings.warn("get_next_pass() is deprecated; use next_pass().", DeprecationWarning)
+        return self.next_pass(*a, **kw)
+
+    def next_pass(self,
+            aos_dt: datetime.datetime,
+            *,
+            limit_date: datetime.datetime = None,
+            visible_only: bool = False,
+        ) -> PredictedPass:
         """
         Gets first overpass starting at aos_dt
         """
@@ -235,19 +269,19 @@ class ObserverBase(LocationPredictor):
             raise NotReachable('Propagation limit date exceeded')
         return pass_
 
-    def get_next_pass_detail(
+    def next_pass_detail(
         self,
         aos_dt: datetime.datetime,
         *,
         limit_date: datetime.datetime = None,
         delta_s: float = 10,
         pad_minutes: int = 5,
-    ) -> typing.Tuple[PredictedPass, LLH]:
+    ) -> Tuple[PredictedPass, LLH]:
         """
         Add details to PredictedPass
         Evaluate position and velocity properties for each delta_s seconds
         """
-        pass_ = self.get_next_pass(aos_dt, limit_date=limit_date)
+        pass_ = self.next_pass(aos_dt, limit_date=limit_date)
         start_date, n_steps, time_step = get_pass_detail_datetime_metadata(pass_, delta_s, pad_minutes=pad_minutes)
         pass_detail = self._get_overpass_detail(pass_, start_date, n_steps, time_step)
         llh = self.satellite.get_position_detail(start_date, n_steps, time_step)

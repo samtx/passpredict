@@ -83,7 +83,7 @@ def test_heavens_above_zurich_iss_visibility_predictions():
         vis_end = datetime.strptime(f"{date_str} {line_parts[8]}+0100", "%Y %d %b %H:%M:%S%z")
 
         # Find next pass
-        pass_ = observer.get_next_pass(date, limit_date=end, visible_only=True)
+        pass_ = observer.next_pass(date, limit_date=end, visible_only=True)
         assert_datetime_approx(pass_.vis_begin.dt, vis_begin, 1.5)
         assert_datetime_approx(pass_.vis_end.dt, vis_end, 1.5)
         assert_datetime_approx(pass_.vis_tca.dt, tca, 1.5)
@@ -163,7 +163,7 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
             vis_end = datetime.strptime(f"{date_str} {line_parts[8]}-0600", "%Y %d %b %H:%M:%S%z")
 
             # Find next pass
-            pass_ = self.observer.get_next_pass(date, limit_date=end, visible_only=True)
+            pass_ = self.observer.next_pass(date, limit_date=end, visible_only=True)
             assert_datetime_approx(pass_.vis_begin.dt, vis_begin, 1.5)
             assert_datetime_approx(pass_.vis_end.dt, vis_end, 1.5)
             assert_datetime_approx(pass_.vis_tca.dt, tca, 1.5)
@@ -221,7 +221,7 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
         assert_sun_elevation_at_date(self.location, vis_end_pt.dt, -8.0)   # vis_end_pt.sun_elevation = -8.0
 
         # Find next pass
-        pass_ = self.observer.get_next_pass(start, visible_only=True)
+        pass_ = self.observer.next_pass(start, visible_only=True)
         tol = {
             'dt_tol': 1.5,
             'el_tol': 1,
@@ -291,7 +291,7 @@ class TestHeavensAboveCapeTownEnvisatVisibilty:
             vis_end = datetime.strptime(f"{date_str} {line_parts[8]}+0200", "%Y %d %b %H:%M:%S%z")
 
             # Find next pass
-            pass_ = self.observer.get_next_pass(date, limit_date=end, visible_only=True)
+            pass_ = self.observer.next_pass(date, limit_date=end, visible_only=True)
             assert_datetime_approx(pass_.vis_begin.dt, vis_begin, 1.5)
             assert_datetime_approx(pass_.vis_end.dt, vis_end, 1.5)
             assert_datetime_approx(pass_.vis_tca.dt, tca, 1.5)
@@ -341,7 +341,7 @@ class TestHeavensAboveCapeTownEnvisatVisibilty:
         assert_sun_elevation_at_date(self.location, los_pt.dt, -13.9)  # los_pt.sun_elevation = -13.9
 
         # Find next pass
-        pass_ = self.observer.get_next_pass(start, visible_only=True)
+        pass_ = self.observer.next_pass(start, visible_only=True)
         tol = {
             'dt_tol': 1.5,
             'el_tol': 1,
@@ -394,7 +394,7 @@ class TestHeavensAboveCapeTownEnvisatVisibilty:
         assert_sun_elevation_at_date(self.location, los_pt.dt, -4.2)  # los_pt.sun_elevation = -4.2
 
         # Find next pass
-        pass_ = self.observer.get_next_pass(start, visible_only=True)
+        pass_ = self.observer.next_pass(start, visible_only=True)
         tol = {
             'dt_tol': 1.5,
             'el_tol': 1,
