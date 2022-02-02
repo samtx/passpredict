@@ -6,11 +6,15 @@ import numpy as np
 from orbit_predictor.locations import Location as LocationBase
 from orbit_predictor import coordinate_systems
 
-from .zoneinfo import ZoneInfo
 from .utils import get_timezone_from_latlon
 from .time import julian_date_from_datetime
 from .solar import sun_pos
 from ._rotations import elevation_at
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 
 class Location(LocationBase):

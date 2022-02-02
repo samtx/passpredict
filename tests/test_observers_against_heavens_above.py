@@ -6,7 +6,11 @@ from pytest import approx
 from passpredict import Observer, Location, SGP4Predictor
 from passpredict import *
 from passpredict.observers import PassPoint, Visibility
-from passpredict.zoneinfo import ZoneInfo
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 
 
