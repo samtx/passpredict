@@ -1,4 +1,6 @@
-__version__ = '0.3.0'
+from ._version import version
+
+__version__ = version
 
 from .core import (
     predict_all_visible_satellite_overpasses,
