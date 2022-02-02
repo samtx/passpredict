@@ -72,7 +72,6 @@ class CelestrakTLESource(TLESource):
     def __init__(self, cache: BaseCache = None) -> None:
         if cache:
             self.cache = cache
-            self.cache.load()
         else:
             self.cache = MemoryCache()
 

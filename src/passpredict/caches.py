@@ -1,7 +1,6 @@
 import json
 import shelve
 import time
-import pathlib
 import abc
 
 
@@ -9,13 +8,12 @@ class BaseCache(abc.ABC):
     """
     Base object for Caches
     """
-
     def _hash(self, key):
         return str(key)
 
     def __contains__(self, key):
         key_hash = self._hash(key)
-        return key_hash in self.cache
+        return self._in(key_hash)
 
     def get(self, key, ignore_ttl=False):
         if key not in self: return None
@@ -33,6 +31,10 @@ class BaseCache(abc.ABC):
         self._set(key, item)
 
     @abc.abstractmethod
+    def _in(self, key):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def _set(self, key, value):
         raise NotImplementedError
 
@@ -46,7 +48,7 @@ class BaseCache(abc.ABC):
 
     def pop(self, key, default_value=None):
         key_hash = self._hash(key)
-        if key_hash in self.cache:
+        if self._in(key_hash):
             value = self.get(key)
             self._del(key_hash)
             return value
@@ -69,30 +71,50 @@ class BaseCache(abc.ABC):
         raise NotImplementedError
 
 
-class JsonCache(BaseCache):
+class DictionaryCache(BaseCache):
+    def __init__(self) -> None:
+        super().__init__()
+        self._cache = {}
+
+    def _set(self, key, value):
+        self._cache[key] = value
+
+    def _get(self, key):
+        return self._cache[key]
+
+    def _del(self, key):
+        del self._cache[key]
+
+    def _in(self, key):
+        return key in self._cache
+
+
+class MemoryCache(DictionaryCache):
+    """
+    A dictionary in-memory cache
+    """
+    def load(self):
+        pass
+
+    def save(self):
+        pass
+
+
+class JsonCache(DictionaryCache):
     """
     A cache for downloaded TLE data using a json file
     """
     filename = 'passpredict.json'
 
     def __init__(self, filename=filename):
+        super().__init__()
         self.filename = filename
-        self.cache = {}
-
-    def _set(self, key, value):
-        self.cache[key] = value
-
-    def _get(self, key):
-        return self.cache[key]
-
-    def _del(self, key):
-        del self.cache[key]
 
     def load(self, strict=False):
         """ Load cache from json file """
         try:
             with open(self.filename, 'r') as f:
-                self.cache = json.load(f)
+                self._cache = json.load(f)
         except FileNotFoundError as e:
             if strict:
                 raise e
@@ -102,85 +124,28 @@ class JsonCache(BaseCache):
     def save(self):
         """ Save cache to json file """
         with open(self.filename, 'w') as f:
-            json.dump(self.cache, f, indent=2)
+            json.dump(self._cache, f, indent=2)
 
 
-class MemoryCache(BaseCache):
-    """
-    A dictionary in-memory cache
-    """
-    def __init__(self):
-        self.cache = {}
-
-    def _set(self, key, value):
-        self.cache[key] = value
-
-    def _get(self, key):
-        return self.cache[key]
-
-    def _del(self, key):
-        del self.cache[key]
-
-    def load(self):
-        pass
-
-    def save(self):
-        pass
-
-
-class ShelfCache:
+class ShelfCache(DictionaryCache):
     """
     A cache for downloaded TLE data using a shelf.
     """
     filename = 'passpredict.db'
 
     def __init__(self, filename=filename):
+        super().__init__()
         self.filename = filename
 
-    def set(self, key, value):
-        key_hash = self._hash(key)
-        self.cache[key_hash] = value
-
-    def get(self, key, *a):
-        key_hash = self._hash(key)
-        value = self.cache.get(key_hash, *a)
-        return value
-
-    def pop(self, key, default_value=None):
-        key_hash = self._hash(key)
-        if key_hash in self.cache:
-            value = self.get(key)
-            del self.cache[key_hash]
-            return value
+    def load(self, strict=False):
+        """  Load shelf db from file  """
+        if strict:
+            flag = 'r'
         else:
-            return default_value
-
-    def __contains__(self, key):
-        key_hash = self._hash(key)
-        return key_hash in self.cache
-
-    def __setitem__(self, key, value):
-        self.set(key, value)
-
-    def __getitem__(self, key):
-        return self.get(key)
-
-    def __delitem__(self, key):
-        key_hash = self._hash(key)
-        del self.cache[key_hash]
-
-    def _hash(self, key):
-        return str(key)
-
-    def __enter__(self):
-        return self.open()
-
-    def __exit__(self, *a):
-        self.close()
-
-    def open(self):
-        self.cache = shelve.DbfilenameShelf(self.filename)
+            # Create the shelf if it doesn't exist
+            flag = 'c'
+        self._cache = shelve.DbfilenameShelf(self.filename, flag=flag)
         return self
 
-    def close(self):
-        self.cache.close()
+    def save(self):
+        self._cache.close()

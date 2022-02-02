@@ -51,8 +51,8 @@ def test_jsoncache_filenotfound(tmp_path):
     fname = tmp_path / 'fake.json'
     cache = caches.JsonCache(fname)
     cache.load()
-    assert not cache.cache
-    assert len(cache.cache.items()) == 0
+    assert not cache._cache
+    assert len(cache._cache.items()) == 0
 
 
 def test_set_jsoncache_ttl(cache):

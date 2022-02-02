@@ -41,8 +41,12 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
     """
     Command line interface for pass predictions
     """
+    cache = JsonCache()
+    cache.load()
+
     if location_query:
-        location = NominatimGeocoder.query(location_query)
+        geocoder = NominatimGeocoder(cache=cache)
+        location = geocoder.query(location_query)
     elif latitude != '' and longitude != '':
         location = Location(
             latitude_deg=float(latitude),
@@ -54,8 +58,7 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
         raise Exception("Must specify observing location")
     date_start = datetime.datetime.now(tz=location.timezone)
     date_end = date_start + datetime.timedelta(days=days)
-    cache = JsonCache()
-    cache.load()
+
     source = CelestrakTLESource(cache=cache)
     # Get TLE data for selected satellites and categories
     tles = []
