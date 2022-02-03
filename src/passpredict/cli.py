@@ -21,14 +21,14 @@ from .observers import PassType, Observer
 from .tle import TLE
 
 
-@click.command()
-@click.option('-s', '--satid', 'satids', type=int, default=list(), multiple=True)  # satellite id
-@click.option('-c', '--category', 'categories', type=str, default=list(), multiple=True)  # Celestrak category
-@click.option('-d', '--days', default=1, type=int) # day range
-@click.option('-loc', '--location', 'location_query', default='', type=str)  # For geocoding location query
-@click.option('-lat', '--latitude', default='', type=str)   # latitude
-@click.option('-lon', '--longitude', default='', type=str)  # longitude
-@click.option('-h', '--height', default=0.0, type=float)    # height
+@click.command(no_args_is_help=True)
+@click.option('-s', '--satid', 'satids', type=int, default=list(), multiple=True, help="Satellite NORAD ID")  # satellite id
+@click.option('-c', '--category', 'categories', type=str, default=list(), multiple=True, help="Celestrak category string. Example: 'visual', 'amateur'")  # Celestrak category
+@click.option('-d', '--days', default=1, type=int, help="Number of days to compute overpasses") # day range
+@click.option('-loc', '--location', 'location_query', default='', type=str, help="Location name string")  # For geocoding location query
+@click.option('-lat', '--latitude', default='', type=str, help="Location latitude in decimal degrees North")   # latitude
+@click.option('-lon', '--longitude', default='', type=str, help="Location longitude in decimal degrees East")  # longitude
+@click.option('-h', '--height', default=0.0, type=float, help="Location height in meters")    # height
 @click.option('--min-elevation', default=10, type=click.FloatRange(min=-90, max=90))  # minimum elevation in degrees
 @click.option('--twelve/--twentyfour', '-12/-24', is_flag=True, default=False)  # 12 hour / 24 hour format
 @click.option('-a', '--all', 'alltypes', is_flag=True, default=False)  # show all pass types
@@ -39,7 +39,7 @@ from .tle import TLE
 @click.version_option(version=__version__)
 def main(satids, categories, days, location_query, latitude, longitude, height, min_elevation, twelve, alltypes, quiet, verbose, summary, no_cache):
     """
-    Command line interface for pass predictions
+    Predict satellite passes over a location on Earth.
     """
     cache = JsonCache()
     cache.load()
