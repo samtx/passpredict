@@ -1,13 +1,10 @@
 import datetime
 
 import pytest
-import click
 from click.testing import CliRunner
 
 from passpredict import cli
 from passpredict import Location, SGP4Predictor, Observer, TLE
-from passpredict.exceptions import CelestrakError
-
 
 
 @pytest.fixture(scope="module")
@@ -49,6 +46,16 @@ def test_cli(options_string):
     runner = CliRunner()
     result = runner.invoke(cli.main, options_string)
     assert result.exit_code == 0
+
+
+def test_cli_no_arguments_help_message():
+    """  Invoking CLI without arguments returns help message  """
+    runner = CliRunner()
+    result1 = runner.invoke(cli.main, '')
+    result2 = runner.invoke(cli.main, '--help')
+    assert result1.output == result2.output
+    assert result1.exit_code == 0
+    assert result2.exit_code == 0
 
 
 def test_cli_fake_category():
