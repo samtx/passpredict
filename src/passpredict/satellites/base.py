@@ -11,10 +11,12 @@ from sgp4.model import WGS84
 from sgp4.propagation import gstime
 
 from ..time import julian_date_from_datetime
+from .._time import mjd2jdfr
+from .._rotations import teme2ecef
 from ..solar import sun_pos
 from .. import _solar
 from ..exceptions import PropagationError
-from ..constants import R_EARTH
+from ..constants import R_EARTH, MJD0
 
 if typing.TYPE_CHECKING:
     from ..sources import PasspredictTLESource, TLE
@@ -75,12 +77,30 @@ class SatellitePredictorBase(HighAccuracyTLEPredictor):
         """
         Get satellite position in ECEF coordinates [km]
         """
-        status, position_eci, _ = self._propagator.sgp4(jd, 0.0)
-        if status != 0:
-            raise PropagationError(SGP4_ERRORS[status])
+        position_eci = self._sgp4(jd, 0.0)
         gmst = gstime(jd)
         pos_tuple = eci_to_ecef(position_eci, gmst)
         return np.array(pos_tuple)
+
+    @lru_cache(maxsize=1800)  # Max cache, 30 minutes
+    def get_only_position_mjd(self, mjd: float) -> np.ndarray:
+        """
+        Use modified julian date
+        Get satellite position in ECEF coordinates [km]
+        """
+        jd, jdfr = _time.mjd2jdfr(mjd)
+        position_eci = self._sgp4(jd, jdfr)
+        rteme = np.array(position_eci)
+        recef = np.empty(3, dtype=np.double)
+        teme2ecef(mjd, rteme, recef)
+        return recef
+
+    def _sgp4(self, jd: float, jdfr: float):
+        status, position_eci, _ = self._propagator.sgp4(jd, jdfr)
+        if status != 0:
+            raise PropagationError(f"Sat {self.satid} {SGP4_ERRORS[status]}")
+        return position_eci
+
 
     def get_llh(self, datetime: datetime.datetime) -> np.ndarray:
         raise NotImplementedError

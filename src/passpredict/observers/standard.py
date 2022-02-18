@@ -124,9 +124,7 @@ class Observer(ObserverBase):
             if self._is_ascending(candidate):
                 return candidate
         else:
-            # logger.error('Could not find an ascending pass over %s start date: %s - TLE: %s',
-            #              self.location, descending_date, self.satellite.tle)
-            raise PropagationError('Can not find an ascending phase')
+            raise PropagationError(f'Sat {self.satellite.satid}, date: {descending_date}, could not find an ascending phase')
 
     def _sample_points(self, date):
         """Helper method to found ascending or descending phases of elevation"""
@@ -135,7 +133,11 @@ class Observer(ObserverBase):
         mid = self.midpoint(start, end)
         mid_right = self.midpoint(mid, end)
         mid_left = self.midpoint(start, mid)
-        return [end, mid, mid_right, mid_left]
+        mid_right_2 = self.midpoint(mid, mid_right)
+        mid_left_2 = self.midpoint(start, mid_left)
+        mid_right_3 = self.midpoint(mid_right, end)
+        mid_left_3 = self.midpoint(mid_left, mid)
+        return [end, mid, mid_right, mid_left, mid_right_2, mid_left_2, mid_right_3, mid_left_3]
 
     def _refine_pass(self, ascending_date, descending_date) -> BasicPassInfo:
         tca_dt = self._find_tca(ascending_date, descending_date)

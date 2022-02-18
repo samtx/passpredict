@@ -37,6 +37,9 @@ def overpasses(location, tle):
     return passes
 
 @pytest.mark.parametrize('options_string',[
+    pytest.param('', id="no arguments (help)"),
+    pytest.param('--help', id="--help"),
+    pytest.param('-s 25544 --location="austin, texas"', id="one sat, geocode location"),
     pytest.param('-s 25544 --location="austin, texas"', id="one sat, geocode location"),
     pytest.param('-s 25544 -lat 30.1234 -lon -98.134', id="one sat, location coordinates"),
     pytest.param('--category visual --location="austin, texas" -d 1', id='sat category'),

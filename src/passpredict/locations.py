@@ -1,6 +1,6 @@
 from functools import cached_property
 from datetime import datetime, timezone as py_timezone
-from math import radians
+from math import radians, sin, cos
 
 import numpy as np
 from orbit_predictor.locations import Location as LocationBase
@@ -8,8 +8,9 @@ from orbit_predictor import coordinate_systems
 
 from .utils import get_timezone_from_latlon
 from .time import julian_date_from_datetime
-from .solar import sun_pos
+from .solar import sun_pos, sun_pos_mjd
 from ._rotations import elevation_at
+from .constants import MJD0
 
 try:
     from zoneinfo import ZoneInfo
@@ -80,21 +81,38 @@ class Location(LocationBase):
         delta = now.utcoffset().total_seconds() / 3600
         return delta
 
+    @cached_property
+    def _cached_elevation_calculation_data(self):
+        """
+        Cache trig values used for rotating ECEF to SEZ topocentric coordinates
+        """
+        sin_lat, sin_long = sin(self.latitude_rad), sin(self.longitude_rad)
+        cos_lat, cos_long = cos(self.latitude_rad), cos(self.longitude_rad)
+        return (cos_lat * cos_long, cos_lat * sin_long, sin_lat)
+
+
+    def sun_elevation_mjd(self, mjd: float) -> float:
+        """
+        Computes elevation angle of sun relative to location. Returns degrees.
+        """
+        sun_recef = sun_pos_mjd(mjd)
+        el = elevation_at(self.latitude_rad, self.longitude_rad, self.recef, sun_recef)
+        return el
+
     def sun_elevation_jd(self, jd: float) -> float:
         """
         Computes elevation angle of sun relative to location. Returns degrees.
         """
-        sun_recef = sun_pos(jd)
-        el = elevation_at(self.latitude_rad, self.longitude_rad, self.recef, sun_recef)
-        return el
+        mjd = jd - MJD0
+        return self.sun_elevation_mjd(mjd)
 
     def sun_elevation(self, dt: datetime) -> float:
         """
         Computes elevation angle of sun relative to location. Returns degrees.
         """
         jd, jdfr = julian_date_from_datetime(dt)
-        jd = jd + jdfr
-        el = self.sun_elevation_jd(jd)
+        mjd = jd + jdfr - MJD0
+        el = self.sun_elevation_mjd(mjd)
         return el
 
     def is_sunlit(self, dt: datetime) -> bool:
