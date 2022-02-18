@@ -60,13 +60,15 @@ def test_cli_no_arguments_help_message():
 
 def test_cli_fake_category():
     runner = CliRunner()
-    result = runner.invoke(cli.main, '--category fake --location="austin, texas" -d 1', catch_exceptions=True)
+    result = runner.invoke(cli.main, '--category fake --location="austin, texas" -d 1')
+    assert 'Error: Invalid value' in result.output
     assert result.exit_code != 0
 
 
 def test_cli_fake_satid():
     runner = CliRunner()
-    result = runner.invoke(cli.main, '-s 9999999 --location="austin, texas" -d 1', catch_exceptions=True)
+    result = runner.invoke(cli.main, '-s 9999999 --location="austin, texas" -d 1')
+    assert 'Error: Invalid value' in result.output
     assert result.exit_code != 0
 
 
