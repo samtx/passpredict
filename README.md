@@ -55,8 +55,7 @@ source = CelestrakTLESource()
 tle = source.get_tle(25544)  # International space station, Norad ID 25544
 satellite = SGP4Predictor.from_tle(tle)
 observer = Observer(location, satellite)
-pass_iterator = observer.iter_passes(date_start, limit_date=date_end)
-overpasses = list(pass_iterator)
+overpasses = observer.pass_list(date_start, limit_date=date_end)
 ```
 
 ## Command Line Usage
