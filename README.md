@@ -4,7 +4,7 @@
 
 Predict upcoming satellite overpasses over a point on Earth.
 
-This library exposes a command-line interface and a backend API to generate overpass predictions.
+This library exposes a command-line interface and a Python API to generate overpass predictions.
 
 
 ## Requirements
@@ -55,8 +55,7 @@ source = CelestrakTLESource()
 tle = source.get_tle(25544)  # International space station, Norad ID 25544
 satellite = SGP4Predictor.from_tle(tle)
 observer = Observer(location, satellite)
-pass_iterator = observer.iter_passes(date_start, limit_date=date_end)
-overpasses = list(pass_iterator)
+overpasses = observer.pass_list(date_start, limit_date=date_end)
 ```
 
 ## Command Line Usage
@@ -197,3 +196,27 @@ Lat=30.2711°, Lon=-97.7437°, Timezone America/Chicago
 │ 1/31/22  23:42 │ 20580 HST         │     7:15 │      30° │  unlit   │
 └────────────────┴───────────────────┴──────────┴──────────┴──────────┘
 ```
+
+## Changelog
+
+### 0.4.0 (2022-02-18)
+
+* Add tests for visual overpass for Cape Town and Envisat
+* Remove requirements files, specify optional dependencies in setup.py
+* Add Observer.pass_list() method to directly return a list of overpass objects
+* Remove zoneinfo.py and replace with standard importerror checking in each necessary file
+* Refactor cache objects
+* Add better help text to CLI
+* Add tests to confirm that CLI works without arguments
+
+### 0.3.0 (2022-01-30)
+
+* Query multiple satellites and satellite categories from CLI
+* Specify MIT license for package
+
+### 0.2.2 (2022-01-22)
+
+* Use Satellogic's orbit-predictor library as the basis for prediction algorithm, coordinate transformations, locations, propagators, and tle sources. The algorithms are supplemented with custom Cython functions and IAU SOFA routines for speed. Remove unused custom cpp code for now.
+* Improve test suite by adding observation tests using a new brute force observer class to compute predicted passes. Validate visual passes against Heaven's Above.
+* Improve the CLI output using rich tables.
+* Add visibility type enum to pass points
