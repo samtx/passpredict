@@ -208,6 +208,7 @@ Lat=30.2711°, Lon=-97.7437°, Timezone America/Chicago
 * Refactor cache objects
 * Add better help text to CLI
 * Add tests to confirm that CLI works without arguments
+* Update Celestrak source to use new GP url
 
 ### 0.3.0 (2022-01-30)
 
