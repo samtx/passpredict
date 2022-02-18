@@ -7,19 +7,12 @@ from passpredict import Observer, Location, SGP4Predictor
 from passpredict import *
 from passpredict.observers import PassPoint, Visibility
 
+from .utils import assert_datetime_approx
+
 try:
     from zoneinfo import ZoneInfo
 except ImportError:
     from backports.zoneinfo import ZoneInfo
-
-
-
-def assert_datetime_approx(dt1, dt2, delta_seconds):
-    """
-    Compare two python datetimes. Assert difference is <= delta_seconds
-    """
-    diff = (dt1 - dt2).total_seconds()
-    assert diff == approx(0.0, abs=delta_seconds)
 
 
 def assert_passpoint_approx(pt1, pt2, *, dt_tol=1, el_tol=1, az_tol=10, range_tol=10, bright_tol=3):
@@ -40,6 +33,28 @@ def assert_sun_elevation_at_date(location, dt, el, tol=0.1):
     Compare the sun elevation at the location
     """
     assert location.sun_elevation(dt.astimezone(timezone.utc)) == approx(el, abs=tol)
+
+
+@pytest.fixture(scope='function')
+def sanantonio_location():
+    """
+    Location object for San Antonio, Texas
+    """
+    return Location("San Antonio, Texas", 29.4246, -98.4951, 0)
+
+
+@pytest.fixture(scope='function')
+def hst_tle():
+    """
+    TLE for Hubble Space Telescope
+    From heavens-above.com. Queried 1/24/2022
+    """
+    tle_lines = (
+        "1 20580U 90037B   22024.50840557  .00001221  00000-0  62432-4 0  9995",
+        "2 20580  28.4712  42.1300 0002330 285.0338 208.0692 15.09965616544703"
+    )
+    return TLE(20580, tle_lines, name="HST")
+
 
 def test_heavens_above_zurich_iss_visibility_predictions():
     """
@@ -95,26 +110,6 @@ def test_heavens_above_zurich_iss_visibility_predictions():
         assert pass_.type == Visibility.visible
         date = pass_.los.dt + timedelta(minutes=10)
 
-
-@pytest.fixture(scope='function')
-def sanantonio_location():
-    """
-    Location object for San Antonio, Texas
-    """
-    return Location("San Antonio, Texas", 29.4246, -98.4951, 0)
-
-
-@pytest.fixture(scope='function')
-def hst_tle():
-    """
-    TLE for Hubble Space Telescope
-    From heavens-above.com. Queried 1/24/2022
-    """
-    tle_lines = (
-        "1 20580U 90037B   22024.50840557  .00001221  00000-0  62432-4 0  9995",
-        "2 20580  28.4712  42.1300 0002330 285.0338 208.0692 15.09965616544703"
-    )
-    return TLE(20580, tle_lines, name="HST")
 
 
 class TestHeavensAboveSanAntonioHSTVisibilty:
@@ -412,5 +407,56 @@ class TestHeavensAboveCapeTownEnvisatVisibilty:
         assert pass_.type == Visibility.visible
 
 
-if __name__ == "__main__":
-    pytest.main([__file__])
+
+
+def test_san_antonio_molniya_orbit_all_passes():
+    """
+    Location: San Antonio: 29.4246, -98.4951, UTC-06:00
+
+    TLE:
+    1 14129U 83058B   22033.24895832 -.00000141  00000-0  00000-0 0  9999
+    2 14129  26.3866 118.1312 5979870  45.7131 349.8958  2.05868779262629
+
+    Oscar 10/S400 - All Passes	Home | Info. | Orbit | Close encounters
+    Search period start:	03 February 2022 00:00
+    Search period end:	13 February 2022 00:00
+    Orbit:	4115 x 35332 km, 26.4° (Epoch: 02 February)
+    Passes to include: visible only all
+
+    Click on the date to see the ground track during the pass.
+
+    Date	Brightness	Start	Highest point	End	Pass type
+    (mag)	Time	Alt.	Az.	Time	Alt.	Az.	Time	Alt.	Az.
+    03 Feb	-	11:54:43	10°	W	13:08:21	41°	SW	22:53:29	10°	E	visible
+    04 Feb	-	11:07:22	10°	W	12:14:42	48°	SW	22:07:13	10°	ESE	visible
+    05 Feb	-	10:21:08	10°	W	11:19:16	54°	SW	21:20:20	10°	ESE	visible
+    06 Feb	-	09:35:38	10°	W	10:24:01	60°	SSW	20:32:29	10°	ESE	visible
+    07 Feb	-	08:50:36	10°	W	09:30:34	66°	SSW	19:43:13	10°	SE	visible
+    08 Feb	-	08:05:53	10°	W	08:39:19	71°	SSW	18:52:04	10°	SE	visible
+    09 Feb	-	07:21:21	10°	W	07:49:55	75°	SSW	17:58:24	10°	SE	daylight
+    10 Feb	-	06:36:55	10°	W	07:01:55	79°	SSW	17:01:25	10°	SE	visible
+    11 Feb	-	05:52:30	10°	W	06:14:57	81°	S	15:59:27	10°	SE	visible
+    12 Feb	-	05:08:01	10°	W	05:28:45	83°	S	14:48:09	10°	SE	visible
+
+
+    Date:	04 February 2022
+    Orbit:	4115 x 35332 km, 26.4° (Epoch: 02 February)
+    Event	Time	Altitude	Azimuth	Distance (km)	Brightness	Sun altitude
+    Rises	11:01:19	0°	284° (WNW)	10,989	?	37.7°
+    Reaches altitude 10°	11:07:24	10°	279° (W)	11,005	?	38.4°
+    Maximum altitude	12:14:42	48°	225° (SW)	19,694	?	43.8°
+    Enters shadow	21:52:19	26°	149° (SSE)	8,027	?	-47.6°
+    Drops below altitude 10°	22:07:11	10°	104° (ESE)	7,579	-	-50.8°
+    Sets	22:13:10	0°	90° (E)	8,347	-	-52.1°
+
+
+    Date:	07 February 2022
+    Orbit:	4115 x 35332 km, 26.4° (Epoch: 02 February)
+    Event	Time	Altitude	Azimuth	Distance (km)	Brightness	Sun altitude
+    Rises	08:46:21	0°	283° (WNW)	9,229	?	16.6°
+    Reaches altitude 10°	08:50:37	10°	280° (W)	8,742	?	17.4°
+    Maximum altitude	09:30:34	66°	206° (SSW)	12,163	?	24.7°
+    Drops below altitude 10°	19:43:09	10°	128° (SE)	10,416	?	-19.1°
+    Enters shadow	19:49:50	4°	116° (ESE)	9,916	?	-20.6°
+    Sets	19:53:24	0°	109° (ESE)	9,808	-	-21.3°
+    """

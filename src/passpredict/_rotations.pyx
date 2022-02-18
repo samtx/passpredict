@@ -91,6 +91,28 @@ def elevation_at(
     return el_deg
 
 
+def elevation_at_rad(
+    double cos_lat_x_cos_lon,
+    double cos_lat_x_sin_lon,
+    double sin_lat,
+    double[::1] location_ecef,
+    double[::1] satellite_ecef
+):
+    """
+    Get elevation of satellite relative for observing location [rad]
+    """
+    cdef double rho_z
+    cdef double range_, el
+    cdef double rx, ry, rz
+    rx = satellite_ecef[0] - location_ecef[0]
+    ry = satellite_ecef[1] - location_ecef[1]
+    rz = satellite_ecef[2] - location_ecef[2]
+    rho_z = (cos_lat_x_cos_lon * rx) + (cos_lat_x_sin_lon * ry) + (sin_lat * rz)
+    range_ = sqrt(rx*rx + ry*ry + rz*rz)
+    el = asin(rho_z / range_)
+    return el
+
+
 def razel(
     double location_lat_rad,
     double location_lon_rad,
@@ -163,6 +185,18 @@ cdef void jd2tt2(double jd, double* tt1, double* tt2):
     return
 
 
+cdef void mjd2tt2(double mjd, double* tt1, double* tt2):
+    """
+    Convert modified julian date to terrestial time. Don't apply corrections for UT1
+    """
+    cdef double tai1, tai2
+    cdef int err
+    # Find terrestial time, ignore delta_UT1
+    err = iauUtctai(2400000.5, mjd, &tai1, &tai2)
+    err = iauTaitt(tai1, tai2, tt1, tt2)
+    return
+
+
 cpdef mod2ecef(double jd, double[::1] rmod, double[::1] recef):
     """
     Convert MOD to ECEF coordinates
@@ -172,7 +206,6 @@ cpdef mod2ecef(double jd, double[::1] rmod, double[::1] recef):
 
     r_mod = [NG]r_ecef
     --> r_ecef = [NG]^T r_mod
-
 
     """
     cdef double dp80, de80, epsa, tt1, tt2, ee, gast
@@ -213,3 +246,79 @@ cpdef mod2ecef(double jd, double[::1] rmod, double[::1] recef):
     iauRxr(N, G, NG)
     # iauTr(NG, NG)
     iauRxp(NG, &rmod[0], &recef[0])
+
+
+cpdef mod2ecef_mjd(double mjd, double[::1] rmod, double[::1] recef):
+    """
+    Convert MOD to ECEF coordinates
+
+    N = nutation rotation matrix
+    G = z-rotation matrix by gast
+
+    r_mod = [NG]r_ecef
+    --> r_ecef = [NG]^T r_mod
+
+    """
+    cdef double dp80, de80, epsa, tt1, tt2, ee, gast
+    cdef double N[3][3]
+    cdef double G[3][3]
+    cdef double NG[3][3]
+    cdef double NGT[3][3]
+    cdef double twopi = 2*pi
+
+    # get terrestial time
+    mjd2tt2(mjd, &tt1, &tt2)
+    # get nutation values
+    iauNut80(tt1, tt2, &dp80, &de80)
+    # mean obliquity
+    epsa = iauObl80(tt1, tt2)
+    # build nutation rotation matrix
+    iauNumat(epsa, dp80, de80, N)
+    # equation of equinoxes
+    ee = iauEqeq94(tt1, tt2)
+    # greenwich apparent sidereal time
+    gast = iauGmst82(2400000.5, mjd) + ee
+    # normalize gast into 0 <= gast < 2pi
+    gast = fmod(gast, twopi)
+    if gast < 0:
+        gast += twopi
+    iauIr(G)  # initialize G matrix with identity
+    iauRz(gast, G)   # rotate on the Z axis by gast radians
+    """
+    Rotate on Z axis
+    (  + cos(psi)   + sin(psi)     0  )
+    (                                 )
+    (  - sin(psi)   + cos(psi)     0  )
+    (                                 )
+    (       0            0         1  )
+    """
+
+    # Create rotation matrix, multiply NG, then transpose
+    iauRxr(N, G, NG)
+    # iauTr(NG, NG)
+    iauRxp(NG, &rmod[0], &recef[0])
+
+
+cpdef double gmst82(double mjd):
+    """
+    Get Greenwich Mean Sidereal time, 1982 model
+    Input with modified julian date
+    """
+    cdef double _gmst
+    _gmst = iauGmst82(2400000.5, mjd)
+    return _gmst
+
+
+
+def teme2ecef(double mjd, double[::1] rteme, double[::1] recef):
+    """
+    Convert a TEME position vector to ECEF.
+    Inputs modified julian date
+    """
+    cdef double gmst, singmst, cosgmst
+    gmst = gmst82(mjd)
+    singmst = sin(gmst)
+    cosgmst = cos(gmst)
+    recef[0] = rteme[0]*cosgmst + rteme[1]*singmst
+    recef[1] = rteme[0]*(-singmst) + rteme[1]*cosgmst
+    recef[2] = rteme[2]

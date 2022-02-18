@@ -2,10 +2,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from passpredict import MemoryTLESource, Observer, Location
+from passpredict import Observer, Location
 from passpredict.exceptions import NotReachable
 from passpredict import *
-
 
 
 def assert_datetime_approx(dt1, dt2, delta_seconds):
@@ -35,66 +34,6 @@ def assert_overpass_accuracy_with_brute_force_observer(location, tle, start, end
         assert pass_.duration == pytest.approx(expected_duration, abs=dt_tol*2)
         assert pass_.tca.elevation == pytest.approx(expected_pass.tca.elevation, abs=0.5)
         date = pass_.los.dt + timedelta(minutes=1)
-
-
-@pytest.mark.parametrize('observer_class, observer_kwargs', [
-    pytest.param(Observer, {'tolerance_s': 0.5}, id='Standard Observer'),
-    pytest.param(BruteForceObserver, {'time_step': 5, 'tolerance_s': 0.5}, id='BruteForceObserver'),
-])
-def test_bugsat_predictions(observer_class, observer_kwargs):
-    """
-    From orbit-predictor test suite,  newsat 2
-    https://github.com/satellogic/orbit-predictor/blob/master/tests/test_accurate_predictor.py
-    """
-    tle_lines = (
-        "1 40014U 14033E   14294.41438078  .00003468  00000-0  34565-3 0  3930",
-        "2 40014  97.9781 190.6418 0032692 299.0467  60.7524 14.91878099 18425"
-    )
-    satellite = SatellitePredictor.from_tle(TLE('Bugsat', tle_lines))
-
-    # ARG in orbit_predictor.locations
-    location = Location("ARG", latitude_deg=-31.2884, longitude_deg=-64.2032868, elevation_m=492.96)
-    observer = observer_class(location, satellite, **observer_kwargs)
-
-    STK_DATA = """
-    ------------------------------------------------------------------------------------------------
-        AOS                      TCA                      LOS                      Duration      Max El
-    ------------------------------------------------------------------------------------------------
-        2014/10/23 01:27:33.224  2014/10/23 01:32:41.074  2014/10/23 01:37:47.944  00:10:14.720   12.76
-        2014/10/23 03:01:37.007  2014/10/23 03:07:48.890  2014/10/23 03:14:01.451  00:12:24.000   39.32
-        2014/10/23 14:49:34.783  2014/10/23 14:55:44.394  2014/10/23 15:01:51.154  00:12:16.000   41.75
-        2014/10/23 16:25:54.939  2014/10/23 16:30:50.152  2014/10/23 16:35:44.984  00:09:50.000   11.45
-        2014/10/24 01:35:47.889  2014/10/24 01:41:13.181  2014/10/24 01:46:37.548  00:10:50.000   16.07
-        2014/10/24 03:10:23.486  2014/10/24 03:16:27.230  2014/10/24 03:22:31.865  00:12:08.000   30.62
-        2014/10/24 14:58:07.378  2014/10/24 15:04:21.721  2014/10/24 15:10:33.546  00:12:26.000   54.83
-        2014/10/24 16:34:48.635  2014/10/24 16:39:20.960  2014/10/24 16:43:53.204  00:09:04.000    8.78
-        2014/10/25 01:44:05.771  2014/10/25 01:49:45.487  2014/10/25 01:55:24.414  00:11:18.000   20.07
-        2014/10/25 03:19:12.611  2014/10/25 03:25:05.674  2014/10/25 03:30:59.815  00:11:47.000   24.09"""  # NOQA
-
-    UTC = timezone.utc
-    for line in STK_DATA.splitlines()[4:]:
-        line_parts = line.split()
-        aos = datetime.strptime(" ".join(line_parts[:2]), '%Y/%m/%d %H:%M:%S.%f').replace(tzinfo=UTC)
-        max_elevation_date = datetime.strptime(" ".join(line_parts[2:4]),
-                                                    '%Y/%m/%d %H:%M:%S.%f').replace(tzinfo=UTC)
-        los = datetime.strptime(" ".join(line_parts[4:6]), '%Y/%m/%d %H:%M:%S.%f').replace(tzinfo=UTC)
-        duration = datetime.strptime(line_parts[6], '%H:%M:%S.%f')
-        duration_s = timedelta(
-            minutes=duration.minute, seconds=duration.second).total_seconds()
-        max_elev_deg = float(line_parts[7])
-
-        try:
-            date = pass_.los.dt + timedelta(minutes=1) # NOQA
-        except UnboundLocalError:
-            date = datetime.strptime(
-                "2014-10-22 20:18:11.921921", '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=UTC)
-
-        pass_ = observer.next_pass(date)
-        assert_datetime_approx(pass_.aos.dt, aos, 1)
-        assert_datetime_approx(pass_.los.dt, los, 1)
-        assert_datetime_approx(pass_.tca.dt, max_elevation_date, 1)
-        assert pass_.duration == pytest.approx(duration_s, abs=2)
-        assert pass_.tca.elevation == pytest.approx(max_elev_deg, abs=0.05)
 
 
 @pytest.mark.slow
@@ -143,7 +82,16 @@ class TestStandardObserver:
         assert_overpass_accuracy_with_brute_force_observer(location, tle, start, end)
 
 
-@pytest.mark.skip(reason="Need to determine how to count geosynchronous overpasses")
+    @pytest.mark.parametrize('tle', [
+        pytest.param(TLE(14129, ('1 14129U 83058B   22033.24895832 -.00000141  00000+0  00000+0 0  9997', '2 14129  26.3866 118.1312 5979870  45.7131 349.8958  2.05868779262630')), id="AMSAT Phase 3-B, OSCAR-10"),
+    ])
+    def test_high_eccentricity_satellites(self, location, tle):
+        """  Satellites with Molniya orbits  """
+        start = datetime(2022, 2, 9, tzinfo=timezone.utc)
+        end = datetime(2022, 2, 11, tzinfo=timezone.utc)
+        assert_overpass_accuracy_with_brute_force_observer(location, tle, start, end)
+
+
 @pytest.mark.parametrize('location',[
     pytest.param(Location('Inuvik, Canada', 68.3607, -133.7230, 15), id='Inuvik'),
     pytest.param(Location('Austin, Texas, USA', 32.1234, -97.1234, 0), id='Austin'),
@@ -174,7 +122,6 @@ def test_west_geo_geosynchronous_satellites(location, tle, start, end):
     assert_overpass_accuracy_with_brute_force_observer(location, tle, start, end, dt_tol=dt_tol)
 
 
-@pytest.mark.skip(reason="Need to determine how to count geosynchronous overpasses")
 @pytest.mark.parametrize('location',[
     pytest.param(Location('Perth, Australia', -31.9523, 115.8613, 0), id='Perth'),
     pytest.param(Location('Singapore', 1.3521, 103.8198, 0), id='Singapore'),
@@ -187,13 +134,13 @@ def test_west_geo_geosynchronous_satellites(location, tle, start, end):
         datetime(2022, 1, 23, tzinfo=timezone.utc),
         id='BEIDOU 3'
     ),
+    pytest.param(
+        TLE('QZS-1 (QZSS/PRN 183)', ('1 37158U 10045A   22033.59047689 -.00000180  00000+0  00000+0 0  9990', '2 37158  42.1963 135.2577 0764175 270.5283  82.3950  1.00264832 41747')),
+        datetime(2022, 2, 9, tzinfo=timezone.utc),
+        datetime(2022, 2, 11, tzinfo=timezone.utc),
+        id="QZS-1 Tundra Orbit"
+    ),
 ])
 def test_east_geo_geosynchronous_satellites(location, tle, start, end):
     tol = 2  # datetime tolerance in seconds
     assert_overpass_accuracy_with_brute_force_observer(location, tle, start, end, dt_tol=tol)
-
-
-
-
-if __name__ == "__main__":
-    pytest.run(__file__)

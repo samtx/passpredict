@@ -8,6 +8,7 @@ from pytest import approx
 
 from passpredict import _rotations
 from passpredict.observers import RangeAzEl
+from passpredict.constants import MJD0
 
 np.set_printoptions(precision=8)
 
@@ -71,6 +72,30 @@ def test_ecef_to_llh(ecef, llh, tol):
 def test_jd2tt(jd, tt_expected, tol):
     tt = _rotations.jd2tt(jd)
     assert tt == approx(tt_expected, abs=tol)
+
+
+@pytest.mark.parametrize(
+    'jd, rmod, rpef_expected',
+    (
+        pytest.param(2453827.5, [146186212.0, 28788976.0, 12481064.0], [-148973886.6, -2444152.8, 12481902.6], id="Vallado, Eg.5-1, p.280, April 2, 2006, 00:00 UTC"),
+        pytest.param(2450540.547222222, [146082321., 29321182.7, 12715819.0], [-143170456.9, 41255716.8, 12714338.5], id="Vallado, Eg.11-6, p.913, April 2, 1997, 01:08:0.00 UTC"),
+    )
+)
+@pytest.mark.parametrize(
+    'tol', (1e-5,)
+)
+def test_mod2ecef_mjd(jd, rmod, rpef_expected, tol):
+    """
+    Test MOD to ECEF transformation
+    Validates result using julia SatelliteToolbox MOD to PEF
+    """
+    rmod = np.asarray(rmod)
+    rpef_expected = np.asarray(rpef_expected)
+    rpef = np.empty(3, dtype=np.double)
+    mjd = jd - MJD0
+    _rotations.mod2ecef_mjd(mjd, rmod, rpef)
+    rel = norm(rpef - rpef_expected) / norm(rpef_expected)
+    assert rel < tol
 
 
 @pytest.mark.parametrize(

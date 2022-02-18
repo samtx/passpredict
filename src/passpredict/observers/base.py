@@ -1,6 +1,5 @@
 from __future__ import annotations
 import datetime
-from distutils.log import warn
 from math import pi, log10, sin, cos, acos, degrees, radians, floor
 from typing import List, TYPE_CHECKING, NamedTuple, Sequence, Tuple
 from functools import lru_cache, cached_property
@@ -15,7 +14,7 @@ from numpy.linalg import norm
 
 from .functions import julian_date_sum
 from ..time import julian_date_from_datetime
-from ..constants import R_EARTH
+from ..constants import R_EARTH, MJD0
 from .. import _rotations
 from ..utils import get_pass_detail_datetime_metadata
 from ..exceptions import NotReachable
@@ -326,12 +325,19 @@ class ObserverBase:
         return PredictedPass(**data)
 
     @lru_cache(maxsize=16)
-    def _elevation_at(self, when_utc):
-        position = self.satellite.get_only_position(when_utc)
-        return self.location.elevation_for(position)
+    def _elevation_at(self, when_utc: datetime.datetime):
+        """  Return elevation of object in radians  """
+        sat_recef = self.satellite.get_only_position(when_utc)
+        coslatcoslon, coslatsinlon, sinlat = self.location._cached_elevation_calculation_data
+        return _rotations.elevation_at_rad(coslatcoslon, coslatsinlon, sinlat, self.location.recef, sat_recef)
 
     @lru_cache(maxsize=16)
     def _elevation_at_jd(self, jd: float) -> float:
+        position = self.satellite.get_only_position_jd(jd)
+        return self.location.elevation_for(position)
+
+    @lru_cache(maxsize=16)
+    def _elevation_at_mjd(self, mjd: float) -> float:
         position = self.satellite.get_only_position_jd(jd)
         return self.location.elevation_for(position)
 
