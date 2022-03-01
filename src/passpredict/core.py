@@ -35,9 +35,8 @@ def predict_single_satellite_overpasses(
     min_elevation: float
 ):
     date_end = date_start + datetime.timedelta(days=days)
-    observer = Observer(location, satellite, aos_at_dg=min_elevation, tolerance_s=1.0)
-    pass_iterator = observer.iter_passes(date_start, limit_date=date_end)
-    passes = list(pass_iterator)
+    observer = Observer(location, satellite)
+    passes = observer.pass_list(date_start, limit_date=date_end, aos_at_dg=min_elevation, tol=1.0)
     return passes
 
 
@@ -47,8 +46,8 @@ def predict_next_overpass(
     date_start: datetime.date,
     min_elevation: float = 10.0
 ):
-    observer = Observer(location, satellite, aos_at_dg=min_elevation, tolerance_s=1.0)
-    pass_ = observer.get_next_pass(date_start)
+    observer = Observer(location, satellite)
+    pass_ = observer.get_next_pass(date_start, aos_at_dg=min_elevation, tol=1.0)
     return pass_
 
 

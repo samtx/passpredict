@@ -4,9 +4,20 @@ import datetime
 
 import numpy as np
 
+from .core import PassType
+from ..constants import R_EARTH
 from ..time import julian_date
 from .core import PassType
 from ..constants import R_EARTH
+
+if typing.TYPE_CHECKING:
+    from .observer import Observer
+
+
+class VisualPoints(typing.NamedTuple):
+    vis_begin_mjd: float = None
+    vis_tca_mjd: float = None
+    vis_end_mjd: float = None
 
 if typing.TYPE_CHECKING:
     from .observer import Observer

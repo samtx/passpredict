@@ -8,7 +8,7 @@ from passpredict import *
 from passpredict.locations import Location
 from passpredict.satellites import SatellitePredictor
 from passpredict import MemoryTLESource
-from passpredict.observers import Observer, BruteForceObserver
+from passpredict.observers import Observer
 import passpredict
 
 
@@ -32,13 +32,12 @@ class PredictOverpasses:
 
         location = Location("Austin, Texas", 30.2711, -97.7434, 0)
         self.min_elevation = 10
-        self.observer = passpredict.Observer(location, satellite, aos_at_dg=self.min_elevation)
+        self.observer = passpredict.Observer(location, satellite)
         self.satellite = satellite
         self.location = location
 
     def time_observer_iter_passes(self):
-        pass_iterator = self.observer.iter_passes(self.start, limit_date=self.end)
-        list(pass_iterator)
+        self.observer.pass_list(self.start, limit_date=self.end, aos_at_dg=self.min_elevation)
 
     def time_predict_single_satellite_overpass(self):
         passpredict.predict_single_satellite_overpasses(
@@ -57,10 +56,10 @@ class PredictOverpasses:
             self.ndays,
             10,  # min elevation
         )
-        res = self.observer._elevation_at.cache_info()
+        res = self.observer._elevation_at_mjd.cache_info()
         return res.hits + res.misses
 
-    def track_elevation_at_function_cache_ration(self):
+    def track_elevation_at_function_cache_ratio(self):
         passpredict.predict_single_satellite_overpasses(
             self.satellite,
             self.location,
@@ -68,9 +67,8 @@ class PredictOverpasses:
             self.ndays,
             10,  # min elevation
         )
-        res = self.observer._elevation_at.cache_info()
+        res = self.observer._elevation_at_mjd.cache_info()
         return res.hits / (res.misses + res.hits)
-
 
 
 class PredictOverpassesBruteForce:
@@ -98,8 +96,7 @@ class PredictOverpassesBruteForce:
 
         location = Location("Austin, Texas", 30.2711, -97.7434, 0)
         self.min_elevation = 10
-        self.observer = passpredict.BruteForceObserver(location, satellite, aos_at_dg=self.min_elevation)
+        self.observer = passpredict.Observer(location, satellite)
 
     def time_brute_force_observer(self, *args):
-        pass_iterator = self.observer.iter_passes(self.start, limit_date=self.end)
-        list(pass_iterator)
+        self.observer.pass_list(self.start, limit_date=self.end, method='brute', aos_at_dg=self.min_elevation)
