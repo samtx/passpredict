@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, List, Tuple
 import warnings
 from functools import lru_cache
 from collections import defaultdict
-from math import sin, cos, log10, acos, pi, radians
+from math import sin, cos, log10, acos, pi, radians, degrees
 
 import numpy as np
 from numpy.linalg import norm
@@ -22,7 +22,7 @@ from .orbit_predictor import orbit_predictor_iterator
 from .brute_force import brute_force_iterator
 from .. import _rotations
 from ..time import julian_date_from_datetime
-from .._time import mjd2datetime_us, datetime2mjd
+from .._time import mjd2datetime, datetime2mjd
 from ..solar import sun_pos_mjd
 from ..constants import MJD0, R_EARTH
 from ..utils import get_pass_detail_datetime_metadata
@@ -213,16 +213,16 @@ class Observer:
             'satid': self.satellite.satid,
             'location': self.location,
             'type': basic_pass.type,
-            'aos': self.point(basic_pass.aos_mjd, **kw),
-            'tca': self.point(basic_pass.tca_mjd, **kw),
-            'los': self.point(basic_pass.los_mjd, **kw),
+            'aos': self._point_mjd(basic_pass.aos_mjd, **kw),
+            'tca': self._point_mjd(basic_pass.tca_mjd, **kw),
+            'los': self._point_mjd(basic_pass.los_mjd, **kw),
         })
         if basic_pass.vis_begin_mjd:
-            data['vis_begin'] = self.point(basic_pass.vis_begin_mjd, **kw)
+            data['vis_begin'] = self._point_mjd(basic_pass.vis_begin_mjd, **kw)
         if basic_pass.vis_end_mjd:
-            data['vis_end'] = self.point(basic_pass.vis_end_mjd, **kw)
+            data['vis_end'] = self._point_mjd(basic_pass.vis_end_mjd, **kw)
         if basic_pass.vis_tca_mjd:
-            data['vis_tca'] = self.point(basic_pass.vis_tca_mjd, **kw)
+            data['vis_tca'] = self._point_mjd(basic_pass.vis_tca_mjd, **kw)
         if (basic_pass.type == Visibility.visible) and (self.satellite.intrinsic_mag is not None):
             brightness = 999
             for pt in ('vis_begin', 'vis_tca', 'vis_end',):
@@ -232,35 +232,29 @@ class Observer:
             data['brightness'] = brightness
         return PredictedPass(**data)
 
-    @lru_cache(maxsize=16)
-    def _elevation_at(self, when_utc: datetime.datetime):
-        """  Return elevation of object in radians  """
-        sat_recef = self.satellite.get_only_position(when_utc)
-        coslatcoslon, coslatsinlon, sinlat = self.location._cached_elevation_calculation_data
-        return _rotations.elevation_at_rad(coslatcoslon, coslatsinlon, sinlat, self.location.recef, sat_recef)
+    def elevation(self, d: datetime.datetime):
+        """  Return elevation of object in degrees  """
+        d2 = make_utc(d)
+        mjd = datetime2mjd(d2)
+        el = self._elevation_mjd(mjd)
+        return degrees(el)
 
     @lru_cache(maxsize=16)
-    def _elevation_at_jd(self, jd: float) -> float:
-        position = self.satellite.get_only_position_jd(jd)
-        return self.location.elevation_for(position)
-
-    @lru_cache(maxsize=16)
-    def _elevation_at_mjd(self, mjd: float) -> float:
+    def _elevation_mjd(self, mjd: float) -> float:
+        """  Returns elevation of object in radians  """
         sat_recef = self.satellite.get_only_position_mjd(mjd)
         coslatcoslon, coslatsinlon, sinlat = self.location._cached_elevation_calculation_data
         return _rotations.elevation_at_rad(coslatcoslon, coslatsinlon, sinlat, self.location.recef, sat_recef)
 
-    def razel(self, datetime: datetime.datetime) -> RangeAzEl:
+    def razel(self, d: datetime.datetime) -> RangeAzEl:
         """
         Get range, azimuth, and elevation for datetime
         """
-        satellite_ecef = self.satellite.get_only_position(datetime)
-        range_, az, el = _rotations.razel(
-            self.location.latitude_rad, self.location.longitude_rad, self.location.recef, satellite_ecef
-        )
-        return RangeAzEl(range_, az, el)
+        d2 = make_utc(d)
+        mjd = datetime2mjd(d2)
+        return self._razel_mjd(mjd)
 
-    def razel_mjd(self, mjd: float) -> RangeAzEl:
+    def _razel_mjd(self, mjd: float) -> RangeAzEl:
         """
         Get range, azimuth, and elevation for mjd time
         """
@@ -270,48 +264,40 @@ class Observer:
         )
         return RangeAzEl(range_, az, el)
 
-    @lru_cache(maxsize=16)
-    def range_at_jd(self, jd: float) -> float:
-        """
-        Get slant range magnitude from location to satellite [km]
-        """
-        satellite_ecef = self.satellite.get_only_position_jd(jd)
-        range_ = _rotations.range_at(
-            self.location.latitude_rad,
-            self.location.longitude_rad,
-            self.location.recef,
-            satellite_ecef,
-        )
-        return range_
-
-    def point(self, mjd: float, **kw) -> PassPoint:
+    def point(self, d: datetime.datetime, **kw) -> PassPoint:
         """
         Get PassPoint with range, azimuth, and elevation data for mjd time
         """
-        rnazel = self.razel_mjd(mjd)
-        vis_state = self.determine_visibility_mjd(mjd, **kw)
+        d2 = make_utc(d)
+        mjd = datetime2mjd(d2)
+        return self._point_mjd(mjd)
+
+    def _point_mjd(self, mjd: float, **kw) -> PassPoint:
+        """
+        Get PassPoint with range, azimuth, and elevation data for mjd time
+        """
+        rnazel = self._razel_mjd(mjd)
+        vis_state = self._determine_visibility_mjd(mjd, **kw)
         if (vis_state == Visibility.visible) and (self.satellite.intrinsic_mag is not None):
-            brightness = self.brightness_mjd(mjd)
+            brightness = self._brightness_mjd(mjd)
         else:
             brightness = None
-        d = mjd2datetime_us(mjd)
+        d = mjd2datetime(mjd)
         pt = PassPoint(
             d, rnazel.range, rnazel.az, rnazel.el, type=vis_state, brightness=brightness
         )
         return pt
 
-    @lru_cache(maxsize=16)
-    def rho_jd(self, jd: float) -> np.ndarray:
+    def rho(self, d: datetime.datetime) -> np.ndarray:
         """
         Get topocentric ECEF vector from location to satellite
         """
-        rho = np.empty(3, dtype=np.double)
-        sat_recef = self.satellite.get_only_position_jd(jd)
-        _rotations.ecef_to_rhosez(self.location.latitude_rad, self.location.longitude_rad, self.location.recef, sat_recef, rho)
-        return rho
+        d2 = make_utc(d)
+        mjd = datetime2mjd(d2)
+        return self._rho_mjd(mjd)
 
     @lru_cache(maxsize=16)
-    def rho_mjd(self, mjd: float) -> np.ndarray:
+    def _rho_mjd(self, mjd: float) -> np.ndarray:
         """
         Get topocentric ECEF vector from location to satellite
         """
@@ -320,45 +306,48 @@ class Observer:
         _rotations.ecef_to_rhosez(self.location.latitude_rad, self.location.longitude_rad, self.location.recef, sat_recef, rho)
         return rho
 
-    def brightness_mjd(self, mjd: float) -> float:
-        jd = mjd + MJD0
-        beta = pi - self.sat_location_sun_angle(jd)
-        range_ = norm(self.rho_jd(jd))
+    def _brightness_mjd(self, mjd: float) -> float:
+        beta, range_ = self._sat_location_sun_angle_mjd(mjd)
+        beta = pi - beta
         mag = self.satellite.intrinsic_mag - 15 + 5*log10(range_) - 2.5*log10(sin(beta) + (pi-beta)*cos(beta))
         return mag
 
-    def brightness(self, jd: float) -> float:
-        beta = pi - self.sat_location_sun_angle(jd)
-        range_ = norm(self.rho_jd(jd))
-        mag = self.satellite.intrinsic_mag - 15 + 5*log10(range_) - 2.5*log10(sin(beta) + (pi-beta)*cos(beta))
-        return mag
+    def brightness(self, d: datetime.datetime) -> float:
+        d2 = make_utc(d)
+        mjd = datetime2mjd(d2)
+        return self._brightness_mjd(mjd)
 
-    def sat_location_sun_angle_mjd(self, mjd: float) -> float:
+    def _sat_location_sun_angle_mjd(self, mjd: float):
         """
         Get phase angle between location -- satellite -- sun
         Return value in radians
+        Also return slant range to satellite
         """
         sun_rho = sun_pos_mjd(mjd) - self.location.recef
-        sat_rho = self.rho_mjd(mjd)
-        phase_angle = acos(np.dot(sat_rho, sun_rho) / (norm(sat_rho) * norm(sun_rho)))
-        return phase_angle
+        sat_rho = self._rho_mjd(mjd)
+        range_ = norm(sat_rho)
+        phase_angle = acos(np.dot(sat_rho, sun_rho) / (range_ * norm(sun_rho)))
+        return phase_angle, range_
 
-    def sat_location_sun_angle(self, jd: float) -> float:
+    def sat_location_sun_angle(self, d: datetime.datetime) -> float:
         """
         Get phase angle between location -- satellite -- sun
         Return value in radians
         """
-        mjd = jd - MJD0
-        return self.sat_location_sun_angle_mjd(mjd)
+        d2 = make_utc(d)
+        mjd = datetime2mjd(d2)
+        phase_angle, _ = self._sat_location_sun_angle_mjd(mjd)
+        return phase_angle
 
     def determine_visibility(self, d: datetime.datetime, **kw) -> Visibility:
         """
         Determine if satellite is visible for single datetime instance
         """
-        jd = sum(julian_date_from_datetime(d))
-        return self.determine_visibility_jd(jd, **kw)
+        d2 = make_utc(d)
+        mjd = datetime2mjd(d2)
+        return self._determine_visibility_mjd(mjd, **kw)
 
-    def determine_visibility_mjd(
+    def _determine_visibility_mjd(
         self,
         mjd: float,
         *,
@@ -369,7 +358,7 @@ class Observer:
         """
         Determine if satellite is visible for single modified julian date
         """
-        sat_el = self._elevation_at_mjd(mjd)
+        sat_el = self._elevation_mjd(mjd)
         if sat_el < aos_at:
             return None
         sun_el = self.location.sun_elevation_mjd(mjd)
@@ -379,17 +368,6 @@ class Observer:
         if dist > R_EARTH:
             return Visibility.visible
         return Visibility.unlit
-
-    def determine_visibility_jd(
-        self,
-        jd: float,
-        **kw,
-    ) -> Visibility:
-        """
-        Determine if satellite is visible for single julian date
-        """
-        mjd = jd - MJD0
-        return self.determine_visibility_mjd(mjd, **kw)
 
 
 def _is_valid(pass_, visible_only, max_elevation_gt, start_mjd):
