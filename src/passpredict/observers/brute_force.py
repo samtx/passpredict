@@ -1,16 +1,11 @@
 from __future__ import annotations
 import datetime
-from telnetlib import EC
 from typing import TYPE_CHECKING
 from math import radians, degrees
 
-import numpy as np
-
-from .core import BasicPassInfo, PassType
+from .core import BasicPassInfo
 from .functions import make_utc, find_root, find_min, visual_pass_details
 from .._time import datetime2mjd
-from ..constants import R_EARTH
-
 
 if TYPE_CHECKING:
     from .observer import Observer

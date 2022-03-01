@@ -23,8 +23,7 @@ from .brute_force import brute_force_iterator
 from .. import _rotations
 from ..time import julian_date_from_datetime
 from .._time import mjd2datetime_us, datetime2mjd
-from ..solar import sun_pos_mjd, sun_pos
-from ..exceptions import NotReachable
+from ..solar import sun_pos_mjd
 from ..constants import MJD0, R_EARTH
 from ..utils import get_pass_detail_datetime_metadata
 
