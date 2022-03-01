@@ -1,14 +1,16 @@
-from .base import ObserverBase, PredictedPass, BasicPassInfo, RangeAzEl, PassType, PassPoint, Visibility
+from .core import (
+    PredictedPass,
+    BasicPassInfo,
+    RangeAzEl,
+    PassType,
+    PassPoint,
+    Visibility,
+)
 
-from .standard import Observer
-
-from .brute_force import BruteForceObserver
-
+from .observer import Observer
 
 __all__ = [
-    'ObserverBase',
     'Observer',
-    'BruteForceObserver',
     'PredictedPass',
     'BasicPassInfo',
     'RangeAzEl',

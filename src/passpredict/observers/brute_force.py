@@ -1,168 +1,173 @@
 from __future__ import annotations
 import datetime
-import time
-import typing
-from math import radians, degrees, pi, log10, sin, cos, acos, floor
-from enum import Enum
+from telnetlib import EC
+from typing import TYPE_CHECKING
+from math import radians, degrees
 
 import numpy as np
-# from scipy.optimize import minimize_scalar
 
-from .base import ObserverBase, BasicPassInfo
-from .functions import _make_utc, julian_date_sum
-from ..time import julian_date, julian_date_from_datetime
-from .._time import jday2datetime_us
-from ..exceptions import NotReachable, PropagationError
-from ..locations import Location
-
-if typing.TYPE_CHECKING:
-    from ..satellites import SatellitePredictor, LLH
+from .core import BasicPassInfo, PassType
+from .functions import make_utc, find_root, find_min
+from .._time import datetime2mjd
+from ..constants import R_EARTH
 
 
-class BruteForceObserver(ObserverBase):
+if TYPE_CHECKING:
+    from .observer import Observer
+
+
+def brute_force_iterator(
+    observer: Observer,
+    start_date: datetime.datetime,
+    limit_date: datetime.datetime = None,
+    *,
+    aos_at_dg: float = 0,
+    max_elevation_gt: float = 0,
+    tol: float = 1,  # tolerance in seconds
+    sunrise_dg: float = -6,
+    time_step: float = 10,  # time step in seconds
+    **extra_options,
+) -> BasicPassInfo:
     """
     Predicts passes of a satellite over a given location.
     Exposes an iterable interface.
     This is a brute force observation algorithm, useful for validation
+
+    Returns one pass each time
     """
+    start_date = make_utc(start_date)
+    limit_date = make_utc(limit_date)
+    mjd = datetime2mjd(start_date)
+    limit_mjd = datetime2mjd(limit_date) if limit_date else None
 
-    def __init__(
-        self,
-        location: Location,
-        satellite: SatellitePredictor,
-        time_step=10,
-        **kwargs
-    ):
-        """
-        Initialize Observer but also compute radians for geodetic coordinates
-        """
-        super().__init__(location, satellite, **kwargs)
-        if time_step <= 0:
-            raise Exception("Time step must be > 0")
-        self.jd_step = time_step / 86400
+    # Get extra options
+    aos_at = radians(aos_at_dg)
+    max_elevation_gt = radians(max([max_elevation_gt, aos_at_dg]))
+    if tol <= 0:
+        raise Exception("Tolerance must be > 0")
+    if tol >= time_step:
+        raise Exception("Tolerance must be greater than time_step")
+    tol = tol / 86400.0
+    step = time_step / 86400.0
 
-    def iter_passes(self, start_date, limit_date=None, visible_only=False):
-        """Returns one pass each time"""
-        start_date = _make_utc(start_date)
-        limit_date = _make_utc(limit_date)
-        jd = julian_date_sum(start_date)
-        if not limit_date:
-            limit_jd = None
-        else:
-            limit_jd = julian_date_sum(limit_date)
-        # First check if satellite is currently above horizon
-        # If so, rewind start time until below horizon
-        # stop rewinding after 1 day
-        prev_jd_limit = jd - 1
-        while self._above_horizon(jd) and jd > prev_jd_limit:
-            jd = jd - self.jd_step
+    aos_at = radians(aos_at_dg)
 
-        prev_jd = jd - self.jd_step
-        while True:
-            if self._crosses_horizon(prev_jd, jd):
-                # satellite has just come above the horizon, find aos, tca, and los
-                pass_, los_jd = self._refine_pass(prev_jd, jd)
-                if self._is_pass_valid(pass_, visible_only=visible_only):
-                    predicted_pass = self._build_predicted_pass(pass_)
-                    yield predicted_pass
-                    jd = los_jd + self.jd_step * 5
-            if limit_jd and jd > limit_jd:
-                break
-            prev_jd = jd
-            jd += self.jd_step
+    prev_mjd = mjd - step
+    while True:
+        if _crosses_horizon(observer, prev_mjd, mjd, aos_at):
+            # satellite has just come above the horizon, find aos, tca, and los
 
-    def set_minimum_elevation(self, elevation: float):
-        """  Set minimum elevation for an overpass  """
-        self.aos_at = radians(elevation)
-        self.aos_at_deg = elevation
+            def el_fn(t):
+                return observer._elevation_at_mjd(t) - aos_at
 
-    def _above_horizon(self, jd):
-        el = self._elevation_at_jd(jd)
-        return el >= self.aos_at
+            aos_mjd = find_root(el_fn, prev_mjd, mjd, tol)
+            mjd = aos_mjd + step
 
-    def _crosses_horizon(self, jd1, jd2):
-        if not self._above_horizon(jd1) and self._above_horizon(jd2):
-            return True
-        else:
-            return False
+            # find los
+            while observer._elevation_at_mjd(mjd) > aos_at:
+                prev_mjd = mjd
+                mjd += step
 
-    def _refine_pass(self, jd1, jd2) -> BasicPassInfo:
-        el_fn = lambda x: self._elevation_at_jd(x) - self.aos_at
-        aos_jd = find_root(el_fn, jd1, jd2, self.jd_tol)
-        jd = aos_jd + self.jd_step
-        # find los
-        while self._elevation_at_jd(jd) > self.aos_at:
-            prev_jd = jd
-            jd += self.jd_step
-        los_jd = find_root(el_fn, prev_jd, jd, self.jd_tol)
-        # find tca
-        el_fn = lambda x: -self._elevation_at_jd(x)
-        tca_jd, max_el_rad = find_min(el_fn, aos_jd, los_jd, self.jd_tol)
-        max_el = degrees(-max_el_rad)
-        aos_dt = jday2datetime_us(aos_jd)
-        tca_dt = jday2datetime_us(tca_jd)
-        los_dt = jday2datetime_us(los_jd)
-        return BasicPassInfo(aos_dt, tca_dt, los_dt, max_el), los_jd
+            los_mjd = find_root(el_fn, prev_mjd, mjd, tol)
 
+            # find tca
+            def el_fn(t):
+                return -observer._elevation_at_mjd(t)
 
-def find_root(f: typing.Callable, a: float, b: float, tol: float) -> float:
-    """
-    Find root of function f() with bisection method within tolerance tol.
-    Return root.
-    """
-    assert a < b
-    fa, fb = f(a), f(b)
-    if fa*fb >= 0:
-        return None
-        # # return value closest to zero
-        # if abs(fa) < abs(fb):
-        #     return a
-        # else:
-        #     return b
+            tca_mjd, max_el_rad = find_min(el_fn, aos_mjd, los_mjd, tol)
 
-    diff = tol + 1
-    while diff > tol:
-        mid = (a + b) / 2
-        fmid = f(mid)
-        if fa*fmid < 0:
-            b = mid
-            fb = f(b)
-        elif fb*fmid < 0:
-            a = mid
-            fa = f(a)
-        diff = abs(b - a)
-    return mid
+            tca_elevation = degrees(-max_el_rad)
 
+            # Find visual pass details
+            # First, get endpoints of when location is not sunlit
+            t0 = aos_mjd
+            tf = los_mjd
+            t = np.linspace(t0, tf, 25)
 
-def find_min(f: typing.Callable, a: float, b: float, tol: float) -> float:
-    """
-    Find minimum of bounded univariate scalar function using scipy.optimize.minimize_scalar
-    """
-    assert a < b
-    # res = minimize_scalar(f, bounds=(a, b), method='golden', tol=tol, options={'xatol': tol})
-    diff = b - a
-    fvec = np.vectorize(f)
-    N = 5
-    while diff > tol:
-        x = np.linspace(a, b, N)
-        y = fvec(x)
-        i = y.argmin()
-        if i == N:
-            a = x[N - 1]
-            b = x[N]
-        elif i == 0:
-            a = x[0]
-            b = x[1]
-        else:
-            a = x[i - 1]
-            b = x[i + 1]
-        diff = abs(b - a)
-    xsol = a + diff / 2
-    fsol = f(xsol)
-    return xsol, fsol
+            def sun_el_fn(t):
+                return observer.location.sun_elevation_mjd(t) - sunrise_dg
+
+            el = np.array([sun_el_fn(t_) for t_ in t])
+
+            pass_ = None
+            if np.min(el) > 0:
+                # entire pass in sunlit
+                pass_ = BasicPassInfo(
+                    aos_mjd, tca_mjd, los_mjd, tca_elevation,
+                    type_=PassType.daylight
+                )
+
+            else:
+                if el[0]*el[-1] < 0:
+                    # part of the pass is in darkness.
+                    # only part of the pass is sunlit. Find new jd0, jdf
+                    x = find_root(sun_el_fn, t0, tf, tol)
+                    tmp1 = sun_el_fn(x - tol)
+                    tmp2 = sun_el_fn(x + tol)
+                    if tmp1 < tmp2:
+                        # sun elevation is decreasing
+                        t0 = x
+                    else:
+                        tf = x
+                # Now use t0 and tf to find when satellite is
+                # illuminated by sun
+                t = np.linspace(t0, tf, 25)
+
+                def illum_fn(t):
+                    return observer.satellite.illumination_distance_mjd(t) - R_EARTH  # noqa
+
+                illum_pts = np.array([illum_fn(t_) for t_ in t])
+
+                if np.max(illum_pts) < 0:
+                    # entire pass is in shadow
+                    pass_ = BasicPassInfo(
+                        aos_mjd, tca_mjd, los_mjd, tca_elevation,
+                        type_=PassType.unlit
+                    )
+
+                else:
+                    if illum_pts[0]*illum_pts[-1] < 0:
+                        # the satellite is visible for only part of the pass.
+                        # Find new t0, tf
+                        x = find_root(illum_fn, t0, tf, tol)
+                        tmp1 = illum_fn(x - tol)
+                        tmp2 = illum_fn(x + tol)
+                        if tmp1 < tmp2:
+                            # satellite is coming out of shadow
+                            t0 = x
+                        else:
+                            # satellite is going into shadow
+                            tf = x
+                        # Set visible start and end points for Pass
+                    vis_begin_mjd = t0
+                    vis_end_mjd = tf
+                    # Find maximum elevation during visible period
+                    if vis_begin_mjd <= tca_mjd <= vis_end_mjd:
+                        vis_tca_mjd = tca_mjd
+                    elif observer._elevation_at_mjd(vis_begin_mjd) > observer._elevation_at_mjd(vis_end_mjd):
+                        vis_tca_mjd = vis_begin_mjd
+                    else:
+                        vis_tca_mjd = vis_end_mjd
+                    pass_ = BasicPassInfo(
+                        aos_mjd, tca_mjd, los_mjd, tca_elevation,
+                        type_=PassType.visible, vis_begin_mjd=vis_begin_mjd,
+                        vis_end_mjd=vis_end_mjd, vis_tca_mjd=vis_tca_mjd,
+                    )
+            yield pass_
+            mjd = pass_.los_mjd + step*5
+        if limit_mjd and mjd > limit_mjd:
+            break
+        prev_mjd = mjd
+        mjd += step
 
 
+def _above_horizon(observer, t, aos_at):
+    el = observer._elevation_at_mjd(t)
+    return el >= aos_at
 
-def julian_date_sum(d: datetime.datetime) -> float:
-    jd, jdfr = julian_date(d.year, d.month, d.day, d.hour, d.minute, d.second + d.microsecond/1e6)
-    return jd + jdfr
+
+def _crosses_horizon(observer, t1, t2, aos_at):
+    if not _above_horizon(observer, t1, aos_at) and _above_horizon(observer, t2, aos_at):
+        return True
+    else:
+        return False

@@ -13,7 +13,7 @@ from sgp4.propagation import gstime
 from ..time import julian_date_from_datetime
 from .._time import mjd2jdfr
 from .._rotations import teme2ecef
-from ..solar import sun_pos
+from ..solar import sun_pos,  sun_pos_mjd
 from .. import _solar
 from ..exceptions import PropagationError
 from ..constants import R_EARTH, MJD0
@@ -88,7 +88,7 @@ class SatellitePredictorBase(HighAccuracyTLEPredictor):
         Use modified julian date
         Get satellite position in ECEF coordinates [km]
         """
-        jd, jdfr = _time.mjd2jdfr(mjd)
+        jd, jdfr = mjd2jdfr(mjd)
         position_eci = self._sgp4(jd, jdfr)
         rteme = np.array(position_eci)
         recef = np.empty(3, dtype=np.double)
@@ -134,5 +134,11 @@ class SatellitePredictorBase(HighAccuracyTLEPredictor):
     def illumination_distance_jd(self, jd: float) -> float:
         rsun = sun_pos(jd)
         rsat = self.get_only_position_jd(jd)
+        dist = _solar.sat_illumination_distance(rsat, rsun)
+        return dist
+
+    def illumination_distance_mjd(self, mjd: float) -> float:
+        rsun = sun_pos_mjd(mjd)
+        rsat = self.get_only_position_mjd(mjd)
         dist = _solar.sat_illumination_distance(rsat, rsun)
         return dist
