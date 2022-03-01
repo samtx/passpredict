@@ -2,10 +2,12 @@ from __future__ import annotations
 import typing
 import datetime
 
+import numpy as np
+
 from ..time import julian_date
 
 
-def _make_utc(d: datetime.datetime) -> datetime.datetime:
+def make_utc(d: datetime.datetime) -> datetime.datetime:
     """ Make a datetime a UTC timezone aware datetime """
     if not d:
         return d
@@ -43,6 +45,34 @@ def find_root(f: typing.Callable, a: float, b: float, tol: float) -> float:
             fa = f(a)
         diff = abs(b - a)
     return mid
+
+
+def find_min(f: typing.Callable, a: float, b: float, tol: float) -> float:
+    """
+    Find minimum of bounded univariate scalar function using scipy.optimize.minimize_scalar
+    """
+    assert a < b
+    # res = minimize_scalar(f, bounds=(a, b), method='golden', tol=tol, options={'xatol': tol})
+    diff = b - a
+    fvec = np.vectorize(f)
+    N = 5
+    while diff > tol:
+        x = np.linspace(a, b, N)
+        y = fvec(x)
+        i = y.argmin()
+        if i == N:
+            a = x[N - 1]
+            b = x[N]
+        elif i == 0:
+            a = x[0]
+            b = x[1]
+        else:
+            a = x[i - 1]
+            b = x[i + 1]
+        diff = abs(b - a)
+    xsol = a + diff / 2
+    fsol = f(xsol)
+    return xsol, fsol
 
 
 def julian_date_sum(d: datetime.datetime) -> float:

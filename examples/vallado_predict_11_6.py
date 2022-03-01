@@ -6,6 +6,7 @@ from rich.align import Align
 
 from passpredict import Location, Observer, SatellitePredictor, TLE
 from passpredict.tle import jd_to_epoch_string
+from passpredict._time import datetime2mjd
 
 
 def vallado_predict_11_6():
@@ -26,7 +27,7 @@ def vallado_predict_11_6():
     )
     satellite = SatellitePredictor.from_tle(tle)
     location = Location('MIT', 42.38, -71.13, 24)
-    observer = Observer(location, satellite, aos_at_dg=0, tolerance_s=0.75)
+    observer = Observer(location, satellite)
 
     table = Table(title='Prediction Values for Example 11-6')
     table.add_column('Visibility')
@@ -56,7 +57,9 @@ def vallado_predict_11_6():
 
 
 def _get_row_data(observer: Observer, d: datetime.datetime):
-    pt = observer.point(d, visibility=True)
+    #  aos_at_dg=0, tolerance_s=0.75
+    mjd = datetime2mjd(d)
+    pt = observer.point(mjd, visibility=True, aos_at_dg=0)
     vis = pt.type.capitalize() if pt.type else 'None'
     row = [
         vis,

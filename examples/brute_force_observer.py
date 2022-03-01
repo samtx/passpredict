@@ -3,7 +3,7 @@ import datetime
 from rich.console import Console
 
 from passpredict import Location, MemoryTLESource, SatellitePredictor, TLE
-from passpredict.observers.brute_force import BruteForceObserver
+from passpredict.observers import Observer
 from passpredict.cli import PasspredictManager
 
 
@@ -25,8 +25,11 @@ def brute_force_observer():
     source = MemoryTLESource()
     source.add_tle(tle)
     satellite = SatellitePredictor(25544, source)
-    observer = BruteForceObserver(location, satellite, aos_at_dg=min_elevation, time_step=5, tolerance_s=0.1)
-    overpasses =  observer.pass_list(date_start, limit_date=date_end)
+    observer = Observer(location, satellite)
+    overpasses = observer.pass_list(
+        date_start, limit_date=date_end, method='brute',
+        aos_at_dg=min_elevation, time_step=5, tolerance_s=0.1
+    )
     manager = PasspredictManager(
         location,
         tle,

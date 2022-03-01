@@ -24,8 +24,8 @@ def standard_observer():
         name='ISS',
     )
     satellite = SGP4Predictor.from_tle(tle)
-    observer = Observer(location, satellite, aos_at_dg=min_elevation, tolerance_s=0.5)
-    overpasses = observer.pass_list(date_start, limit_date=date_end)
+    observer = Observer(location, satellite)
+    overpasses = observer.pass_list(date_start, limit_date=date_end, aos_at_dg=min_elevation, tol=0.5)
     manager = PasspredictManager(
         location,
         tle,

@@ -16,8 +16,8 @@ def all_visual_satellites():
     end = start + datetime.timedelta(days=1)
     for tle in tles:
         satellite = SGP4Predictor.from_tle(tle)
-        observer = Observer(location, satellite, aos_at_dg=10)
-        passes = observer.pass_list(start, end, visible_only=True)
+        observer = Observer(location, satellite)
+        passes = observer.pass_list(start, end, visible_only=True, aos_at_dg=10)
         overpasses += passes
     return overpasses
 

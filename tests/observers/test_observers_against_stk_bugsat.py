@@ -2,9 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from passpredict import MemoryTLESource, Observer, Location
-from passpredict.exceptions import NotReachable
-from passpredict import *
+from passpredict import Observer, Location, SGP4Predictor, TLE
 
 from .utils import assert_datetime_approx
 
@@ -14,11 +12,11 @@ except ImportError:
     from backports.zoneinfo import ZoneInfo
 
 
-@pytest.mark.parametrize('observer_class, observer_kwargs', [
-    pytest.param(Observer, {'tolerance_s': 0.5}, id='Standard Observer'),
-    pytest.param(BruteForceObserver, {'time_step': 5, 'tolerance_s': 0.5}, id='BruteForceObserver'),
+@pytest.mark.parametrize('observer_method, observer_kwargs', [
+    pytest.param('op', {'tol': 0.5}, id='orbit predictor iterator'),
+    pytest.param('brute', {'time_step': 5, 'tol': 0.5}, id='brute force iterator'),
 ])
-def test_bugsat_predictions(observer_class, observer_kwargs):
+def test_bugsat_predictions(observer_method, observer_kwargs):
     """
     From orbit-predictor test suite,  newsat 2
     https://github.com/satellogic/orbit-predictor/blob/master/tests/test_accurate_predictor.py
@@ -27,11 +25,11 @@ def test_bugsat_predictions(observer_class, observer_kwargs):
         "1 40014U 14033E   14294.41438078  .00003468  00000-0  34565-3 0  3930",
         "2 40014  97.9781 190.6418 0032692 299.0467  60.7524 14.91878099 18425"
     )
-    satellite = SatellitePredictor.from_tle(TLE('Bugsat', tle_lines))
+    satellite = SGP4Predictor.from_tle(TLE('Bugsat', tle_lines))
 
     # ARG in orbit_predictor.locations
     location = Location("ARG", latitude_deg=-31.2884, longitude_deg=-64.2032868, elevation_m=492.96)
-    observer = observer_class(location, satellite, **observer_kwargs)
+    observer = Observer(location, satellite)
 
     STK_DATA = """
     ------------------------------------------------------------------------------------------------
@@ -66,7 +64,7 @@ def test_bugsat_predictions(observer_class, observer_kwargs):
             date = datetime.strptime(
                 "2014-10-22 20:18:11.921921", '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=UTC)
 
-        pass_ = observer.next_pass(date)
+        pass_ = observer.next_pass(date, method=observer_method, **observer_kwargs)
         assert_datetime_approx(pass_.aos.dt, aos, 1)
         assert_datetime_approx(pass_.los.dt, los, 1)
         assert_datetime_approx(pass_.tca.dt, max_elevation_date, 1)

@@ -33,7 +33,6 @@ from .satellites import (
 
 from .observers import (
     Observer,
-    BruteForceObserver,
     PredictedPass,
 )
 
@@ -55,5 +54,4 @@ __all__ = [
     'KeplerianPredictor',
     'PredictedPass',
     'Observer',
-    'BruteForceObserver',
 ]
