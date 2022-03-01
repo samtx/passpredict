@@ -57,13 +57,24 @@ class Observer:
         **options
     ):
         start_mjd = datetime2mjd(make_utc(start_date))
+
+        # Get options with defaults
+        aos_at_dg = options.get('aos_at_dg', 0)
+        max_elevation_gt = options.get('max_elevation_gt', 0)
+
+        if 'tolerance_s' in options:
+            warnings.warn("tolerance_s has been replaced with tol", DeprecationWarning)
+            if 'tol' not in options:
+                options['tol'] = options['tolerance_s']
+        tol = options.get('tol', 1)   # in seconds
+        if tol < 0:
+            raise Exception("tol must be > 0")
+        sunrise_dg = options.get('sunrise_dg', -6)
+
+        # Derived options
+        aos_at = radians(aos_at_dg)
+
         if method == 'op':
-            # Get options for orbit_predictor_iterator
-            aos_at_dg = options.get('aos_at_dg', 0)
-            aos_at = radians(aos_at_dg)
-            max_elevation_gt = options.get('max_elevation_gt', 0)
-            tol = options.get('tol', 1)
-            sunrise_dg = options.get('sunrise_dg', -6)
             for pass_ in orbit_predictor_iterator(
                 self, start_date, limit_date, aos_at_dg=aos_at_dg,
                 max_elevation_gt=max_elevation_gt, tol=tol,
@@ -77,14 +88,9 @@ class Observer:
 
         elif method == 'brute':
             # Get options for brute force iterator
-            aos_at_dg = options.get('aos_at_dg', 0)
-            aos_at = radians(aos_at_dg)
-            max_elevation_gt = options.get('max_elevation_gt', 0)
-            tol = options.get('tol', 1)
-            sunrise_dg = options.get('sunrise_dg', -6)
             time_step = options.get('time_step', 10)  # in seconds
             if time_step <= 0:
-                raise Exception("Time step must be > 0")
+                raise Exception("time_step must be > 0")
             for pass_ in brute_force_iterator(
                 self, start_date, limit_date, aos_at_dg=aos_at_dg,
                 max_elevation_gt=max_elevation_gt, tol=tol,

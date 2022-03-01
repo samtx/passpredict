@@ -14,7 +14,7 @@ def brute_force_observer():
     location = Location('Austin, TX', 30.2711, -97.7437, 0)
     date_start = datetime.datetime(2021, 10, 2, tzinfo=datetime.timezone.utc)
     date_end = date_start + datetime.timedelta(days=10)
-    min_elevation = 10.0 # degrees
+    min_elevation = 10.0  # degrees
     tle = TLE(
         25544,  # International space station, Norad ID 25544
         (
@@ -28,7 +28,7 @@ def brute_force_observer():
     observer = Observer(location, satellite)
     overpasses = observer.pass_list(
         date_start, limit_date=date_end, method='brute',
-        aos_at_dg=min_elevation, time_step=5, tolerance_s=0.1
+        aos_at_dg=min_elevation, time_step=5, tol=0.1
     )
     manager = PasspredictManager(
         location,

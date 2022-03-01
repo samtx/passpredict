@@ -39,34 +39,13 @@ class PredictOverpasses:
     def time_observer_iter_passes(self):
         self.observer.pass_list(self.start, limit_date=self.end, aos_at_dg=self.min_elevation)
 
-    def time_predict_single_satellite_overpass(self):
-        passpredict.predict_single_satellite_overpasses(
-            self.satellite,
-            self.location,
-            self.start,
-            self.ndays,
-            10,  # min elevation
-        )
-
     def track_elevation_at_function_calls(self):
-        passpredict.predict_single_satellite_overpasses(
-            self.satellite,
-            self.location,
-            self.start,
-            self.ndays,
-            10,  # min elevation
-        )
+        self.observer.pass_list(self.start, limit_date=self.end, aos_at_dg=self.min_elevation)
         res = self.observer._elevation_at_mjd.cache_info()
         return res.hits + res.misses
 
     def track_elevation_at_function_cache_ratio(self):
-        passpredict.predict_single_satellite_overpasses(
-            self.satellite,
-            self.location,
-            self.start,
-            self.ndays,
-            10,  # min elevation
-        )
+        self.observer.pass_list(self.start, limit_date=self.end, aos_at_dg=self.min_elevation)
         res = self.observer._elevation_at_mjd.cache_info()
         return res.hits / (res.misses + res.hits)
 
