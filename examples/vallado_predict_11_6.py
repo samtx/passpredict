@@ -58,8 +58,7 @@ def vallado_predict_11_6():
 
 def _get_row_data(observer: Observer, d: datetime.datetime):
     #  aos_at_dg=0, tolerance_s=0.75
-    mjd = datetime2mjd(d)
-    pt = observer.point(mjd, visibility=True, aos_at_dg=0)
+    pt = observer.point(d, visibility=True, aos_at_dg=0)
     vis = pt.type.capitalize() if pt.type else 'None'
     row = [
         vis,

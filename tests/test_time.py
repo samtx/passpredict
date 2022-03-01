@@ -49,7 +49,7 @@ class TestTimeFunctions:
     def test_jday2datetime(self, yr, mo, dy, hr, mn, sec, jd_expected, atol):
         """Convert a Julian date to a datetime and back"""
         dt_computed = _ptime.jday2datetime(jd_expected)
-        sec, us = np.divmod(sec, 1)
+        sec, us = divmod(sec, 1)
         dt_desired = datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
         dt_difference = dt_computed - dt_desired
         assert dt_difference.total_seconds() == approx(0.0, abs=0.5)
@@ -57,7 +57,7 @@ class TestTimeFunctions:
     def test_jday2datetime_us(self, yr, mo, dy, hr, mn, sec, jd_expected, atol):
         """Convert a Julian date to a datetime with microseconds and back"""
         dt_computed = _ptime.jday2datetime_us(jd_expected)
-        sec, us = np.divmod(sec, 1)
+        sec, us = divmod(sec, 1)
         dt_desired = datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
         dt_difference = dt_computed - dt_desired
         assert dt_difference.total_seconds() == approx(0.0, abs=0.0005)
@@ -66,7 +66,7 @@ class TestTimeFunctions:
         jd, jdfr = _ptime.julian_date(yr, mo, dy, hr, mn, sec)
         jd += jdfr
         dt = _ptime.jday2datetime(jd)
-        sec, us = np.divmod(sec, 1)
+        sec, us = divmod(sec, 1)
         delta = dt - datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
         assert delta.total_seconds() == approx(0.0, abs=0.5)
 
@@ -74,7 +74,7 @@ class TestTimeFunctions:
         jd, jdfr = _ptime.julian_date(yr, mo, dy, hr, mn, sec)
         jd += jdfr
         dt = _ptime.jday2datetime_us(jd)
-        sec, us = np.divmod(sec, 1)
+        sec, us = divmod(sec, 1)
         delta = dt - datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
         assert delta.total_seconds() == approx(0.0, abs=0.5)
 
@@ -123,30 +123,22 @@ class TestMjd2Datetime:
     def test_mjd2datetime(self, yr, mo, dy, hr, mn, sec, jd_expected, mjd_expected, atol):
         """Convert a modified julian date to a datetime"""
         dt_computed = _ptime.mjd2datetime(mjd_expected)
-        sec, us = np.divmod(sec, 1)
-        dt_desired = datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
-        dt_difference = dt_computed - dt_desired
-        assert dt_difference.total_seconds() == approx(0.0, abs=0.5)
-
-    def test_mjd2datetime_us(self, yr, mo, dy, hr, mn, sec, jd_expected, mjd_expected, atol):
-        """Convert a modified julian date to a datetime with microseconds"""
-        dt_computed = _ptime.mjd2datetime_us(mjd_expected)
-        sec, us = np.divmod(sec, 1)
+        sec, us = divmod(sec, 1)
         dt_desired = datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
         dt_difference = dt_computed - dt_desired
         assert dt_difference.total_seconds() == approx(0.0, abs=0.0005)
 
-    def test_mjd2datetime_us_and_back(self, yr, mo, dy, hr, mn, sec, jd_expected, mjd_expected, atol):
+    def test_mjd2datetime_and_back(self, yr, mo, dy, hr, mn, sec, jd_expected, mjd_expected, atol):
         """Convert a modified julian date to a datetime with microseconds and back"""
-        dt1 = _ptime.mjd2datetime_us(mjd_expected)
+        dt1 = _ptime.mjd2datetime(mjd_expected)
         mjd = _ptime.datetime2mjd(dt1)
-        dt2 = _ptime.mjd2datetime_us(mjd)
+        dt2 = _ptime.mjd2datetime(mjd)
         dt_difference = dt1 - dt2
         assert dt_difference.total_seconds() == approx(0.0, abs=1e-6)
 
     def test_datetime2mjd(self, yr, mo, dy, hr, mn, sec, jd_expected, mjd_expected, atol):
         """  Convert a datetime to modified julian date  """
-        sec, us = np.divmod(sec, 1)
+        sec, us = divmod(sec, 1)
         dt = datetime(yr, mo, dy, hr, mn, int(sec), int(us*1e6), tzinfo=timezone.utc)
         mjd = _ptime.datetime2mjd(dt)
         assert atol < 9.999e-7  # ensure tolerance is at least 1e-8

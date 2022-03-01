@@ -34,10 +34,10 @@ def make_utc(d: datetime.datetime) -> datetime.datetime:
     if not d:
         return d
     if d.tzinfo:
-        d = d.astimezone(datetime.timezone.utc)
+        res = d.astimezone(datetime.timezone.utc)
     else:
-        d = d.replace(tzinfo=datetime.timezone.utc)
-    return d
+        res = d.replace(tzinfo=datetime.timezone.utc)
+    return res
 
 
 def find_root(f: typing.Callable, a: float, b: float, tol: float) -> float:
@@ -168,7 +168,7 @@ def visual_pass_details(
     # Find maximum elevation during visible period
     if vis_begin_mjd <= tca_mjd <= vis_end_mjd:
         vis_tca_mjd = tca_mjd
-    elif observer._elevation_at_mjd(vis_begin_mjd) > observer._elevation_at_mjd(vis_end_mjd):
+    elif observer._elevation_mjd(vis_begin_mjd) > observer._elevation_mjd(vis_end_mjd):
         vis_tca_mjd = vis_begin_mjd
     else:
         vis_tca_mjd = vis_end_mjd

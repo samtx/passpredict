@@ -70,16 +70,16 @@ def orbit_predictor_iterator(
                     descending_mjd = midpoint
             tca_mjd = ascending_mjd
 
-            tca_elevation = observer._elevation_at_mjd(tca_mjd)
+            tca_elevation = observer._elevation_mjd(tca_mjd)
             if tca_elevation > max_elevation_gt:
 
                 # Find AOS
                 end = tca_mjd
                 start = tca_mjd - _orbit_step(observer, 0.34)  # On third of the orbit
-                elevation = observer._elevation_at_mjd(start)
+                elevation = observer._elevation_mjd(start)
                 while not (end - start <= tol):  # precision reached
                     midpoint = _midpoint(start, end)
-                    elevation = observer._elevation_at_mjd(midpoint)
+                    elevation = observer._elevation_mjd(midpoint)
                     if elevation < aos_at:
                         start = midpoint
                     else:
@@ -91,7 +91,7 @@ def orbit_predictor_iterator(
                 end = tca_mjd + _orbit_step(observer, 0.34)
                 while not (end - start <= tol):  # precision reached
                     midpoint = _midpoint(start, end)
-                    elevation = observer._elevation_at_mjd(midpoint)
+                    elevation = observer._elevation_mjd(midpoint)
                     if elevation < aos_at:
                         end = midpoint
                     else:
@@ -167,8 +167,8 @@ def _midpoint(start, end):
 
 def _is_ascending(observer: Observer, mjd: float, tol: float):
     """Check is elevation is ascending or descending on a given point"""
-    elevation = observer._elevation_at_mjd(mjd)
-    next_elevation = observer._elevation_at_mjd(mjd + tol)
+    elevation = observer._elevation_mjd(mjd)
+    next_elevation = observer._elevation_mjd(mjd + tol)
     return elevation <= next_elevation
 
 

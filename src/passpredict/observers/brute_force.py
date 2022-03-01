@@ -53,13 +53,13 @@ def brute_force_iterator(
             # satellite has just come above the horizon, find aos, tca, and los
 
             def el_fn(t):
-                return observer._elevation_at_mjd(t) - aos_at
+                return observer._elevation_mjd(t) - aos_at
 
             aos_mjd = find_root(el_fn, prev_mjd, mjd, tol)
             mjd = aos_mjd + step
 
             # find los
-            while observer._elevation_at_mjd(mjd) > aos_at:
+            while observer._elevation_mjd(mjd) > aos_at:
                 prev_mjd = mjd
                 mjd += step
 
@@ -67,7 +67,7 @@ def brute_force_iterator(
 
             # find tca
             def el_fn(t):
-                return -observer._elevation_at_mjd(t)
+                return -observer._elevation_mjd(t)
 
             tca_mjd, max_el_rad = find_min(el_fn, aos_mjd, los_mjd, tol)
 
@@ -102,7 +102,7 @@ def brute_force_iterator(
 
 
 def _above_horizon(observer, t, aos_at):
-    el = observer._elevation_at_mjd(t)
+    el = observer._elevation_mjd(t)
     return el >= aos_at
 
 
