@@ -87,7 +87,7 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
         observer = Observer(location, satellite)
         overpasses += observer.pass_list(
             date_start, date_end, visible_only=visible_only,
-            aos_at_dg=min_elevation, tolerance_s=0.75
+            aos_at_dg=min_elevation, tol=0.75
         )
 
     # Sort overpass list by AOS date

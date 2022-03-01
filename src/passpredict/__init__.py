@@ -2,13 +2,6 @@ from ._version import version
 
 __version__ = version
 
-from .core import (
-    predict_all_visible_satellite_overpasses,
-    predict_single_satellite_overpasses,
-    predict_next_overpass,
-    get_next_pass_detail,
-    get_satellite_llh,
-)
 
 from .locations import (
     Location,
@@ -38,11 +31,6 @@ from .observers import (
 
 
 __all__ = [
-    'predict_all_visible_satellite_overpasses',
-    'predict_single_satellite_overpasses',
-    'predict_next_overpass',
-    'get_next_pass_detail',
-    'get_satellite_llh',
     'Location',
     'AsyncPasspredictTLESource',
     'PasspredictTLESource',
