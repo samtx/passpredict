@@ -7,7 +7,7 @@ import numpy as np
 from scipy.optimize import root_scalar
 
 from .core import BasicPassInfo, PassType
-from .functions import make_utc
+from .functions import make_utc, visual_pass_details
 from .._time import datetime2mjd
 from ..constants import R_EARTH
 from ..exceptions import PropagationError
@@ -103,89 +103,25 @@ def orbit_predictor_iterator(
                 continue
 
             # Find visual pass details
-            # First, get endpoints of when location is not sunlit
-            t0 = aos_mjd
-            tf = los_mjd
-            t = np.linspace(t0, tf, 5)  # use 5 points for spline
-
-            def sun_el_fn(t):
-                return observer.location.sun_elevation_mjd(t) - sunrise_dg
-
-            el = np.array([sun_el_fn(t_) for t_ in t])
-
-            pass_ = None
-            if np.min(el) > 0:
-                # entire pass in sunlit
-                pass_ = BasicPassInfo(
-                    aos_mjd, tca_mjd, los_mjd, tca_elevation,
-                    type_=PassType.daylight
-                )
-
-            else:
-                if el[0]*el[-1] < 0:
-                    # part of the pass is in darkness.
-                    # only part of the pass is sunlit. Find new jd0, jdf
-                    result = root_scalar(
-                        sun_el_fn, method='bisect', bracket=(t0, tf),
-                        x0=t0, xtol=tol
-                    )
-                    x = result.root
-                    tmp1 = sun_el_fn(x - tol)
-                    tmp2 = sun_el_fn(x + tol)
-                    if tmp1 < tmp2:
-                        # sun elevation is decreasing
-                        t0 = x
-                    else:
-                        tf = x
-
-                # Now use jd0 and jdf to find when satellite
-                # is illuminated by sun
-                t = np.linspace(t0, tf, 5)  # use 5 points for spline
-
-                def illum_fn(t):
-                    return observer.satellite.illumination_distance_mjd(t) - R_EARTH  # noqa
-
-                illum_pts = np.array([illum_fn(t_) for t_ in t])
-
-                if np.max(illum_pts) < 0:
-                    # entire pass is in shadow
-                    pass_ = BasicPassInfo(
-                        aos_mjd, tca_mjd, los_mjd, tca_elevation,
-                        type_=PassType.unlit
-                    )
-
-                else:
-                    if illum_pts[0]*illum_pts[-1] < 0:
-                        # the satellite is visible for only part of the pass.
-                        # Find new t0, tf
-                        result = root_scalar(
-                            illum_fn, method='bisect', bracket=(t0, tf),
-                            x0=t0, xtol=tol
-                        )
-                        x = result.root
-                        tmp1 = illum_fn(x - tol)
-                        tmp2 = illum_fn(x + tol)
-                        if tmp1 < tmp2:
-                            # satellite is coming out of shadow
-                            t0 = x
-                        else:
-                            # satellite is going into shadow
-                            tf = x
-                    # Set visible start and end points for Pass
-                    vis_begin_mjd = t0
-                    vis_end_mjd = tf
-                    # Find maximum elevation during visible period
-                    if vis_begin_mjd <= tca_mjd <= vis_end_mjd:
-                        vis_tca_mjd = tca_mjd
-                    elif observer._elevation_at_mjd(vis_begin_mjd) > observer._elevation_at_mjd(vis_end_mjd):
-                        vis_tca_mjd = vis_begin_mjd
-                    else:
-                        vis_tca_mjd = vis_end_mjd
-                    pass_ = BasicPassInfo(
-                        aos_mjd, tca_mjd, los_mjd, tca_elevation,
-                        type_=PassType.visible, vis_begin_mjd=vis_begin_mjd,
-                        vis_end_mjd=vis_end_mjd, vis_tca_mjd=vis_tca_mjd,
-                    )
+            type_, visual_points = visual_pass_details(
+                observer,
+                aos_mjd,
+                tca_mjd,
+                los_mjd,
+                tol=tol,
+                sunrise_dg=sunrise_dg,
+                n=5,
+            )
+            pass_ = BasicPassInfo(
+                aos_mjd,
+                tca_mjd,
+                los_mjd,
+                tca_elevation,
+                type_=type_,
+                vis_begin_mjd=visual_points.vis_begin_mjd,
+                vis_end_mjd=visual_points.vis_end_mjd,
+                vis_tca_mjd=visual_points.vis_tca_mjd,
+            )
             yield pass_
             mjd = pass_.tca + _orbit_step(observer, 0.6)
 
