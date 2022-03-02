@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.align import Align
 
-from passpredict import Location, Observer, SatellitePredictor, TLE
+from passpredict import Location, Observer, SGP4Propagator, TLE
 from passpredict.tle import jd_to_epoch_string
 from passpredict._time import datetime2mjd
 
@@ -25,7 +25,7 @@ def vallado_predict_11_6():
             "2 16609  51.6190  13.3340 0005770 102.5680 257.5950 15.5911407044786"
         )
     )
-    satellite = SatellitePredictor.from_tle(tle)
+    satellite = SGP4Propagator.from_tle(tle)
     location = Location('MIT', 42.38, -71.13, 24)
     observer = Observer(location, satellite)
 

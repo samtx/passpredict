@@ -1,15 +1,16 @@
 from functools import cached_property
 from datetime import datetime, timezone as py_timezone
-from math import radians, sin, cos
+from math import degrees, radians, sin, cos
 
 import numpy as np
 from orbit_predictor.locations import Location as LocationBase
 from orbit_predictor import coordinate_systems
 
 from .utils import get_timezone_from_latlon
-from .time import julian_date_from_datetime
+from .time import julian_date_from_datetime, make_utc
+from ._time import mjd2datetime, datetime2mjd
 from .solar import sun_pos, sun_pos_mjd
-from ._rotations import elevation_at
+from ._rotations import elevation_at_rad
 from .constants import MJD0
 
 try:
@@ -90,30 +91,22 @@ class Location(LocationBase):
         cos_lat, cos_long = cos(self.latitude_rad), cos(self.longitude_rad)
         return (cos_lat * cos_long, cos_lat * sin_long, sin_lat)
 
-
-    def sun_elevation_mjd(self, mjd: float) -> float:
+    def _sun_elevation_mjd(self, mjd: float) -> float:
         """
         Computes elevation angle of sun relative to location. Returns degrees.
         """
         sun_recef = sun_pos_mjd(mjd)
-        el = elevation_at(self.latitude_rad, self.longitude_rad, self.recef, sun_recef)
-        return el
+        coslatcoslon, coslatsinlon, sinlat = self._cached_elevation_calculation_data
+        el = elevation_at_rad(coslatcoslon, coslatsinlon, sinlat, self.recef, sun_recef)
+        return degrees(el)
 
-    def sun_elevation_jd(self, jd: float) -> float:
+    def sun_elevation(self, d: datetime) -> float:
         """
         Computes elevation angle of sun relative to location. Returns degrees.
         """
-        mjd = jd - MJD0
-        return self.sun_elevation_mjd(mjd)
-
-    def sun_elevation(self, dt: datetime) -> float:
-        """
-        Computes elevation angle of sun relative to location. Returns degrees.
-        """
-        jd, jdfr = julian_date_from_datetime(dt)
-        mjd = jd + jdfr - MJD0
-        el = self.sun_elevation_mjd(mjd)
-        return el
+        d2 = make_utc(d)
+        mjd = datetime2mjd(d2)
+        return self._sun_elevation_mjd(mjd)
 
     def is_sunlit(self, dt: datetime) -> bool:
         """
@@ -121,6 +114,14 @@ class Location(LocationBase):
         Returns True if elevation > -6 degrees
         """
         el = self.sun_elevation(dt)
+        return el > -6
+
+    def _is_sunlit_mjd(self, mjd: float) -> bool:
+        """
+        Computes elevation angle of sun relative to location
+        Returns True if elevation > -6 degrees
+        """
+        el = self._sun_elevation_mjd(mjd)
         return el > -6
 
     def __repr__(self):

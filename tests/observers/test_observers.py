@@ -2,9 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from passpredict import MemoryTLESource, Observer, Location
-from passpredict.exceptions import NotReachable
-from passpredict import *
+from passpredict import SGP4Propagator, Observer, Location, TLE
 
 from .utils import assert_datetime_approx
 
@@ -15,15 +13,14 @@ except ImportError:
 
 
 def assert_overpass_accuracy_with_brute_force_observer(location, tle, start, end, dt_tol=1):
-    satellite = SatellitePredictor.from_tle(tle)
+    satellite = SGP4Propagator.from_tle(tle)
     observer = Observer(location, satellite)
     expected_overpasses = observer.pass_list(start, end, method='brute', aos_at_dg=10, time_step=5, tol=0.1)
     observer = Observer(location, satellite)
     date = start
     if len(expected_overpasses) == 0:
-        with pytest.raises(NotReachable):
-            pass_ = observer.next_pass(date, limit_date=end)
-        return
+        pass_ = observer.next_pass(date, limit_date=end)
+        assert not pass_
     for expected_pass in expected_overpasses:
         pass_ = observer.next_pass(date, limit_date=end, aos_at_dg=10, tol=0.5)
         assert_datetime_approx(pass_.aos.dt, expected_pass.aos.dt, dt_tol)
@@ -49,7 +46,7 @@ def test_sat_14129_observer_error():
         '1 14129U 83058B   22033.24895832 -.00000141  00000+0  00000+0 0  9997',
         '2 14129  26.3866 118.1312 5979870  45.7131 349.8958  2.05868779262630'
     ))
-    satellite = SGP4Predictor.from_tle(tle)
+    satellite = SGP4Propagator.from_tle(tle)
     location = Location("Austin, TX", 30.2711, -97.7437, 0)
     observer = Observer(location, satellite)
     start = datetime(2022, 2, 9, 14, 0, tzinfo=ZoneInfo("America/Chicago"))

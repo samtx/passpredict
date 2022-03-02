@@ -2,9 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from passpredict import Observer, Location
-from passpredict.exceptions import NotReachable
-from passpredict import *
+from passpredict import SGP4Propagator, Location, Observer, TLE
 
 
 def assert_datetime_approx(dt1, dt2, delta_seconds):
@@ -16,7 +14,7 @@ def assert_datetime_approx(dt1, dt2, delta_seconds):
 
 
 def assert_overpass_accuracy_with_brute_force_iterator(location, tle, start, end, dt_tol=1):
-    satellite = SGP4Predictor.from_tle(tle)
+    satellite = SGP4Propagator.from_tle(tle)
     observer = Observer(location, satellite)
     expected_overpasses = observer.pass_list(start, end, method='brute', aos_at_dg=10, time_step=5, tol=0.1)
     date = start

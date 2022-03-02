@@ -9,7 +9,7 @@ from collections import defaultdict
 
 import httpx
 
-from .satellites import SatellitePredictor
+from .satellites import SGP4Propagator
 from .base import TLESource
 from .caches import BaseCache, MemoryCache
 from .exceptions import CelestrakError
@@ -58,7 +58,7 @@ class AsyncPasspredictTLESource(abc.ABC):
         Create Predictor instance with TLE data
         """
         tle = await self.get_tle_or_404(satid, date)
-        predictor = SatellitePredictor(satid, self)
+        predictor = SGP4Propagator(satid, self)
         predictor.tle = tle
         predictor.set_propagator()
         return predictor

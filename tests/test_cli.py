@@ -4,7 +4,7 @@ import pytest
 from click.testing import CliRunner
 
 from passpredict import cli
-from passpredict import Location, SGP4Predictor, Observer, TLE
+from passpredict import Location, SGP4Propagator, Observer, TLE
 
 
 @pytest.fixture(scope="module")
@@ -29,7 +29,7 @@ def overpasses(location, tle):
     """
     List of generated overpasses for cli table output testing
     """
-    satellite = SGP4Predictor.from_tle(tle)
+    satellite = SGP4Propagator.from_tle(tle)
     observer = Observer(location, satellite)
     start = datetime.datetime(2022, 1, 27)
     end = start + datetime.timedelta(days=4)

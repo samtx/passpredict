@@ -117,7 +117,7 @@ def visual_pass_details(
     t = np.linspace(t0, tf, n)
 
     def sun_el_fn(t):
-        return observer.location.sun_elevation_mjd(t) - sunrise_dg
+        return observer.location._sun_elevation_mjd(t) - sunrise_dg
 
     el = np.array([sun_el_fn(t_) for t_ in t])
 
@@ -141,7 +141,7 @@ def visual_pass_details(
     t = np.linspace(t0, tf, n)
 
     def illum_fn(t):
-        return observer.satellite.illumination_distance_mjd(t) - R_EARTH  # noqa
+        return observer.satellite._illumination_distance_mjd(t) - R_EARTH  # noqa
 
     illum_pts = np.array([illum_fn(t_) for t_ in t])
 

@@ -24,3 +24,14 @@ def julian_date_round_to_second(jd: float) -> float:
     jd, jdfr = divmod(jd, 1)
     quot, _ = divmod(jdfr, one_second)
     return jd + quot*one_second
+
+
+def make_utc(d: datetime.datetime) -> datetime.datetime:
+    """ Make a datetime a UTC timezone aware datetime """
+    if not d:
+        return d
+    if d.tzinfo:
+        res = d.astimezone(datetime.timezone.utc)
+    else:
+        res = d.replace(tzinfo=datetime.timezone.utc)
+    return res

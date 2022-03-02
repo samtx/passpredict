@@ -8,7 +8,7 @@ from orbit_predictor.constants import MU_E
 from orbit_predictor.keplerian import coe2rv
 from orbit_predictor.utils import mean_motion
 
-from .base import SatellitePredictorBase, LLH
+from .base import SatellitePropagatorBase, LLH
 
 if typing.TYPE_CHECKING:
     from ..tle import OMM
@@ -29,7 +29,7 @@ def kepler(argp, delta_t_sec, ecc, inc, p, raan, sma, ta):
 
 
 
-class KeplerianPredictor(SatellitePredictorBase):
+class KeplerPropagator(SatellitePropagatorBase):
     """
     Propagator that uses the Keplerian osculating orbital elements.
     We use a naïve propagation algorithm that advances the anomaly the
