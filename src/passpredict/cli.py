@@ -15,7 +15,7 @@ from . import __version__
 from .exceptions import CelestrakError
 from .sources import CelestrakTLESource
 from .geocoding import NominatimGeocoder
-from .satellites import SGP4Predictor
+from .satellites import SGP4Propagator
 from .locations import Location
 from .observers import PassType, Observer
 from .tle import TLE
@@ -83,7 +83,7 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
         console.print(msg)
 
     for tle in tles:
-        satellite = SGP4Predictor.from_tle(tle)
+        satellite = SGP4Propagator.from_tle(tle)
         observer = Observer(location, satellite)
         overpasses += observer.pass_list(
             date_start, date_end, visible_only=visible_only,

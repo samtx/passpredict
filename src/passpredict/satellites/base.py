@@ -1,22 +1,15 @@
 from __future__ import annotations
 import datetime
 import typing
-from functools import lru_cache
+import abc
 
 import numpy as np
-from orbit_predictor.predictors.accurate import HighAccuracyTLEPredictor
-from orbit_predictor.coordinate_systems import ecef_to_llh, eci_to_ecef
-from sgp4.api import SGP4_ERRORS, Satrec
-from sgp4.model import WGS84
-from sgp4.propagation import gstime
+from orbit_predictor.coordinate_systems import ecef_to_llh
 
-from ..time import julian_date_from_datetime
-from .._time import mjd2jdfr
-from .._rotations import teme2ecef
-from ..solar import sun_pos,  sun_pos_mjd
+from ..time import make_utc
+from .._time import datetime2mjd
 from .. import _solar
-from ..exceptions import PropagationError
-from ..constants import R_EARTH, MJD0
+from ..constants import R_EARTH
 
 if typing.TYPE_CHECKING:
     from ..sources import PasspredictTLESource, TLE
@@ -29,9 +22,9 @@ class LLH(typing.NamedTuple):
     altitude: np.typing.NDArray[float]
 
 
-class SatellitePredictorBase(HighAccuracyTLEPredictor):
+class SatellitePropagatorBase(abc.ABC):
     """
-    Predictor for satellite overpasses.
+    Propagator for satellite position and velocity.
     """
     def __init__(self, satid: int, source: PasspredictTLESource = None):
         """
@@ -40,14 +33,17 @@ class SatellitePredictorBase(HighAccuracyTLEPredictor):
             source: PasspredictTLESource
         """
         self.satid = satid
+        self._propagator = None
         if source:
             self.tle = source.get_tle(satid)
             self.name = self.tle.name
-            self._propagator = self.get_propagator(self.tle.lines)
+        else:
+            self.tle = None
+            self.name = ""
         self.intrinsic_mag = 1.0   # ISS is -1.8
 
     @classmethod
-    def from_tle(cls, tle: TLE) -> SatellitePredictorBase:
+    def from_tle(cls, tle: TLE) -> SatellitePropagatorBase:
         sat = cls(tle.satid)
         sat.tle = tle
         sat.name = tle.name
@@ -61,46 +57,23 @@ class SatellitePredictorBase(HighAccuracyTLEPredictor):
     def __repr__(self):
         return f"<{self.__class__.__name__} satid={self.satid} (TLE epoch {self.tle.epoch})>"
 
-    def get_propagator(self, lines):
-        tle_line_1, tle_line_2 = lines
-        return Satrec.twoline2rv(tle_line_1, tle_line_2, WGS84)
+    @abc.abstractproperty
+    def mean_motion(self):
+        """  Mean motion, in radians per minute  """
+        raise NotImplementedError
 
-    def get_only_position(self, datetime: datetime.datetime) -> np.ndarray:
+    def get_only_position(self, d: datetime.datetime) -> np.ndarray:
         """
         Get satellite position in ECEF coordinates [km]
         """
-        pos_tuple = super().get_only_position(datetime)
-        return np.array(pos_tuple)
+        d2 = make_utc(d)
+        mjd = datetime2mjd(d2)
+        return self._position_ecef_mjd(mjd)
 
-    @lru_cache(maxsize=1800)  # Max cache, 30 minutes
-    def get_only_position_jd(self, jd: float) -> np.ndarray:
-        """
-        Get satellite position in ECEF coordinates [km]
-        """
-        position_eci = self._sgp4(jd, 0.0)
-        gmst = gstime(jd)
-        pos_tuple = eci_to_ecef(position_eci, gmst)
-        return np.array(pos_tuple)
-
-    @lru_cache(maxsize=1800)  # Max cache, 30 minutes
-    def get_only_position_mjd(self, mjd: float) -> np.ndarray:
-        """
-        Use modified julian date
-        Get satellite position in ECEF coordinates [km]
-        """
-        jd, jdfr = mjd2jdfr(mjd)
-        position_eci = self._sgp4(jd, jdfr)
-        rteme = np.array(position_eci)
-        recef = np.empty(3, dtype=np.double)
-        teme2ecef(mjd, rteme, recef)
-        return recef
-
-    def _sgp4(self, jd: float, jdfr: float):
-        status, position_eci, _ = self._propagator.sgp4(jd, jdfr)
-        if status != 0:
-            raise PropagationError(f"Sat {self.satid} {SGP4_ERRORS[status]}")
-        return position_eci
-
+    @abc.abstractmethod
+    def _position_ecef_mjd(self, mjd: float) -> np.ndarray:
+        """ Use modified Julian date """
+        raise NotImplementedError
 
     def get_llh(self, datetime: datetime.datetime) -> np.ndarray:
         raise NotImplementedError
@@ -125,20 +98,14 @@ class SatellitePredictorBase(HighAccuracyTLEPredictor):
         return LLH(datetime, latitude, longitude, altitude)
 
     def is_illuminated(self, d: datetime.datetime) -> bool:
-        jd = julian_date_from_datetime(d)
-        rsun = sun_pos(jd)
-        rsat = self.get_only_position(d)
-        is_illum = _solar.is_sat_illuminated(rsat, rsun)
-        return is_illum
+        d2 = make_utc(d)
+        mjd = datetime2mjd(d2)
+        dist = self._illumination_distance_mjd(mjd)
+        return dist > R_EARTH
 
-    def illumination_distance_jd(self, jd: float) -> float:
-        rsun = sun_pos(jd)
-        rsat = self.get_only_position_jd(jd)
+    def _illumination_distance_mjd(self, mjd: float) -> float:
+        rsun = _solar.sun_pos_mjd(mjd)
+        rsat = self._position_ecef_mjd(mjd)
         dist = _solar.sat_illumination_distance(rsat, rsun)
         return dist
 
-    def illumination_distance_mjd(self, mjd: float) -> float:
-        rsun = sun_pos_mjd(mjd)
-        rsat = self.get_only_position_mjd(mjd)
-        dist = _solar.sat_illumination_distance(rsat, rsun)
-        return dist

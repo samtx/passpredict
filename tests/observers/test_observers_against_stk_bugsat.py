@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from passpredict import Observer, Location, SGP4Predictor, TLE
+from passpredict import Observer, Location, SGP4Propagator, TLE
 
 from .utils import assert_datetime_approx
 
@@ -25,7 +25,7 @@ def test_bugsat_predictions(observer_method, observer_kwargs):
         "1 40014U 14033E   14294.41438078  .00003468  00000-0  34565-3 0  3930",
         "2 40014  97.9781 190.6418 0032692 299.0467  60.7524 14.91878099 18425"
     )
-    satellite = SGP4Predictor.from_tle(TLE('Bugsat', tle_lines))
+    satellite = SGP4Propagator.from_tle(TLE('Bugsat', tle_lines))
 
     # ARG in orbit_predictor.locations
     location = Location("ARG", latitude_deg=-31.2884, longitude_deg=-64.2032868, elevation_m=492.96)

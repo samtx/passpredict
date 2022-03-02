@@ -21,10 +21,9 @@ from .functions import make_utc
 from .orbit_predictor import orbit_predictor_iterator
 from .brute_force import brute_force_iterator
 from .. import _rotations
-from ..time import julian_date_from_datetime
 from .._time import mjd2datetime, datetime2mjd
 from ..solar import sun_pos_mjd
-from ..constants import MJD0, R_EARTH
+from ..constants import R_EARTH
 from ..utils import get_pass_detail_datetime_metadata
 
 if TYPE_CHECKING:
@@ -242,7 +241,7 @@ class Observer:
     @lru_cache(maxsize=16)
     def _elevation_mjd(self, mjd: float) -> float:
         """  Returns elevation of object in radians  """
-        sat_recef = self.satellite.get_only_position_mjd(mjd)
+        sat_recef = self.satellite._position_ecef_mjd(mjd)
         coslatcoslon, coslatsinlon, sinlat = self.location._cached_elevation_calculation_data
         return _rotations.elevation_at_rad(coslatcoslon, coslatsinlon, sinlat, self.location.recef, sat_recef)
 
@@ -258,7 +257,7 @@ class Observer:
         """
         Get range, azimuth, and elevation for mjd time
         """
-        satellite_ecef = self.satellite.get_only_position_mjd(mjd)
+        satellite_ecef = self.satellite._position_ecef_mjd(mjd)
         range_, az, el = _rotations.razel(
             self.location.latitude_rad, self.location.longitude_rad, self.location.recef, satellite_ecef
         )
@@ -302,7 +301,7 @@ class Observer:
         Get topocentric ECEF vector from location to satellite
         """
         rho = np.empty(3, dtype=np.double)
-        sat_recef = self.satellite.get_only_position_mjd(mjd)
+        sat_recef = self.satellite._position_ecef_mjd(mjd)
         _rotations.ecef_to_rhosez(self.location.latitude_rad, self.location.longitude_rad, self.location.recef, sat_recef, rho)
         return rho
 
@@ -361,10 +360,10 @@ class Observer:
         sat_el = self._elevation_mjd(mjd)
         if sat_el < aos_at:
             return None
-        sun_el = self.location.sun_elevation_mjd(mjd)
+        sun_el = self.location._sun_elevation_mjd(mjd)
         if sun_el > sunrise_dg:
             return Visibility.daylight
-        dist = self.satellite.illumination_distance_mjd(mjd)
+        dist = self.satellite._illumination_distance_mjd(mjd)
         if dist > R_EARTH:
             return Visibility.visible
         return Visibility.unlit

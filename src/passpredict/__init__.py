@@ -19,9 +19,8 @@ from .tle import (
 )
 
 from .satellites import (
-    SGP4Predictor as SatellitePredictor,
-    SGP4Predictor,
-    KeplerianPredictor,
+    SGP4Propagator,
+    KeplerPropagator,
 )
 
 from .observers import (
@@ -37,9 +36,8 @@ __all__ = [
     'CelestrakTLESource',
     'MemoryTLESource',
     'TLE',
-    'SatellitePredictor',
-    'SGP4Predictor',
-    'KeplerianPredictor',
+    'SGP4Propagator',
+    'KeplerPropagator',
     'PredictedPass',
     'Observer',
 ]

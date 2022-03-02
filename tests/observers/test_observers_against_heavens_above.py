@@ -3,8 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from pytest import approx
 
-from passpredict import Observer, Location, SGP4Predictor
-from passpredict import *
+from passpredict import Observer, Location, SGP4Propagator, TLE
 from passpredict.observers import PassPoint, Visibility
 
 from .utils import assert_datetime_approx
@@ -64,7 +63,7 @@ def test_heavens_above_zurich_iss_visibility_predictions():
         "1 25544U 98067A   22021.68747065 -.00000457  00000-0  00000+0 0  9996",
         "2 25544  51.6270 342.0904 0006847  44.2808  14.3181 15.49598315322461"
     )
-    satellite = SGP4Predictor.from_tle(TLE('ISS', tle_lines))
+    satellite = SGP4Propagator.from_tle(TLE('ISS', tle_lines))
     satellite.intrinsic_mag = -1.8
 
     location = Location("Zurich", 47.3744, 8.5410, 0)
@@ -122,7 +121,7 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
             "2 20580  28.4712  42.1300 0002330 285.0338 208.0692 15.09965616544703"
         )
         tle = TLE(20580, tle_lines, name="HST")
-        cls.satellite = SGP4Predictor.from_tle(tle)
+        cls.satellite = SGP4Propagator.from_tle(tle)
         cls.satellite.intrinsic_mag = 2.2
         cls.observer = Observer(cls.location, cls.satellite)
 
@@ -244,7 +243,7 @@ class TestHeavensAboveCapeTownEnvisatVisibilty:
             "2 27386  98.1695  18.2467 0001188  87.4527  20.8530 14.38072512 43711"
         )
         tle = TLE(27386, tle_lines, name="Envisat")
-        cls.satellite = SGP4Predictor.from_tle(tle)
+        cls.satellite = SGP4Propagator.from_tle(tle)
         cls.satellite.intrinsic_mag = 3.7
         cls.observer = Observer(cls.location, cls.satellite)
 

@@ -1,4 +1,3 @@
-from .base import SatellitePredictorBase, LLH
-from .sgp4_predictor import SGP4Predictor
-from .sgp4_predictor import SGP4Predictor as SatellitePredictor
-from .keplerian_predictor import KeplerianPredictor
+from .base import SatellitePropagatorBase, LLH
+from .sgp4_predictor import SGP4Propagator
+from .keplerian_predictor import KeplerPropagator
