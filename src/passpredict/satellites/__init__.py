@@ -1,3 +1,9 @@
-from .base import SatellitePropagatorBase, LLH
-from .sgp4_predictor import SGP4Propagator
-from .keplerian_predictor import KeplerPropagator
+from .base import LLH
+from .sgp4 import SGP4Propagator
+from .kepler import KeplerPropagator
+
+__all__ = [
+    'LLH',
+    'SGP4Propagator',
+    'KeplerPropagator',
+]

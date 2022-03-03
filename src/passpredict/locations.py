@@ -1,17 +1,15 @@
 from functools import cached_property
-from datetime import datetime, timezone as py_timezone
+from datetime import datetime
 from math import degrees, radians, sin, cos
 
 import numpy as np
-from orbit_predictor.locations import Location as LocationBase
 from orbit_predictor import coordinate_systems
 
 from .utils import get_timezone_from_latlon
-from .time import julian_date_from_datetime, make_utc
-from ._time import mjd2datetime, datetime2mjd
-from .solar import sun_pos, sun_pos_mjd
+from .time import make_utc
+from ._time import datetime2mjd
+from .solar import sun_pos_mjd
 from ._rotations import elevation_at_rad
-from .constants import MJD0
 
 try:
     from zoneinfo import ZoneInfo
@@ -19,7 +17,7 @@ except ImportError:
     from backports.zoneinfo import ZoneInfo
 
 
-class Location(LocationBase):
+class Location:
 
     def __init__(self, name, latitude_deg, longitude_deg, elevation_m):
         """Location.
@@ -38,12 +36,11 @@ class Location(LocationBase):
         self.latitude_rad = radians(latitude_deg)
         self.longitude_rad = radians(longitude_deg)
         self.elevation_m = elevation_m
-        self.position_ecef = coordinate_systems.geodetic_to_ecef(
+        position_ecef = coordinate_systems.geodetic_to_ecef(
             self.latitude_rad,
             self.longitude_rad,
             elevation_m / 1000.)
-        self.position_llh = latitude_deg, longitude_deg, elevation_m
-        self.recef = np.array(self.position_ecef)
+        self.recef = np.array(position_ecef)
 
     def dict(self) -> dict:
         d = {
