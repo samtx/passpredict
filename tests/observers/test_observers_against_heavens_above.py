@@ -90,7 +90,7 @@ def test_heavens_above_zurich_iss_visibility_predictions():
 
     TZ = ZoneInfo('Europe/Zurich')
     UTC = timezone.utc
-    start = datetime(2022, 1, 21, tzinfo=TZ).astimezone(UTC)
+    start = datetime(2022, 1, 21, 12, tzinfo=TZ).astimezone(UTC)
     end = datetime(2022, 1, 31, tzinfo=TZ).astimezone(UTC)
     date = start
     for line in HEAVENS_ABOVE_PREDICTIONS.splitlines()[3:]:

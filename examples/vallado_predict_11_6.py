@@ -5,7 +5,7 @@ from rich.table import Table
 from rich.align import Align
 
 from passpredict import Location, Observer, SGP4Propagator, TLE
-from passpredict.tle import jd_to_epoch_string
+from passpredict.orbit import jd_to_epoch_string
 from passpredict._time import datetime2mjd
 
 

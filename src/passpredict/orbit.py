@@ -1,25 +1,108 @@
-import math
+from __future__ import annotations
+from math import pow
 from datetime import datetime, timedelta, timezone
 from functools import cached_property
 import json
 from typing import NamedTuple, Union, Tuple
-import dataclasses
-from itertools import zip_longest
 
-import httpx
 import numpy as np
 
-from passpredict._time import epoch_to_jd, jday2datetime_us
+from passpredict._time import jday2datetime_us, epoch_to_jd
 
 
-# class TleSchema(BaseModel):
-#     tle1: str
-#     tle2: str
-#     epoch: datetime
-#     satid: int
+class Orbit:
+    def __init__(self, *a, **kw):
+        self.satid = 0
+        self.name = ""
+        self._jdepoch = 0      # julian date
+        self._jdepochF = 0     # julian date fraction
+        self._no_kozai = 0     # kozai mean motion [rev/day], line 2, ch 53-63
+        self._ecc = 0          # eccentricity, line 2, ch 27-33
+        self._sma = 0          # semi-major axis [km]
+        self._inc = 0          # inclination [deg], line 2, ch 9-16
+        self._raan = 0         # right ascension of ascending node [deg], line 2, ch 18-25
+        self._argp = 0         # argument of perigee [deg] line 2, ch 35-42
+        self._mo = 0           # mean anomolay, line 2, ch 44-51
+        self._nu = 0           # true anomaly
+        self._ndot = 0         # first derivative of mean motion, line 1 [rad/s]
+        self._nddot = 0        # second derivative of mean motion, line 1  [rad/s^2]
+        self._ndot_raw = 0     # first derivative of mean motion divided by 2, line 1 [rev/day^2]
+        self._nddot_raw = 0    # second derivative of mean motion divided by 6, line 1  [rev/day^3]
+        self._bstar = 0        # B star drag term, line 1
 
-#     class Config:
-#         title = 'TLE'
+    @property
+    def epoch(self):
+        jd = self._jdepoch + self._jdepochF
+        return jday2datetime_us(jd)
+
+    @property
+    def no_kozai(self):
+        return self._no_kozai
+
+    @property
+    def jdepoch(self):
+        return self._jdepoch
+
+    @property
+    def jdepochF(self):
+        return self._jdepochF
+
+    @property
+    def ecc(self):
+        return self._ecc
+
+    @property
+    def bstar(self):
+        return self._bstar
+
+    @property
+    def argp(self):
+        return self._argp
+
+    @property
+    def sma(self):
+        return self._sma
+
+    @property
+    def inc(self):
+        return self._inc
+
+    @property
+    def nu(self):
+        return self._nu
+
+    @property
+    def mo(self):
+        return self._mo
+
+    @property
+    def raan(self):
+        return self._raan
+
+    @property
+    def ndot(self):
+        return self._ndot
+
+    @property
+    def nddot(self):
+        return self._nddot
+
+    @classmethod
+    def from_tle(cls, tle: TLE):
+        orbit = cls()
+        orbit.satid = tle.satid
+        orbit.name = tle.name
+        orbit._jdepoch = tle.jdepoch
+        orbit._bstar = tle.bstar
+        orbit._ndot = tle.ndot
+        orbit._nddot = tle.nddot
+        orbit._inc = tle.inc
+        orbit._ecc = tle.ecc
+        orbit._raan = tle.raan
+        orbit._mo = tle.mo
+        orbit._argp = tle.argp
+        orbit._no_kozai = tle.no_kozai
+        return orbit
 
 
 # from orbit_predictor.sources
@@ -34,7 +117,7 @@ class TLE(NamedTuple):
 
     @property
     def epoch(self) -> datetime:
-        return epoch_from_tle(self.lines[0])
+        return epoch_from_tle(self.tle1)
 
     @property
     def tle1(self) -> str:
@@ -43,6 +126,70 @@ class TLE(NamedTuple):
     @property
     def tle2(self) -> str:
         return self.lines[1]
+
+    @property
+    def intldesg(self):
+        return self.tle1[9:17].rstrip()
+
+    @property
+    def jdepoch(self):
+        epoch_string = self.tle1[18:32]
+        year = int(epoch_string[0:2])
+        days = float(epoch_string[2:])
+        jd, jdfr = epoch_to_jd(year, days)
+        jd = jd + jdfr
+        return jd
+
+    @property
+    def ndot(self):
+        # ndot = ndot_raw * 2* (2*math.pi/(86400.0**2))
+        return float(self.tle1[33:44])
+
+    @property
+    def nddot(self):
+        # nddot = nddot_raw * 6 * (2*math.pi/(86400.0**3))
+        return float(self.tle1[45:50]) * pow(10,float(self.tle1[50:52]))
+
+    @property
+    def bstar(self):
+        res = float(self.tle1[53] + '.' + self.tle1[54:59])
+        return res * pow(10, float(self.tle1[59:61]))
+
+    @property
+    def ephtype(self):
+        return float(self.tle1[62])
+
+    @property
+    def elnum(self):
+        return float(self.tle1[65:69])
+
+    @property
+    def inc(self):
+        return float(self.tle2[9:17])  # inclination
+
+    @property
+    def raan(self):
+        return float(self.tle2[17:25])  # right ascension of ascending node
+
+    @property
+    def ecc(self):
+        return float('0.' + self.tle2[26:33].replace(' ','0'))  # eccentricity
+
+    @property
+    def argp(self):
+        return float(self.tle2[34:42])
+
+    @property
+    def mo(self):
+        return float(self.tle2[43:52])    # mean anomaly
+
+    @property
+    def no_kozai(self):
+        return float(self.tle2[52:63])   # mean motion
+
+    # @cached_property
+    # def sma(self):
+    #     return 6.6228 / (self.no_kozai**(2/3))  # ref: http://sat.belastro.net/satelliteorbitdetermination.com/orbit_elements_wiki.htm
 
     def dict(self):
         return self._asdict()

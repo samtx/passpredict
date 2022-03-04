@@ -16,7 +16,7 @@ def assert_datetime_approx(dt1, dt2, delta_seconds):
 def assert_overpass_accuracy_with_brute_force_iterator(location, tle, start, end, dt_tol=1):
     satellite = SGP4Propagator.from_tle(tle)
     observer = Observer(location, satellite)
-    expected_overpasses = observer.pass_list(start, end, method='brute', aos_at_dg=10, time_step=5, tol=0.1)
+    expected_overpasses = observer.pass_list(start, end, method='brute', aos_at_dg=10, time_step=10, tol=0.1)
     date = start
     if len(expected_overpasses) == 0:
         pass_ = observer.next_pass(date, limit_date=end, aos_at_dg=10, tol=0.5)
