@@ -8,7 +8,7 @@ from orbit_predictor.constants import MU_E
 from orbit_predictor.keplerian import coe2rv
 from orbit_predictor.utils import mean_motion
 
-from .base import SatellitePropagatorBase, LLH
+from .base import SatellitePropagatorBase
 
 if typing.TYPE_CHECKING:
     from ..tle import OMM
@@ -26,7 +26,6 @@ def kepler(argp, delta_t_sec, ecc, inc, p, raan, sma, ta):
     # Position and velocity vectors
     position_eci, velocity_eci = coe2rv(MU_E, p, ecc, inc, raan, argp, ta)
     return position_eci, velocity_eci
-
 
 
 class KeplerPropagator(SatellitePropagatorBase):

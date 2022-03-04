@@ -26,29 +26,6 @@ class SatellitePropagatorBase(abc.ABC):
     """
     Propagator for satellite position and velocity.
     """
-    def __init__(self, satid: int, source: PasspredictTLESource = None):
-        """
-        Params:
-            satid: int = NORAD id for satellite
-            source: PasspredictTLESource
-        """
-        self.satid = satid
-        self._propagator = None
-        if source:
-            self.tle = source.get_tle(satid)
-            self.name = self.tle.name
-        else:
-            self.tle = None
-            self.name = ""
-        self.intrinsic_mag = 1.0   # ISS is -1.8
-
-    @classmethod
-    def from_tle(cls, tle: TLE) -> SatellitePropagatorBase:
-        sat = cls(tle.satid)
-        sat.tle = tle
-        sat.name = tle.name
-        sat._propagator = sat.get_propagator(tle.lines)
-        return sat
 
     @property
     def sate_id(self):

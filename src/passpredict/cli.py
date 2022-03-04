@@ -18,7 +18,7 @@ from .geocoding import NominatimGeocoder
 from .satellites import SGP4Propagator
 from .locations import Location
 from .observers import PassType, Observer
-from .tle import TLE
+from .orbit import TLE
 
 
 @click.command(no_args_is_help=True)

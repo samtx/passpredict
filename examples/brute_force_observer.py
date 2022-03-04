@@ -22,9 +22,7 @@ def brute_force_observer():
             '2 25544  51.6449 175.1112 0004190  48.8354  53.9444 15.48895782305133'
         )
     )
-    source = MemoryTLESource()
-    source.add_tle(tle)
-    satellite = SGP4Propagator(25544, source)
+    satellite = SGP4Propagator.from_tle(tle)
     observer = Observer(location, satellite)
     overpasses = observer.pass_list(
         date_start, limit_date=date_end, method='brute',

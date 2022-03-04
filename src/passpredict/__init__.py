@@ -14,8 +14,9 @@ from .sources import (
     MemoryTLESource,
 )
 
-from .tle import (
+from .orbit import (
     TLE,
+    Orbit,
 )
 
 from .satellites import (
@@ -36,6 +37,7 @@ __all__ = [
     'CelestrakTLESource',
     'MemoryTLESource',
     'TLE',
+    'Orbit',
     'SGP4Propagator',
     'KeplerPropagator',
     'PredictedPass',

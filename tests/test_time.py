@@ -7,7 +7,7 @@ from pytest import approx
 
 from passpredict import time as ptime
 from passpredict import _time as _ptime
-from passpredict.tle import jd_to_epoch_string
+from passpredict.orbit import jd_to_epoch_string
 from passpredict.constants import DAYSEC
 
 def test_epoch_to_jd():
