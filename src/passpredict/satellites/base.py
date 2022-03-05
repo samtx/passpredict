@@ -47,6 +47,14 @@ class SatellitePropagatorBase(abc.ABC):
         mjd = datetime2mjd(d2)
         return self._position_ecef_mjd(mjd)
 
+    def propagate_eci(self, d: datetime.datetime) -> typing.Tuple([np.ndarray, np.ndarray]):
+        """
+        Get satellite position and velocity in ECI coordinates [km]
+        """
+        d2 = make_utc(d)
+        mjd = datetime2mjd(d2)
+        return self._position_ecef_mjd(mjd)
+
     @abc.abstractmethod
     def _position_ecef_mjd(self, mjd: float) -> np.ndarray:
         """ Use modified Julian date """

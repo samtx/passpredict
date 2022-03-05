@@ -3,8 +3,9 @@ import datetime
 from rich.console import Console
 from rich.table import Table
 from rich.align import Align
+import numpy as np
 
-from passpredict import Location, Observer, SGP4Propagator, TLE
+from passpredict import Location, Observer, SGP4Propagator, TLE, KeplerPropagator
 from passpredict.orbit import jd_to_epoch_string
 from passpredict._time import datetime2mjd
 
@@ -25,7 +26,10 @@ def vallado_predict_11_6():
             "2 16609  51.6190  13.3340 0005770 102.5680 257.5950 15.5911407044786"
         )
     )
-    satellite = SGP4Propagator.from_tle(tle)
+    r0 = np.array([6585.038266, 1568.184321, 9.116355])
+    v0 = np.array([-1.1157766, 4.6316816, 6.0149576])
+    # ndot = 7.889e-5 * 2 * 0
+    satellite = KeplerPropagator.from_rv(r0, v0, epoch_jd, ndot=ndot)
     location = Location('MIT', 42.38, -71.13, 24)
     observer = Observer(location, satellite)
 

@@ -1,13 +1,77 @@
 from __future__ import annotations
-from math import pow
+from math import pow, sin, cos, asin, sqrt, tan, pi, atan, degrees
 from datetime import datetime, timedelta, timezone
-from functools import cached_property
-import json
 from typing import NamedTuple, Union, Tuple
 
 import numpy as np
+from sgp4.earth_gravity import wgs84
+from orbit_predictor.keplerian import rv2coe
 
 from passpredict._time import jday2datetime_us, epoch_to_jd
+from passpredict.constants import MU_E
+
+
+
+def nu_to_anomaly(nu: float, e: float) -> float:
+    """
+    Find Anomaly. For elliptical orbits only
+    Ref: Vallado, Alg 5, p.77
+    """
+    if e < 1:
+        E = 2 * atan(sqrt((1 - e) / (1 + e)) * tan(0.5*nu))
+    else:
+        raise Exception('Orbit is not elliptical')
+    return E
+
+
+def anomaly_to_nu(E: float , e: float) -> float:
+    """
+    For elliptical orbits only
+    Ref: Vallado, Alg 6, p.77
+    """
+    if 0 <= e < 1:
+        nu = 2 * atan(sqrt((1 + e) / (1 - e)) * tan(0.5*E))
+    else:
+        raise Exception('Orbit is not elliptical')
+    return nu
+
+
+def kepler_eqn_E(M: float, e: float) -> float:
+    """
+    Solve the Kepler equation for elliptical orbits
+
+    Ref: Vallado, Alg 2, p.65
+    """
+    if (-pi < M < 0) or (M > pi):
+        E = M - e
+    else:
+        E = M + e
+    tol = 1e-8
+    err = 1
+    # Newton Raphson iteration
+    while err > tol:
+        E_next = E + (M - E + e*sin(E)) / (1 - e*cos(E))
+        err = abs(E_next - E)
+        E = E_next
+    return E
+
+
+def kepler_eqn(E: float, e: float) -> float:
+    """ Get mean anomaly from eccentric anomaly """
+    return E - e*sin(E)
+
+
+def unkozai(no_kozai, ecco, inclo, whichconst):
+    """
+    Undo Kozai transformation
+    Ref: orbit_predictor/utils.py, Vallado p.693, Sec 9.7.2
+    """
+    _, _, _, xke, j2, _, _, _ = whichconst
+    ak = pow(xke / no_kozai, 2.0 / 3.0)
+    d1 = 0.75 * j2 * (3.0 * cos(inclo)**2 - 1.0) / (1.0 - ecco**2)**(3/2)
+    del_ = d1 / (ak * ak)
+    adel = ak * (1.0 - del_ * del_ - del_ * (1.0 / 3.0 + 134.0 * del_ * del_ / 81.0))
+    return no_kozai / (1.0 + d1/(adel*adel))
 
 
 class Orbit:
@@ -17,12 +81,13 @@ class Orbit:
         self._jdepoch = 0      # julian date
         self._jdepochF = 0     # julian date fraction
         self._no_kozai = 0     # kozai mean motion [rev/day], line 2, ch 53-63
+        self._n = 0            # mean motion [rev/day]
         self._ecc = 0          # eccentricity, line 2, ch 27-33
-        self._sma = 0          # semi-major axis [km]
+        self._a = 0          # semi-major axis [km]
         self._inc = 0          # inclination [deg], line 2, ch 9-16
         self._raan = 0         # right ascension of ascending node [deg], line 2, ch 18-25
         self._argp = 0         # argument of perigee [deg] line 2, ch 35-42
-        self._mo = 0           # mean anomolay, line 2, ch 44-51
+        self._M = 0            # mean anomolay, line 2, ch 44-51
         self._nu = 0           # true anomaly
         self._ndot = 0         # first derivative of mean motion, line 1 [rad/s]
         self._nddot = 0        # second derivative of mean motion, line 1  [rad/s^2]
@@ -37,7 +102,13 @@ class Orbit:
 
     @property
     def no_kozai(self):
+        """ Kozai mean motion [rev/day] """
         return self._no_kozai
+
+    @property
+    def n(self):
+        """ Mean motion [rev/day] """
+        return self._n
 
     @property
     def jdepoch(self):
@@ -60,8 +131,8 @@ class Orbit:
         return self._argp
 
     @property
-    def sma(self):
-        return self._sma
+    def a(self):
+        return self._a
 
     @property
     def inc(self):
@@ -69,11 +140,13 @@ class Orbit:
 
     @property
     def nu(self):
+        """ True anomaly [deg] """
         return self._nu
 
     @property
-    def mo(self):
-        return self._mo
+    def M(self):
+        """ Mean anomaly [deg] """
+        return self._M
 
     @property
     def raan(self):
@@ -94,14 +167,72 @@ class Orbit:
         orbit.name = tle.name
         orbit._jdepoch = tle.jdepoch
         orbit._bstar = tle.bstar
-        orbit._ndot = tle.ndot
-        orbit._nddot = tle.nddot
+        orbit._ndot = tle.ndot * 2
+        orbit._nddot = tle.nddot * 6
         orbit._inc = tle.inc
         orbit._ecc = tle.ecc
         orbit._raan = tle.raan
-        orbit._mo = tle.mo
+        orbit._M = tle.M
         orbit._argp = tle.argp
+
+        # mean motion
         orbit._no_kozai = tle.no_kozai
+        orbit._n = unkozai(tle.no_kozai, tle.ecc, tle.inc, wgs84)
+        a = pow(MU_E / (tle.no_kozai * tle.no_kozai), 1/3)
+        orbit._a = a   # semi major axis
+        return orbit
+
+    @classmethod
+    def from_coe(cls, n, ecc, inc, argp, raan, M, jdepoch=0, ndot=0, nddot=0):
+        """
+        Create Orbit object from classical orbital elements
+        """
+        orbit = cls()
+        orbit._inc = inc
+        orbit._ecc = ecc
+        orbit._ndot = ndot
+        orbit._nddot = nddot
+        jd, jdfr = divmod(jdepoch, 1)
+        orbit._jdepoch = jd
+        orbit._jdepochF = jdfr
+        orbit._argp = argp
+        orbit._raan = raan
+        # mean motion
+        orbit._n = n          # mean motion
+        orbit._no_kozai = 0   # kozai mean motion
+        # anomalies
+        E = kepler_eqn_E(M, ecc)   # get eccentric anomaly from Kepler equation
+        nu = anomaly_to_nu(E, ecc)  # then get the true anomaly
+        orbit._M = M   # mean anomaly
+        orbit._nu = nu  # true anomaly
+        return orbit
+
+    @classmethod
+    def from_rv(cls, r, v, jdepoch=0, ndot=0, nddot=0):
+        """
+        Create Orbit object from ECI position and velocity vectors
+        """
+        orbit = cls()
+        p, ecc, inc, raan, argp, nu = rv2coe(MU_E, r, v)
+        orbit._inc = degrees(inc)
+        orbit._ecc = ecc
+        orbit._argp = degrees(argp)
+        orbit._raan = degrees(raan)
+        # semi parameter
+        a = p/(1-ecc*ecc)
+        orbit._a = a
+        # mean motion
+        n = sqrt(MU_E / (a*a*a))
+        orbit._n = n          # mean motion
+        # anomalies
+        orbit._nu = nu  # true anomaly
+        # derivative of mean motion
+        orbit._ndot = ndot
+        orbit._nddot = nddot
+        # epoch
+        jd, jdfr = divmod(jdepoch, 1)
+        orbit._jdepoch = jd
+        orbit._jdepochF = jdfr
         return orbit
 
 
@@ -165,27 +296,33 @@ class TLE(NamedTuple):
 
     @property
     def inc(self):
+        """ Inclination [deg] """
         return float(self.tle2[9:17])  # inclination
 
     @property
     def raan(self):
+        """ Right ascension of ascending node [deg] """
         return float(self.tle2[17:25])  # right ascension of ascending node
 
     @property
     def ecc(self):
+        """ Eccentricity """
         return float('0.' + self.tle2[26:33].replace(' ','0'))  # eccentricity
 
     @property
     def argp(self):
+        """ Argument of perigee [deg] """
         return float(self.tle2[34:42])
 
     @property
-    def mo(self):
+    def M(self):
+        """ Mean anomaly [deg] """
         return float(self.tle2[43:52])    # mean anomaly
 
     @property
     def no_kozai(self):
-        return float(self.tle2[52:63])   # mean motion
+        """ Kozai mean motion [rev/day] """
+        return float(self.tle2[52:63])   # kozai mean motion
 
     # @cached_property
     # def sma(self):

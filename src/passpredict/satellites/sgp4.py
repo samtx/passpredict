@@ -10,7 +10,7 @@ from sgp4.earth_gravity import wgs84 as wgs84_params
 
 from .base import SatellitePropagatorBase
 from .._time import mjd2jdfr
-from ..orbit import TLE, Orbit
+from ..orbit import TLE, Orbit, unkozai
 from .._rotations import teme2ecef
 from ..exceptions import PropagationError
 
@@ -39,7 +39,7 @@ class SGP4Propagator(SatellitePropagatorBase):
             self.orbit.ecc,
             self.orbit.argp,
             self.orbit.inc,
-            self.orbit.mo,
+            self.orbit.M,
             self.orbit.no_kozai,
             self.orbit.raan
         )
@@ -62,7 +62,7 @@ class SGP4Propagator(SatellitePropagatorBase):
         ecc: float,
         argp: float,
         inc: float,
-        mo: float,
+        M: float,
         no_kozai: float,
         raan: float,
     ):
@@ -93,12 +93,12 @@ class SGP4Propagator(SatellitePropagatorBase):
             satid,                  # satnum
             jdepoch - jd0,          # epoch
             bstar,                  # bstar
-            ndot / (xpdotp * 1440.0),               # ndot
-            nddot / (xpdotp * 1440.0 * 1440.0),     # nddot
+            ndot / (2 * xpdotp * 1440.0),               # ndot
+            nddot / (6 * xpdotp * 1440.0 * 1440.0),     # nddot
             ecc,                    # ecco
             radians(argp),          # argpo
             radians(inc),           # inclo
-            radians(mo),            # mo
+            radians(M),            # mo
             no_kozai / xpdotp,      # no_kozai
             radians(raan),          # nodeo in sgp4
         )
@@ -127,14 +127,4 @@ class SGP4Propagator(SatellitePropagatorBase):
         return recef
 
 
-def unkozai(no_kozai, ecco, inclo, whichconst):
-    """
-    Undo Kozai transformation
-    Ref: orbit_predictor/utils.py
-    """
-    _, _, _, xke, j2, _, _, _ = whichconst
-    ak = pow(xke / no_kozai, 2.0 / 3.0)
-    d1 = 0.75 * j2 * (3.0 * cos(inclo)**2 - 1.0) / (1.0 - ecco**2)**(3/2)
-    del_ = d1 / ak ** 2
-    adel = ak * (1.0 - del_ * del_ - del_ * (1.0 / 3.0 + 134.0 * del_ * del_ / 81.0))
-    return no_kozai / (1.0 + d1/adel**2)
+
