@@ -9,16 +9,16 @@ from rich.table import Table
 from rich.align import Align
 from passpredict.caches import JsonCache
 
-from passpredict.observers.base import Visibility
+from passpredict.observers import Visibility
 
 from . import __version__
 from .exceptions import CelestrakError
 from .sources import CelestrakTLESource
 from .geocoding import NominatimGeocoder
-from .satellites import SGP4Predictor
+from .satellites import SGP4Propagator
 from .locations import Location
 from .observers import PassType, Observer
-from .tle import TLE
+from .orbit import TLE
 
 
 @click.command(no_args_is_help=True)
@@ -83,10 +83,12 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
         console.print(msg)
 
     for tle in tles:
-        satellite = SGP4Predictor.from_tle(tle)
-        observer = Observer(location, satellite, aos_at_dg=min_elevation, tolerance_s=0.75)
-        pass_iterator = observer.iter_passes(date_start, date_end, visible_only=visible_only)
-        overpasses += list(pass_iterator)
+        satellite = SGP4Propagator.from_tle(tle)
+        observer = Observer(location, satellite)
+        overpasses += observer.pass_list(
+            date_start, date_end, visible_only=visible_only,
+            aos_at_dg=min_elevation, tol=0.75
+        )
 
     # Sort overpass list by AOS date
     overpasses.sort(key=lambda pass_: pass_.aos.dt)
@@ -116,14 +118,15 @@ class PasspredictManager:
     """
     Manager to hold all options regarding CLI passpredict query
     """
-    def __init__(self,
+    def __init__(
+        self,
         location,
         tles: Union[TLE, Sequence[TLE]],
-        twelvehour = False,
-        alltypes = False,
-        quiet = False,
-        verbose = False,
-        summary = False,
+        twelvehour=False,
+        alltypes=False,
+        quiet=False,
+        verbose=False,
+        summary=False,
     ):
         self.location = location
         self.tles = tles if is_tle_sequence(tles) else [tles]

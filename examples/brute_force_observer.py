@@ -2,8 +2,8 @@ import datetime
 
 from rich.console import Console
 
-from passpredict import Location, MemoryTLESource, SatellitePredictor, TLE
-from passpredict.observers.brute_force import BruteForceObserver
+from passpredict import Location, MemoryTLESource, SGP4Propagator, TLE
+from passpredict.observers import Observer
 from passpredict.cli import PasspredictManager
 
 
@@ -14,7 +14,7 @@ def brute_force_observer():
     location = Location('Austin, TX', 30.2711, -97.7437, 0)
     date_start = datetime.datetime(2021, 10, 2, tzinfo=datetime.timezone.utc)
     date_end = date_start + datetime.timedelta(days=10)
-    min_elevation = 10.0 # degrees
+    min_elevation = 10.0  # degrees
     tle = TLE(
         25544,  # International space station, Norad ID 25544
         (
@@ -22,11 +22,12 @@ def brute_force_observer():
             '2 25544  51.6449 175.1112 0004190  48.8354  53.9444 15.48895782305133'
         )
     )
-    source = MemoryTLESource()
-    source.add_tle(tle)
-    satellite = SatellitePredictor(25544, source)
-    observer = BruteForceObserver(location, satellite, aos_at_dg=min_elevation, time_step=5, tolerance_s=0.1)
-    overpasses =  observer.pass_list(date_start, limit_date=date_end)
+    satellite = SGP4Propagator.from_tle(tle)
+    observer = Observer(location, satellite)
+    overpasses = observer.pass_list(
+        date_start, limit_date=date_end, method='brute',
+        aos_at_dg=min_elevation, time_step=5, tol=0.1
+    )
     manager = PasspredictManager(
         location,
         tle,

@@ -11,7 +11,6 @@ except ImportError:
     from backports.zoneinfo import ZoneInfo
 
 
-
 tf = TimezoneFinder()
 
 

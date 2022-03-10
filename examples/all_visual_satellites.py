@@ -4,7 +4,7 @@ try:
 except ImportError:
     from backports.zoneinfo import ZoneInfo
 
-from passpredict import CelestrakTLESource, Location, SGP4Predictor, Observer
+from passpredict import CelestrakTLESource, Location, SGP4Propagator, Observer
 
 
 def all_visual_satellites():
@@ -15,9 +15,9 @@ def all_visual_satellites():
     start = datetime.datetime.now(tz=ZoneInfo('America/Chicago'))
     end = start + datetime.timedelta(days=1)
     for tle in tles:
-        satellite = SGP4Predictor.from_tle(tle)
-        observer = Observer(location, satellite, aos_at_dg=10)
-        passes = observer.pass_list(start, end, visible_only=True)
+        satellite = SGP4Propagator.from_tle(tle)
+        observer = Observer(location, satellite)
+        passes = observer.pass_list(start, end, visible_only=True, aos_at_dg=10)
         overpasses += passes
     return overpasses
 

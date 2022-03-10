@@ -2,13 +2,6 @@ from ._version import version
 
 __version__ = version
 
-from .core import (
-    predict_all_visible_satellite_overpasses,
-    predict_single_satellite_overpasses,
-    predict_next_overpass,
-    get_next_pass_detail,
-    get_satellite_llh,
-)
 
 from .locations import (
     Location,
@@ -21,39 +14,32 @@ from .sources import (
     MemoryTLESource,
 )
 
-from .tle import (
+from .orbit import (
     TLE,
+    Orbit,
 )
 
 from .satellites import (
-    SGP4Predictor as SatellitePredictor,
-    SGP4Predictor,
-    KeplerianPredictor,
+    SGP4Propagator,
+    KeplerPropagator,
 )
 
 from .observers import (
     Observer,
-    BruteForceObserver,
     PredictedPass,
 )
 
 
 __all__ = [
-    'predict_all_visible_satellite_overpasses',
-    'predict_single_satellite_overpasses',
-    'predict_next_overpass',
-    'get_next_pass_detail',
-    'get_satellite_llh',
     'Location',
     'AsyncPasspredictTLESource',
     'PasspredictTLESource',
     'CelestrakTLESource',
     'MemoryTLESource',
     'TLE',
-    'SatellitePredictor',
-    'SGP4Predictor',
-    'KeplerianPredictor',
+    'Orbit',
+    'SGP4Propagator',
+    'KeplerPropagator',
     'PredictedPass',
     'Observer',
-    'BruteForceObserver',
 ]

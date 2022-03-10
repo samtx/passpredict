@@ -9,11 +9,10 @@ from collections import defaultdict
 
 import httpx
 
-from .satellites import SatellitePredictor
-from .base import TLESource
+from .satellites import SGP4Propagator
 from .caches import BaseCache, MemoryCache
 from .exceptions import CelestrakError
-from .tle import TLE
+from .orbit import TLE
 from .utils import grouper
 
 
@@ -58,13 +57,13 @@ class AsyncPasspredictTLESource(abc.ABC):
         Create Predictor instance with TLE data
         """
         tle = await self.get_tle_or_404(satid, date)
-        predictor = SatellitePredictor(satid, self)
+        predictor = SGP4Propagator(satid, self)
         predictor.tle = tle
         predictor.set_propagator()
         return predictor
 
 
-class CelestrakTLESource(TLESource):
+class CelestrakTLESource(PasspredictTLESource):
     """
     TLE source that checks the cache for orbital elements,
     otherwise queries Celestrak website
@@ -128,7 +127,7 @@ class CelestrakTLESource(TLESource):
         if r.text.lower() in ("no tle found", "no gp data found") or r.status_code >= 300:
             raise CelestrakError(f'Celestrak TLE for satellite {satid} not found')
         tle_strings = r.text.splitlines()
-        tle = self._parse_tle(tle_strings)
+        tle = parse_tle(tle_strings)
         return tle
 
     def _query_tle_category_from_celestrak(self, category: str) -> List[TLE]:
@@ -142,28 +141,9 @@ class CelestrakTLESource(TLESource):
         r = httpx.get(url)
         if not r.text or r.status_code >= 300:
             raise CelestrakError(f'Celestrak TLEs for {category}.txt not found')
-        tles = []
         tle_strings = r.text.splitlines()
-        for raw_tle in grouper(tle_strings, 3):
-            tle = self._parse_tle(raw_tle)
-            tles.append(tle)
+        tles = parse_multiple_tles(tle_strings)
         return tles
-
-    def _parse_tle(self, tle_strings):
-        """
-        Parse a single 3-line TLE from celestrak
-        """
-        if len(tle_strings) == 2:
-            tle1, tle2 = tle_strings
-            name = ""
-        elif len(tle_strings) == 3:
-            tle0, tle1, tle2 = tle_strings
-            name = tle0.strip()  # satellite name
-        else:
-            raise Exception(f"Invalid TLE strings {tle_strings}")
-        satid = int(tle1[2:7])
-        tle = TLE(satid, (tle1, tle2), name=name)
-        return tle
 
 
 class MemoryTLESource(PasspredictTLESource):
@@ -175,3 +155,29 @@ class MemoryTLESource(PasspredictTLESource):
 
     def get_tle(self, satid: Union[int, str]):
         return self.tles[satid]
+
+
+def parse_multiple_tles(tle_lines):
+    """ Assumes TLEs are 3 line TLEs """
+    tles = []
+    for raw_tle in grouper(tle_lines, 3):
+        tle = parse_tle(raw_tle)
+        tles.append(tle)
+    return tles
+
+
+def parse_tle(tle_lines):
+    """
+    Parse a single 2-line or 3-line TLE from celestrak
+    """
+    if len(tle_lines) == 2:
+        tle1, tle2 = tle_lines
+        name = ""
+    elif len(tle_lines) == 3:
+        tle0, tle1, tle2 = tle_lines
+        name = tle0.strip()  # satellite name
+    else:
+        raise Exception(f"Invalid TLE strings {tle_lines}")
+    satid = int(tle1[2:7])
+    tle = TLE(satid, (tle1, tle2), name=name)
+    return tle

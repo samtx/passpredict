@@ -3,23 +3,15 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from pytest import approx
 
-from passpredict import Observer, Location, SGP4Predictor
-from passpredict import *
+from passpredict import Observer, Location, SGP4Propagator, TLE
 from passpredict.observers import PassPoint, Visibility
+
+from .utils import assert_datetime_approx
 
 try:
     from zoneinfo import ZoneInfo
 except ImportError:
     from backports.zoneinfo import ZoneInfo
-
-
-
-def assert_datetime_approx(dt1, dt2, delta_seconds):
-    """
-    Compare two python datetimes. Assert difference is <= delta_seconds
-    """
-    diff = (dt1 - dt2).total_seconds()
-    assert diff == approx(0.0, abs=delta_seconds)
 
 
 def assert_passpoint_approx(pt1, pt2, *, dt_tol=1, el_tol=1, az_tol=10, range_tol=10, bright_tol=3):
@@ -40,60 +32,6 @@ def assert_sun_elevation_at_date(location, dt, el, tol=0.1):
     Compare the sun elevation at the location
     """
     assert location.sun_elevation(dt.astimezone(timezone.utc)) == approx(el, abs=tol)
-
-def test_heavens_above_zurich_iss_visibility_predictions():
-    """
-    From heavens-above.com. Queried 1/21/2022
-    """
-    tle_lines = (
-        "1 25544U 98067A   22021.68747065 -.00000457  00000-0  00000+0 0  9996",
-        "2 25544  51.6270 342.0904 0006847  44.2808  14.3181 15.49598315322461"
-    )
-    satellite = SGP4Predictor.from_tle(TLE('ISS', tle_lines))
-    satellite.intrinsic_mag = -1.8
-
-    location = Location("Zurich", 47.3744, 8.5410, 0)
-    observer = Observer(location, satellite, aos_at_dg=10, tolerance_s=0.5)
-
-    HEAVENS_ABOVE_PREDICTIONS = """
-    Date	Brightness	Start	Highest point	End	Pass type
-    (mag)	Time	Alt.	Az.	Time	Alt.	Az.	Time	Alt.	Az.
-    21 Jan	-4.0	19:02:20	10°	WSW	19:05:41	88°	NNW	19:05:54	76°	ENE	visible
-    22 Jan	-3.6	18:14:24	10°	SW	18:17:41	64°	SSE	18:19:57	19°	ENE	visible
-    22 Jan	-1.4	19:51:23	10°	W	19:52:53	23°	WNW	19:52:53	23°	WNW	visible
-    23 Jan	-3.4	19:03:14	10°	W	19:06:31	51°	NNW	19:06:53	48°	NNE	visible
-    24 Jan	-3.6	18:15:08	10°	WSW	18:18:27	66°	NNW	18:20:52	17°	ENE	visible
-    24 Jan	-1.3	19:52:24	10°	WNW	19:53:48	21°	WNW	19:53:48	21°	WNW	visible
-    25 Jan	-3.0	19:04:17	10°	WNW	19:07:27	39°	N	19:07:46	38°	N	visible
-    26 Jan	-3.1	18:16:07	10°	W	18:19:21	43°	N	18:21:43	16°	ENE	visible
-    26 Jan	-1.3	19:53:19	10°	WNW	19:54:39	21°	NW	19:54:39	21°	NW	visible
-    27 Jan	-3.0	19:05:15	10°	WNW	19:08:25	38°	N	19:08:38	38°	NNE	visible
-    28 Jan	-2.9	18:17:10	10°	WNW	18:20:19	37°	N	18:22:38	16°	ENE	visible
-    28 Jan	-1.5	19:54:06	10°	WNW	19:55:34	23°	WNW	19:55:34	23°	WNW	visible
-    29 Jan	-3.5	19:06:05	10°	WNW	19:09:22	50°	NNE	19:09:36	48°	NNE	visible
-    30 Jan	-3.2	18:18:04	10°	WNW	18:21:17	42°	N	18:23:42	16°	ENE	visible
-    30 Jan	-1.7	19:54:52	10°	WNW	19:56:38	28°	WNW	19:56:38	28°	WNW	visible"""  # NOQA
-
-    TZ = ZoneInfo('Europe/Zurich')
-    UTC = timezone.utc
-    start = datetime(2022, 1, 21, tzinfo=TZ).astimezone(UTC)
-    end = datetime(2022, 1, 31, tzinfo=TZ).astimezone(UTC)
-    date = start
-    for line in HEAVENS_ABOVE_PREDICTIONS.splitlines()[3:]:
-        line_parts = line.split('\t')
-        date_str = f"2022 {line_parts[0]}"
-        vis_begin = datetime.strptime(f"{date_str} {line_parts[2]}+0100", "%Y %d %b %H:%M:%S%z")
-        tca = datetime.strptime(f"{date_str} {line_parts[5]}+0100", "%Y %d %b %H:%M:%S%z")
-        vis_end = datetime.strptime(f"{date_str} {line_parts[8]}+0100", "%Y %d %b %H:%M:%S%z")
-
-        # Find next pass
-        pass_ = observer.next_pass(date, limit_date=end, visible_only=True)
-        assert_datetime_approx(pass_.vis_begin.dt, vis_begin, 1.5)
-        assert_datetime_approx(pass_.vis_end.dt, vis_end, 1.5)
-        assert_datetime_approx(pass_.vis_tca.dt, tca, 1.5)
-        assert isinstance(pass_.brightness, float)
-        assert pass_.type == Visibility.visible
-        date = pass_.los.dt + timedelta(minutes=10)
 
 
 @pytest.fixture(scope='function')
@@ -117,6 +55,62 @@ def hst_tle():
     return TLE(20580, tle_lines, name="HST")
 
 
+def test_heavens_above_zurich_iss_visibility_predictions():
+    """
+    From heavens-above.com. Queried 1/21/2022
+    """
+    tle_lines = (
+        "1 25544U 98067A   22021.68747065 -.00000457  00000-0  00000+0 0  9996",
+        "2 25544  51.6270 342.0904 0006847  44.2808  14.3181 15.49598315322461"
+    )
+    satellite = SGP4Propagator.from_tle(TLE('ISS', tle_lines))
+    satellite.intrinsic_mag = -1.8
+
+    location = Location("Zurich", 47.3744, 8.5410, 0)
+    observer = Observer(location, satellite)
+
+    HEAVENS_ABOVE_PREDICTIONS = """
+    Date	Brightness	Start	Highest point	End	Pass type
+    (mag)	Time	Alt.	Az.	Time	Alt.	Az.	Time	Alt.	Az.
+    21 Jan	-4.0	19:02:20	10°	WSW	19:05:41	88°	NNW	19:05:54	76°	ENE	visible
+    22 Jan	-3.6	18:14:24	10°	SW	18:17:41	64°	SSE	18:19:57	19°	ENE	visible
+    22 Jan	-1.4	19:51:23	10°	W	19:52:53	23°	WNW	19:52:53	23°	WNW	visible
+    23 Jan	-3.4	19:03:14	10°	W	19:06:31	51°	NNW	19:06:53	48°	NNE	visible
+    24 Jan	-3.6	18:15:08	10°	WSW	18:18:27	66°	NNW	18:20:52	17°	ENE	visible
+    24 Jan	-1.3	19:52:24	10°	WNW	19:53:48	21°	WNW	19:53:48	21°	WNW	visible
+    25 Jan	-3.0	19:04:17	10°	WNW	19:07:27	39°	N	19:07:46	38°	N	visible
+    26 Jan	-3.1	18:16:07	10°	W	18:19:21	43°	N	18:21:43	16°	ENE	visible
+    26 Jan	-1.3	19:53:19	10°	WNW	19:54:39	21°	NW	19:54:39	21°	NW	visible
+    27 Jan	-3.0	19:05:15	10°	WNW	19:08:25	38°	N	19:08:38	38°	NNE	visible
+    28 Jan	-2.9	18:17:10	10°	WNW	18:20:19	37°	N	18:22:38	16°	ENE	visible
+    28 Jan	-1.5	19:54:06	10°	WNW	19:55:34	23°	WNW	19:55:34	23°	WNW	visible
+    29 Jan	-3.5	19:06:05	10°	WNW	19:09:22	50°	NNE	19:09:36	48°	NNE	visible
+    30 Jan	-3.2	18:18:04	10°	WNW	18:21:17	42°	N	18:23:42	16°	ENE	visible
+    30 Jan	-1.7	19:54:52	10°	WNW	19:56:38	28°	WNW	19:56:38	28°	WNW	visible"""  # NOQA
+
+    TZ = ZoneInfo('Europe/Zurich')
+    UTC = timezone.utc
+    start = datetime(2022, 1, 21, 12, tzinfo=TZ).astimezone(UTC)
+    end = datetime(2022, 1, 31, tzinfo=TZ).astimezone(UTC)
+    date = start
+    for line in HEAVENS_ABOVE_PREDICTIONS.splitlines()[3:]:
+        line_parts = line.split('\t')
+        date_str = f"2022 {line_parts[0]}"
+        vis_begin = datetime.strptime(f"{date_str} {line_parts[2]}+0100", "%Y %d %b %H:%M:%S%z")
+        tca = datetime.strptime(f"{date_str} {line_parts[5]}+0100", "%Y %d %b %H:%M:%S%z")
+        vis_end = datetime.strptime(f"{date_str} {line_parts[8]}+0100", "%Y %d %b %H:%M:%S%z")
+
+        # Find next pass
+        pass_ = observer.next_pass(date, limit_date=end, visible_only=True, aos_at_dg=10, tol=0.5)
+        assert_datetime_approx(pass_.vis_begin.dt, vis_begin, 1.5)
+        assert_datetime_approx(pass_.vis_end.dt, vis_end, 1.5)
+        assert_datetime_approx(pass_.vis_tca.dt, tca, 1.5)
+        assert isinstance(pass_.brightness, float)
+        assert pass_.type == Visibility.visible
+        date = pass_.los.dt + timedelta(minutes=10)
+
+
+
 class TestHeavensAboveSanAntonioHSTVisibilty:
 
     @classmethod
@@ -127,9 +121,9 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
             "2 20580  28.4712  42.1300 0002330 285.0338 208.0692 15.09965616544703"
         )
         tle = TLE(20580, tle_lines, name="HST")
-        cls.satellite = SGP4Predictor.from_tle(tle)
+        cls.satellite = SGP4Propagator.from_tle(tle)
         cls.satellite.intrinsic_mag = 2.2
-        cls.observer = Observer(cls.location, cls.satellite, aos_at_dg=10, tolerance_s=0.5)
+        cls.observer = Observer(cls.location, cls.satellite)
 
     def test_visibile_overpasses(self):
         """
@@ -149,9 +143,9 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
         30 Jan	2.1	18:49:50	10°	SW	18:53:22	28°	SSE	18:56:36	12°	ESE	visible
         30 Jan	3.0	20:30:12	10°	WSW	20:31:54	24°	WSW	20:31:54	24°	WSW	visible
         31 Jan	1.9	18:38:19	10°	SW	18:42:03	34°	SSE	18:45:47	10°	E	visible
-        31 Jan	2.3	20:18:54	10°	WSW	20:21:21	34°	WSW	20:21:21	34°	WSW	visible
-        01 Feb	1.5	20:07:38	10°	W	20:10:47	51°	WSW	20:10:47	51°	WSW	visible
-        02 Feb	0.8	19:56:22	10°	W	20:00:13	74°	SW	20:00:13	74°	SW	visible"""  # NOQA
+        31 Jan	2.3	20:18:54	10°	WSW	20:21:21	34°	WSW	20:21:21	34°	WSW	visible"""  # noqa
+        # 01 Feb	1.5	20:07:38	10°	W	20:10:47	51°	WSW	20:10:47	51°	WSW	visible
+        # 02 Feb	0.8	19:56:22	10°	W	20:00:13	74°	SW	20:00:13	74°	SW	visible"""  # NOQA
 
         TZ = self.location.timezone
         UTC = timezone.utc
@@ -167,7 +161,7 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
             vis_end = datetime.strptime(f"{date_str} {line_parts[8]}-0600", "%Y %d %b %H:%M:%S%z")
 
             # Find next pass
-            pass_ = self.observer.next_pass(date, limit_date=end, visible_only=True)
+            pass_ = self.observer.next_pass(date, limit_date=end, visible_only=True, aos_at_dg=10, tol=0.5, sunrise_dg=-2)
             assert_datetime_approx(pass_.vis_begin.dt, vis_begin, 1.5)
             assert_datetime_approx(pass_.vis_end.dt, vis_end, 1.5)
             assert_datetime_approx(pass_.vis_tca.dt, tca, 1.5)
@@ -175,7 +169,6 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
             assert pass_.type == Visibility.visible
             # assert pass_.brightness == approx(brightness, abs=3)  # this is very inaccurate
             date = pass_.los.dt + timedelta(minutes=10)
-
 
     def test_visibility_one_overpass_Jan_31_2022_1835(self):
         HEAVENS_ABOVE_PREDICTIONS = """
@@ -225,7 +218,7 @@ class TestHeavensAboveSanAntonioHSTVisibilty:
         assert_sun_elevation_at_date(self.location, vis_end_pt.dt, -8.0)   # vis_end_pt.sun_elevation = -8.0
 
         # Find next pass
-        pass_ = self.observer.next_pass(start, visible_only=True)
+        pass_ = self.observer.next_pass(start, visible_only=True, aos_at_dg=10, tol=0.5)
         tol = {
             'dt_tol': 1.5,
             'el_tol': 1,
@@ -250,9 +243,9 @@ class TestHeavensAboveCapeTownEnvisatVisibilty:
             "2 27386  98.1695  18.2467 0001188  87.4527  20.8530 14.38072512 43711"
         )
         tle = TLE(27386, tle_lines, name="Envisat")
-        cls.satellite = SGP4Predictor.from_tle(tle)
+        cls.satellite = SGP4Propagator.from_tle(tle)
         cls.satellite.intrinsic_mag = 3.7
-        cls.observer = Observer(cls.location, cls.satellite, aos_at_dg=10, tolerance_s=0.5, sunrise_dg=-2)
+        cls.observer = Observer(cls.location, cls.satellite)
 
     def test_visibile_overpasses(self):
         """
@@ -295,7 +288,7 @@ class TestHeavensAboveCapeTownEnvisatVisibilty:
             vis_end = datetime.strptime(f"{date_str} {line_parts[8]}+0200", "%Y %d %b %H:%M:%S%z")
 
             # Find next pass
-            pass_ = self.observer.next_pass(date, limit_date=end, visible_only=True)
+            pass_ = self.observer.next_pass(date, limit_date=end, visible_only=True, aos_at_dg=10, tol=0.5, sunrise_dg=-2)
             assert_datetime_approx(pass_.vis_begin.dt, vis_begin, 1.5)
             assert_datetime_approx(pass_.vis_end.dt, vis_end, 1.5)
             assert_datetime_approx(pass_.vis_tca.dt, tca, 1.5)
@@ -345,7 +338,7 @@ class TestHeavensAboveCapeTownEnvisatVisibilty:
         assert_sun_elevation_at_date(self.location, los_pt.dt, -13.9)  # los_pt.sun_elevation = -13.9
 
         # Find next pass
-        pass_ = self.observer.next_pass(start, visible_only=True)
+        pass_ = self.observer.next_pass(start, visible_only=True, aos_at_dg=10, tol=0.5, sunrise_dg=-2)
         tol = {
             'dt_tol': 1.5,
             'el_tol': 1,
@@ -398,7 +391,7 @@ class TestHeavensAboveCapeTownEnvisatVisibilty:
         assert_sun_elevation_at_date(self.location, los_pt.dt, -4.2)  # los_pt.sun_elevation = -4.2
 
         # Find next pass
-        pass_ = self.observer.next_pass(start, visible_only=True)
+        pass_ = self.observer.next_pass(start, visible_only=True, aos_at_dg=10, tol=0.5, sunrise_dg=-2)
         tol = {
             'dt_tol': 1.5,
             'el_tol': 1,
@@ -412,5 +405,56 @@ class TestHeavensAboveCapeTownEnvisatVisibilty:
         assert pass_.type == Visibility.visible
 
 
-if __name__ == "__main__":
-    pytest.main([__file__])
+
+
+def test_san_antonio_molniya_orbit_all_passes():
+    """
+    Location: San Antonio: 29.4246, -98.4951, UTC-06:00
+
+    TLE:
+    1 14129U 83058B   22033.24895832 -.00000141  00000-0  00000-0 0  9999
+    2 14129  26.3866 118.1312 5979870  45.7131 349.8958  2.05868779262629
+
+    Oscar 10/S400 - All Passes	Home | Info. | Orbit | Close encounters
+    Search period start:	03 February 2022 00:00
+    Search period end:	13 February 2022 00:00
+    Orbit:	4115 x 35332 km, 26.4° (Epoch: 02 February)
+    Passes to include: visible only all
+
+    Click on the date to see the ground track during the pass.
+
+    Date	Brightness	Start	Highest point	End	Pass type
+    (mag)	Time	Alt.	Az.	Time	Alt.	Az.	Time	Alt.	Az.
+    03 Feb	-	11:54:43	10°	W	13:08:21	41°	SW	22:53:29	10°	E	visible
+    04 Feb	-	11:07:22	10°	W	12:14:42	48°	SW	22:07:13	10°	ESE	visible
+    05 Feb	-	10:21:08	10°	W	11:19:16	54°	SW	21:20:20	10°	ESE	visible
+    06 Feb	-	09:35:38	10°	W	10:24:01	60°	SSW	20:32:29	10°	ESE	visible
+    07 Feb	-	08:50:36	10°	W	09:30:34	66°	SSW	19:43:13	10°	SE	visible
+    08 Feb	-	08:05:53	10°	W	08:39:19	71°	SSW	18:52:04	10°	SE	visible
+    09 Feb	-	07:21:21	10°	W	07:49:55	75°	SSW	17:58:24	10°	SE	daylight
+    10 Feb	-	06:36:55	10°	W	07:01:55	79°	SSW	17:01:25	10°	SE	visible
+    11 Feb	-	05:52:30	10°	W	06:14:57	81°	S	15:59:27	10°	SE	visible
+    12 Feb	-	05:08:01	10°	W	05:28:45	83°	S	14:48:09	10°	SE	visible
+
+
+    Date:	04 February 2022
+    Orbit:	4115 x 35332 km, 26.4° (Epoch: 02 February)
+    Event	Time	Altitude	Azimuth	Distance (km)	Brightness	Sun altitude
+    Rises	11:01:19	0°	284° (WNW)	10,989	?	37.7°
+    Reaches altitude 10°	11:07:24	10°	279° (W)	11,005	?	38.4°
+    Maximum altitude	12:14:42	48°	225° (SW)	19,694	?	43.8°
+    Enters shadow	21:52:19	26°	149° (SSE)	8,027	?	-47.6°
+    Drops below altitude 10°	22:07:11	10°	104° (ESE)	7,579	-	-50.8°
+    Sets	22:13:10	0°	90° (E)	8,347	-	-52.1°
+
+
+    Date:	07 February 2022
+    Orbit:	4115 x 35332 km, 26.4° (Epoch: 02 February)
+    Event	Time	Altitude	Azimuth	Distance (km)	Brightness	Sun altitude
+    Rises	08:46:21	0°	283° (WNW)	9,229	?	16.6°
+    Reaches altitude 10°	08:50:37	10°	280° (W)	8,742	?	17.4°
+    Maximum altitude	09:30:34	66°	206° (SSW)	12,163	?	24.7°
+    Drops below altitude 10°	19:43:09	10°	128° (SE)	10,416	?	-19.1°
+    Enters shadow	19:49:50	4°	116° (ESE)	9,916	?	-20.6°
+    Sets	19:53:24	0°	109° (ESE)	9,808	-	-21.3°
+    """
