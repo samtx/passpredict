@@ -199,8 +199,31 @@ Lat=30.2711°, Lon=-97.7437°, Timezone America/Chicago
 
 ## Changelog
 
-### 0.4.0 (2022-02-18)
+### 0.5.0 (2022-03-24)
+Changes in structure of core classes:
+* begin adding functions and methods to use mjd instead of jd
+* Standardize Observer methods. Use method() to accept datetime objects, _method_mjd() to accept mjd time objects
+* Change SGP4Predictor to SGP4Propagator
+* Update satellite propagator methods to correspond to Observer methods
+* Update tests and benchmarks with new class names and methods
+* Remove orbit predictor Location class as inherited base class
+* Create new Orbit class that can be initialized from a TLE.
+* Refactor the SGP4Propagator to not call a source class directly. Instead initialize from Orbit or TLE object
+* Create tests to ensure that SGP4 satrec propagator is created correctly from TLE object
 
+Changes to pass iterators:
+* Change Observer pass iterator algorithms to callable methods rather than subclassing Observer()
+* Use MJD instead of JD in pass iterators. Update propagation and coordinate transformations to use MJD.
+* Update tests to use new observer pass iterator methods
+* move visual pass detail computation to separate function
+* Performance boost: orbit_predictor pass iterator is now 1.2x faster
+
+Misc:
+* Remove old core.py functions. These can now be easily replicated with the current api
+* Enforce mjd2datetime to always use microseconds.
+* Rename satellite modules to sgp4.py and kepler.py
+
+### 0.4.0 (2022-02-18)
 * Add tests for visual overpass for Cape Town and Envisat
 * Remove requirements files, specify optional dependencies in setup.py
 * Add Observer.pass_list() method to directly return a list of overpass objects
@@ -211,12 +234,10 @@ Lat=30.2711°, Lon=-97.7437°, Timezone America/Chicago
 * Update Celestrak source to use new GP url
 
 ### 0.3.0 (2022-01-30)
-
 * Query multiple satellites and satellite categories from CLI
 * Specify MIT license for package
 
 ### 0.2.2 (2022-01-22)
-
 * Use Satellogic's orbit-predictor library as the basis for prediction algorithm, coordinate transformations, locations, propagators, and tle sources. The algorithms are supplemented with custom Cython functions and IAU SOFA routines for speed. Remove unused custom cpp code for now.
 * Improve test suite by adding observation tests using a new brute force observer class to compute predicted passes. Validate visual passes against Heaven's Above.
 * Improve the CLI output using rich tables.
