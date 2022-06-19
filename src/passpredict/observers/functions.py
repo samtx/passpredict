@@ -7,8 +7,6 @@ import numpy as np
 from .core import PassType
 from ..constants import R_EARTH
 from ..time import julian_date
-from .core import PassType
-from ..constants import R_EARTH
 
 if typing.TYPE_CHECKING:
     from .observer import Observer

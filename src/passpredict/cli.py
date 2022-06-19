@@ -55,7 +55,7 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
             name=""
         )
     else:
-        raise Exception("Must specify observing location")
+        raise click.BadParameter("Must specify observing location name with --location or coordinates with --lat and --lon")
     date_start = datetime.datetime.now(tz=location.timezone)
     date_end = date_start + datetime.timedelta(days=days)
 
@@ -63,7 +63,7 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
     # Get TLE data for selected satellites and categories
     tles = []
     if len(satids) == 0 and len(categories) == 0:
-        raise click.BadParameter("Must specify satellite ID or category")
+        raise click.BadParameter("Must specify satellite with --satid or --category")
     try:
         for satid in satids:
             tles.append(source.get_tle(satid))
