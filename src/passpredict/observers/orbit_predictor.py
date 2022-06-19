@@ -10,7 +10,7 @@ from .core import BasicPassInfo, PassType
 from .functions import make_utc, visual_pass_details
 from .._time import datetime2mjd
 from ..constants import R_EARTH
-from ..exceptions import PropagationError
+from ..exceptions import PassAlgorithmError, PropagationError
 
 if typing.TYPE_CHECKING:
     from .observer import Observer
@@ -59,7 +59,7 @@ def orbit_predictor_iterator(
             if not candidate_found:
                 # logger.error('Could not find a descending pass over %s start date: %s - TLE: %s',
                 #              self.location, ascending_date, self.satellite.tle)
-                raise Exception("Can not find an descending phase")
+                raise PassAlgorithmError("Can not find an descending phase")
 
             # Find TCA tca_dt = _find_tca(observer, ascending_date, descending_date)
             while not (descending_mjd - ascending_mjd <= tol):  # precision reached
@@ -139,7 +139,7 @@ def orbit_predictor_iterator(
                     f'Sat {observer.satellite.satid},'
                     f'date: {mjd}, could not find an ascending phase'
                 )
-                raise Exception(msg)
+                raise PassAlgorithmError(msg)
 
 
 def _sample_points(observer: Observer, mjd: float):

@@ -8,3 +8,7 @@ class PropagationError(Exception):
 
 class CelestrakError(Exception):
     """ Raised when TLEs can't be downloaded from Celestrak """
+
+
+class PassAlgorithmError(Exception):
+    """ Raised when pass finding algorithm fails """

@@ -2,22 +2,21 @@ from __future__ import annotations
 import datetime
 from math import floor
 from typing import Union, Sequence
+import warnings
 
 import click
 from rich.console import Console
 from rich.table import Table
 from rich.align import Align
-from passpredict.caches import JsonCache
-
-from passpredict.observers import Visibility
 
 from . import __version__
-from .exceptions import CelestrakError
+from .caches import JsonCache
+from .exceptions import CelestrakError, PassAlgorithmError, PropagationError
 from .sources import CelestrakTLESource
 from .geocoding import NominatimGeocoder
 from .satellites import SGP4Propagator
 from .locations import Location
-from .observers import PassType, Observer
+from .observers import PassType, Observer, Visibility
 from .orbit import TLE
 
 
@@ -85,10 +84,16 @@ def main(satids, categories, days, location_query, latitude, longitude, height, 
     for tle in tles:
         satellite = SGP4Propagator.from_tle(tle)
         observer = Observer(location, satellite)
-        overpasses += observer.pass_list(
-            date_start, date_end, visible_only=visible_only,
-            aos_at_dg=min_elevation, tol=0.75
-        )
+        try:
+            overpasses += observer.pass_list(
+                date_start, date_end, visible_only=visible_only,
+                aos_at_dg=min_elevation, tol=0.75
+            )
+        except PropagationError:
+            warnings.warn(f"Propagation Error raised for {tle}. Overpasses skipped.")
+        except PassAlgorithmError:
+            warnings.warn(f"Pass Algorithm Error raised for {tle}. Overpasses skipped.")
+
 
     # Sort overpass list by AOS date
     overpasses.sort(key=lambda pass_: pass_.aos.dt)
