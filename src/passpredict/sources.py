@@ -118,7 +118,7 @@ class CelestrakTLESource(PasspredictTLESource):
         """
         Download current TLEs from Celestrak and save them to a JSON file
         """
-        url = 'https://celestrak.com/NORAD/elements/gp.php'
+        url = 'https://celestrak.org/NORAD/elements/gp.php'
         params = {
             'CATNR': satid,
             'FORMAT': 'TLE',
@@ -137,7 +137,7 @@ class CelestrakTLESource(PasspredictTLESource):
         Enter Celestrak category string.
         Eg. visual, stations, tle-new, weather, noaa, oneweb, starlink
         """
-        url = f'https://celestrak.com/NORAD/elements/{category}.txt'
+        url = f'https://celestrak.org/NORAD/elements/{category}.txt'
         r = httpx.get(url)
         if not r.text or r.status_code >= 300:
             raise CelestrakError(f'Celestrak TLEs for {category}.txt not found')
