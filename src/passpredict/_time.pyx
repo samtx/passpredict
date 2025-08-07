@@ -73,13 +73,14 @@ def mjd2datetime(double mjd):
     """
     Convert modified julian date float to python datetime object
     """
-    cdef int year, mon, day, hr, minute, i_sec
+    cdef int year, mon, day, hr, minute, i_sec, i_us
     cdef double d_sec, jd
     cdef double jdFrac = 0
     jd = mjd + MJD0
     invjday_SGP4(jd, jdFrac, year, mon, day, hr, minute, d_sec)
-    i_sec, i_us = divmod(d_sec, 1)
-    return datetime.datetime(year, mon, day, hr, minute, int(i_sec), int(i_us*1e6), tzinfo=tz_utc)
+    i_sec = int(d_sec)
+    i_us = int((i_sec % 1) * 1e6)
+    return datetime.datetime(year, mon, day, hr, minute, i_sec, i_us, tzinfo=tz_utc)
 
 def mjd2datetime_us(double mjd):
     """
